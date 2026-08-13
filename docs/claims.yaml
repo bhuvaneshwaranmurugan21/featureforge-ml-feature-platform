@@ -6,6 +6,7 @@ claim_levels:
     evidence:
       - evidence/local-simulation.json
       - tests/
+      - https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/runs/31691791167
     scope:
       - bitemporal revision resolution
       - point-in-time leakage prevention
@@ -16,9 +17,10 @@ claim_levels:
       - TTL and type contracts
       - generation isolation and pointer CAS
   TERRAFORM_STATIC:
-    status: PENDING_CI
+    status: VALIDATED_IN_CI
     evidence:
       - infra/terraform/
+      - https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/runs/31691791184
     scope:
       - formatting
       - terraform validate with providers initialized
