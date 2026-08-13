@@ -216,10 +216,10 @@ resource "aws_sfn_state_machine" "materialization" {
     Comment = "Control-flow contract; replace Pass adapters only after managed verification"
     StartAt = "ValidateManifest"
     States = {
-      ValidateManifest = { Type = "Pass", Next = "MaterializeGeneration" }
+      ValidateManifest      = { Type = "Pass", Next = "MaterializeGeneration" }
       MaterializeGeneration = { Type = "Pass", Next = "ParityGate" }
       ParityGate = {
-        Type = "Choice"
+        Type    = "Choice"
         Choices = [{ Variable = "$.parity_matched", BooleanEquals = true, Next = "Ready" }]
         Default = "Quarantined"
       }

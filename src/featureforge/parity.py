@@ -60,5 +60,6 @@ def compare_parity(
                     "online": None if right is None else right.as_dict(),
                 }
             )
-    proof = {"compared": len(set(expected) | set(actual)), "mismatches": mismatches}
-    return ParityReport(not mismatches, proof["compared"], tuple(mismatches), digest(proof))
+    compared = len(set(expected) | set(actual))
+    proof = {"compared": compared, "mismatches": mismatches}
+    return ParityReport(not mismatches, compared, tuple(mismatches), digest(proof))
