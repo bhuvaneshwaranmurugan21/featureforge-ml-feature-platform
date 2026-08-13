@@ -1,0 +1,207 @@
+{
+  "architecture": "bitemporal-feature-generations",
+  "checks": [
+    {
+      "check": "definition_drift_blocked",
+      "passed": true,
+      "proof": "transaction_count_24h:v1"
+    },
+    {
+      "check": "event_replay_idempotent",
+      "passed": true,
+      "proof": "p-1@1010"
+    },
+    {
+      "check": "conflicting_event_revision_blocked",
+      "passed": true,
+      "proof": "same event_id and knowledge_time, different digest"
+    },
+    {
+      "check": "future_event_excluded",
+      "passed": true,
+      "proof": "p-3 event_time=4000 > label_time=3000"
+    },
+    {
+      "check": "late_correction_excluded",
+      "passed": true,
+      "proof": "p-1 correction knowledge_time=3500 > label_time=3000"
+    },
+    {
+      "check": "dataset_reproducibility",
+      "passed": true,
+      "proof": "f50a6560ddb0a8343d034b573c24a2b672f85761fe12a22016574f9820ced341"
+    },
+    {
+      "check": "offline_materialization",
+      "passed": true,
+      "proof": 10
+    },
+    {
+      "check": "materialization_replay",
+      "passed": true,
+      "proof": "identical digest"
+    },
+    {
+      "check": "missing_entity_defaults",
+      "passed": true,
+      "proof": [
+        {
+          "customer_id": "missing-customer",
+          "definition_digest": "3f3db8aed5ef708ebacb6522ce9d417270375be4e42d7dc2a9bd7f8c7fe2b8c8",
+          "event_time": 5000,
+          "feature_name": "transaction_count_24h",
+          "generation_id": "g-1",
+          "knowledge_time": 5000,
+          "value": 0
+        },
+        {
+          "customer_id": "missing-customer",
+          "definition_digest": "2e90c899a5ca472478b8ee5cb1b0994f083ff5d9acba4de15c9319f66e2bb389",
+          "event_time": 5000,
+          "feature_name": "successful_spend_30d_cents",
+          "generation_id": "g-1",
+          "knowledge_time": 5000,
+          "value": 0
+        },
+        {
+          "customer_id": "missing-customer",
+          "definition_digest": "4801fe6030655eab75654c4dffa65b121fb81c2bbf9c240ccf4cee04f91c8d6e",
+          "event_time": 5000,
+          "feature_name": "failed_payment_ratio_7d",
+          "generation_id": "g-1",
+          "knowledge_time": 5000,
+          "value": 0.0
+        },
+        {
+          "customer_id": "missing-customer",
+          "definition_digest": "d06b7c4c383b89654e7998952a59ef328bf13186cfa53c2652857039c6d0ffd7",
+          "event_time": 5000,
+          "feature_name": "hours_since_successful_payment",
+          "generation_id": "g-1",
+          "knowledge_time": 5000,
+          "value": null
+        },
+        {
+          "customer_id": "missing-customer",
+          "definition_digest": "82e73b4902575e8693f710598766c175b9c405242a262b7526596c50bc17205f",
+          "event_time": 5000,
+          "feature_name": "max_merchant_risk_7d",
+          "generation_id": "g-1",
+          "knowledge_time": 5000,
+          "value": null
+        }
+      ]
+    },
+    {
+      "check": "offline_online_parity",
+      "passed": true,
+      "proof": {
+        "compared": 10,
+        "matched": true,
+        "mismatches": [],
+        "proof_digest": "276399f3bc9672fa134ca3c0c249d118733c8c6ec781773bc79688301e74e1d5"
+      }
+    },
+    {
+      "check": "parity_mismatch_detected",
+      "passed": true,
+      "proof": {
+        "compared": 10,
+        "matched": false,
+        "mismatches": [
+          {
+            "customer_id": "c-1",
+            "expected": {
+              "customer_id": "c-1",
+              "definition_digest": "3f3db8aed5ef708ebacb6522ce9d417270375be4e42d7dc2a9bd7f8c7fe2b8c8",
+              "event_time": 5000,
+              "feature_name": "transaction_count_24h",
+              "generation_id": "g-1",
+              "knowledge_time": 5000,
+              "value": 3
+            },
+            "feature_name": "transaction_count_24h",
+            "online": {
+              "customer_id": "c-1",
+              "definition_digest": "3f3db8aed5ef708ebacb6522ce9d417270375be4e42d7dc2a9bd7f8c7fe2b8c8",
+              "event_time": 5000,
+              "feature_name": "transaction_count_24h",
+              "generation_id": "g-1",
+              "knowledge_time": 5000,
+              "value": 999
+            }
+          },
+          {
+            "customer_id": "missing-customer",
+            "expected": {
+              "customer_id": "missing-customer",
+              "definition_digest": "3f3db8aed5ef708ebacb6522ce9d417270375be4e42d7dc2a9bd7f8c7fe2b8c8",
+              "event_time": 5000,
+              "feature_name": "transaction_count_24h",
+              "generation_id": "g-1",
+              "knowledge_time": 5000,
+              "value": 0
+            },
+            "feature_name": "transaction_count_24h",
+            "online": {
+              "customer_id": "missing-customer",
+              "definition_digest": "3f3db8aed5ef708ebacb6522ce9d417270375be4e42d7dc2a9bd7f8c7fe2b8c8",
+              "event_time": 5000,
+              "feature_name": "transaction_count_24h",
+              "generation_id": "g-1",
+              "knowledge_time": 5000,
+              "value": 999
+            }
+          }
+        ],
+        "proof_digest": "f5525731528f9fa36cd6d7f49c277d90d8e4c80b2098d3b9e7125b4cad79073a"
+      }
+    },
+    {
+      "check": "parity_gate_blocks_publication",
+      "passed": true,
+      "proof": "generation remains building"
+    },
+    {
+      "check": "atomic_online_publication",
+      "passed": true,
+      "proof": [
+        "g-1",
+        1
+      ]
+    },
+    {
+      "check": "stale_publication_blocked",
+      "passed": true,
+      "proof": "stale pointer version=0"
+    },
+    {
+      "check": "online_ttl",
+      "passed": true,
+      "proof": {
+        "expired": null,
+        "fresh": 3
+      }
+    },
+    {
+      "check": "type_contract_enforced",
+      "passed": true,
+      "proof": "float computation declared integer"
+    },
+    {
+      "check": "backfill_generation_isolation",
+      "passed": true,
+      "proof": "active pointer unchanged"
+    }
+  ],
+  "claim_level": "LOCAL_SIMULATION",
+  "evidence_digest": "07d242110e6a16de5f2f5b67003813bfa7c4897d3303ec3e547ad36f87bfc716",
+  "metrics": {
+    "checks_passed": 17,
+    "checks_total": 17,
+    "duration_ms": 2.121
+  },
+  "production_claim": false,
+  "result": "PASS",
+  "scope": "SQLite correctness oracle; no managed AWS feature store was invoked"
+}

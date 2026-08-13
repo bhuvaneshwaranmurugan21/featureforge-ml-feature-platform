@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "featureforge-ml-feature-platform"
+version = "0.1.0"
+description = "A bitemporal ML feature platform with point-in-time datasets and parity-gated serving"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Bhuvaneshwaran Murugan"}]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.11"]
+aws = ["boto3>=1.35"]
+spark = ["pyspark>=3.5"]
+
+[project.scripts]
+featureforge = "featureforge.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers --cov=featureforge --cov-report=term-missing --cov-fail-under=85"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["featureforge"]

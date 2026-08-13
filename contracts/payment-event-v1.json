@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:payment-event:v1",
+  "title": "PaymentEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "customer_id", "event_time", "knowledge_time", "amount_cents", "status", "merchant_risk"],
+  "properties": {
+    "event_id": {"type": "string", "minLength": 1},
+    "customer_id": {"type": "string", "minLength": 1},
+    "event_time": {"type": "integer", "minimum": 0},
+    "knowledge_time": {"type": "integer", "minimum": 0},
+    "amount_cents": {"type": "integer", "minimum": 0},
+    "status": {"enum": ["succeeded", "failed"]},
+    "merchant_risk": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}

@@ -1,0 +1,23 @@
+name: Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths: ["infra/terraform/**", ".github/workflows/terraform.yml"]
+  pull_request:
+    paths: ["infra/terraform/**", ".github/workflows/terraform.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - run: terraform fmt -check -recursive
+      - run: terraform -chdir=infra/terraform init -backend=false
+      - run: terraform -chdir=infra/terraform validate

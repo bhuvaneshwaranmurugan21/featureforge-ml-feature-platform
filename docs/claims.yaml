@@ -1,0 +1,34 @@
+project: featureforge-ml-feature-platform
+updated: 2026-08-13
+claim_levels:
+  LOCAL_SIMULATION:
+    status: VERIFIED
+    evidence:
+      - evidence/local-simulation.json
+      - tests/
+    scope:
+      - bitemporal revision resolution
+      - point-in-time leakage prevention
+      - immutable definition versions
+      - deterministic dataset manifests
+      - idempotent materialization
+      - offline/online parity
+      - TTL and type contracts
+      - generation isolation and pointer CAS
+  TERRAFORM_STATIC:
+    status: PENDING_CI
+    evidence:
+      - infra/terraform/
+    scope:
+      - formatting
+      - terraform validate with providers initialized
+  AWS_MANAGED_RUNTIME:
+    status: NOT_YET_VERIFIED
+    required_evidence:
+      - deployed resource identifiers
+      - Spark, Glue, S3, and DynamoDB run evidence
+      - CloudWatch logs and alarms
+      - late-correction and parity failure injection
+      - measured build and serving performance
+      - measured AWS cost
+      - rollback and teardown evidence
