@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from featureforge.canonical import canonical_json, digest
 from featureforge.model import FeatureValue, PaymentEvent
@@ -188,7 +188,9 @@ class FeatureStore:
         if status != "building":
             raise GenerationConflict("only a building generation can be staged")
         with self._transaction():
-            self.connection.execute("DELETE FROM online_values WHERE generation_id = ?", (generation_id,))
+            self.connection.execute(
+                "DELETE FROM online_values WHERE generation_id = ?", (generation_id,)
+            )
             self.connection.execute(
                 """INSERT INTO online_values
                    SELECT o.generation_id, o.customer_id, o.feature_name, o.event_time,
@@ -200,7 +202,8 @@ class FeatureStore:
                          AND newer.customer_id = o.customer_id
                          AND newer.feature_name = o.feature_name
                          AND (newer.event_time > o.event_time OR
-                              (newer.event_time = o.event_time AND newer.knowledge_time > o.knowledge_time))
+                              (newer.event_time = o.event_time AND
+                               newer.knowledge_time > o.knowledge_time))
                    )""",
                 (generation_id,),
             )
@@ -252,7 +255,14 @@ class FeatureStore:
         ).fetchone()
         return row["generation_id"], row["pointer_version"]
 
-    def serve(self, customer_id: str, feature_name: str, *, request_time: int, ttl_seconds: int) -> Any:
+    def serve(
+        self,
+        customer_id: str,
+        feature_name: str,
+        *,
+        request_time: int,
+        ttl_seconds: int,
+    ) -> Any:
         generation_id, _ = self.active_pointer()
         if generation_id is None:
             return None

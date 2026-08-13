@@ -35,13 +35,17 @@ def latest_known_events(
     )
 
 
-def _window(events: tuple[PaymentEvent, ...], cutoff: int, seconds: int | None) -> tuple[PaymentEvent, ...]:
+def _window(
+    events: tuple[PaymentEvent, ...], cutoff: int, seconds: int | None
+) -> tuple[PaymentEvent, ...]:
     if seconds is None:
         return events
     return tuple(event for event in events if event.event_time > cutoff - seconds)
 
 
-def compute(definition: FeatureDefinition, events: tuple[PaymentEvent, ...], cutoff: int) -> int | float | None:
+def compute(
+    definition: FeatureDefinition, events: tuple[PaymentEvent, ...], cutoff: int
+) -> int | float | None:
     candidates = _window(events, cutoff, definition.window_seconds)
     if definition.computation == "transaction_count":
         value: int | float | None = len(candidates)
@@ -67,7 +71,9 @@ def compute(definition: FeatureDefinition, events: tuple[PaymentEvent, ...], cut
 def validate_value(definition: FeatureDefinition, value: int | float | None) -> None:
     if value is None:
         return
-    if definition.value_type == "integer" and (not isinstance(value, int) or isinstance(value, bool)):
+    if definition.value_type == "integer" and (
+        not isinstance(value, int) or isinstance(value, bool)
+    ):
         raise FeatureTypeError(f"{definition.name} requires integer, got {type(value).__name__}")
     if definition.value_type == "float" and not isinstance(value, (int, float)):
         raise FeatureTypeError(f"{definition.name} requires float, got {type(value).__name__}")

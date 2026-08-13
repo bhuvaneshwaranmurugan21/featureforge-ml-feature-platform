@@ -8,7 +8,12 @@ from featureforge.definitions import payment_features
 from featureforge.model import FeatureDefinition
 from featureforge.parity import compare_parity
 from featureforge.simulator import events_fixture
-from featureforge.store import CompareAndSwapConflict, FeatureStore, GenerationConflict, ReplayConflict
+from featureforge.store import (
+    CompareAndSwapConflict,
+    FeatureStore,
+    GenerationConflict,
+    ReplayConflict,
+)
 
 
 def _prepared_store() -> tuple[FeatureStore, tuple[FeatureDefinition, ...]]:
@@ -48,7 +53,15 @@ def test_parity_gates_atomic_publication_and_ttl() -> None:
         store.mark_ready("g-1", parity_matched=False)
     store.mark_ready("g-1", parity_matched=True)
     assert store.activate("g-1", 0) == 1
-    assert store.serve("c-1", "transaction_count_24h", request_time=5_001, ttl_seconds=definitions[0].ttl_seconds) == 3
+    assert (
+        store.serve(
+            "c-1",
+            "transaction_count_24h",
+            request_time=5_001,
+            ttl_seconds=definitions[0].ttl_seconds,
+        )
+        == 3
+    )
     assert store.serve(
         "c-1",
         "transaction_count_24h",

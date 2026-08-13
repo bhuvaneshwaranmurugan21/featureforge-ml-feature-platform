@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
-from time import perf_counter
-from typing import Any, Callable
+from typing import Any
 
 from featureforge.canonical import digest
 from featureforge.computation import FeatureTypeError, compute, materialize
@@ -13,7 +13,12 @@ from featureforge.definitions import payment_features
 from featureforge.model import FeatureDefinition, Label, PaymentEvent
 from featureforge.parity import compare_parity
 from featureforge.registry import DefinitionConflict, FeatureRegistry
-from featureforge.store import CompareAndSwapConflict, FeatureStore, GenerationConflict, ReplayConflict
+from featureforge.store import (
+    CompareAndSwapConflict,
+    FeatureStore,
+    GenerationConflict,
+    ReplayConflict,
+)
 
 
 def _expect(error_type: type[Exception], operation: Callable[[], object]) -> bool:
@@ -35,7 +40,6 @@ def events_fixture() -> tuple[PaymentEvent, ...]:
 
 
 def run_failure_lab() -> dict[str, Any]:
-    started = perf_counter()
     checks: list[dict[str, Any]] = []
 
     def record(name: str, passed: bool, proof: Any) -> None:
@@ -107,7 +111,8 @@ def run_failure_lab() -> dict[str, Any]:
     missing = [value for value in values if value.customer_id == "missing-customer"]
     record(
         "missing_entity_defaults",
-        any(value.value is None for value in missing) and any(value.value == 0 for value in missing),
+        any(value.value is None for value in missing)
+        and any(value.value == 0 for value in missing),
         [value.as_dict() for value in missing],
     )
 
@@ -178,12 +183,12 @@ def run_failure_lab() -> dict[str, Any]:
     store.put_offline(backfill)
     record(
         "backfill_generation_isolation",
-        store.active_pointer()[0] == "g-1" and all(v.generation_id == "g-backfill" for v in backfill),
+        store.active_pointer()[0] == "g-1"
+        and all(value.generation_id == "g-backfill" for value in backfill),
         "active pointer unchanged",
     )
 
     store.close()
-    duration_ms = round((perf_counter() - started) * 1000, 3)
     return {
         "architecture": "bitemporal-feature-generations",
         "claim_level": "LOCAL_SIMULATION",
@@ -192,7 +197,6 @@ def run_failure_lab() -> dict[str, Any]:
         "metrics": {
             "checks_passed": sum(item["passed"] for item in checks),
             "checks_total": len(checks),
-            "duration_ms": duration_ms,
         },
         "production_claim": False,
         "result": "PASS" if all(item["passed"] for item in checks) else "FAIL",

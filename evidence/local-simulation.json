@@ -198,8 +198,7 @@
   "evidence_digest": "07d242110e6a16de5f2f5b67003813bfa7c4897d3303ec3e547ad36f87bfc716",
   "metrics": {
     "checks_passed": 17,
-    "checks_total": 17,
-    "duration_ms": 2.121
+    "checks_total": 17
   },
   "production_claim": false,
   "result": "PASS",
