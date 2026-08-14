@@ -1,5 +1,5 @@
 project: featureforge-ml-feature-platform
-updated: 2026-08-13
+updated: 2026-08-14
 claim_levels:
   LOCAL_SIMULATION:
     status: VERIFIED
@@ -26,6 +26,7 @@ claim_levels:
       - terraform validate with providers initialized
   AWS_MANAGED_RUNTIME:
     status: NOT_YET_VERIFIED
+    validator: src/featureforge/aws_evidence.py
     required_evidence:
       - deployed resource identifiers
       - Spark, Glue, S3, and DynamoDB run evidence
