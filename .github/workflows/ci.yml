@@ -11,23 +11,29 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # Reviewed action digests from draft PR #1; Stage 0 adopts these CI-only pins.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
           python-version: "3.11"
           cache: pip
-      - run: python -m pip install -e '.[dev]'
+      - run: PIP_CONSTRAINT="$GITHUB_WORKSPACE/requirements-dev.lock" python -m pip install -e '.[dev]'
       - run: ruff check .
       - run: mypy src
       - run: pytest
+      - run: python tools/validate_stage0.py
       - name: Regenerate deterministic evidence
         run: |
           python -m featureforge.cli simulate --output /tmp/featureforge-evidence.json
           python - <<'PY'
           import json
           from pathlib import Path
-          evidence = json.loads(Path('/tmp/featureforge-evidence.json').read_text())
+          generated = Path('/tmp/featureforge-evidence.json').read_bytes()
+          committed = Path('evidence/local-simulation.json').read_bytes()
+          evidence = json.loads(generated)
           assert evidence['result'] == 'PASS'
           assert evidence['production_claim'] is False
+          assert generated == committed, 'simulation differs from committed evidence'
           PY

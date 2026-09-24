@@ -1,0 +1,84 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "base_sha": "85d2cf08ecfbd75d88192e55a8a6db9a6ad55397",
+  "base_tree": "b5c3ba78228801e7e42a8c219235afb2919401b4",
+  "open_draft_pr": {
+    "number": 1,
+    "head_sha": "31c155b4f3a2776a89fd9157380ff45152e70d3c",
+    "status": "open_unmerged",
+    "overlap": ["docs/claims.yaml", ".github/workflows/ci.yml"],
+    "decision": "Review overlap; do not adopt its AWS evidence validator, results, or files as current main proof"
+  },
+  "components": [
+    {
+      "name": "Payment event contract and fixture",
+      "paths": ["contracts/payment-event-v1.json", "src/featureforge/model.py", "src/featureforge/simulator.py"],
+      "classification": "implemented_and_executed_locally",
+      "evidence": ["tests/test_bitemporal_dataset.py", "evidence/local-simulation.json"],
+      "gap": "Knowledge-time source and same-time conflicting revisions are not fully specified"
+    },
+    {
+      "name": "Point-in-time selection and five payment-risk computations",
+      "paths": ["src/featureforge/computation.py", "src/featureforge/definitions.py", "src/featureforge/dataset.py"],
+      "classification": "implemented_and_executed_locally",
+      "evidence": ["tests/test_bitemporal_dataset.py", "src/featureforge/simulator.py"],
+      "gap": "Per-label/customer scans, no independent temporal oracle, no retraction contract"
+    },
+    {
+      "name": "Definition registry and canonical digests",
+      "paths": ["src/featureforge/registry.py", "src/featureforge/canonical.py"],
+      "classification": "implemented_and_executed_locally",
+      "evidence": ["tests/test_registry_and_types.py", "evidence/local-simulation.json"],
+      "gap": "Build manifest does not bind an immutable source snapshot or code dependency set"
+    },
+    {
+      "name": "SQLite event and generation store",
+      "paths": ["src/featureforge/store.py"],
+      "classification": "implemented_and_executed_locally",
+      "evidence": ["tests/test_store_and_parity.py", "evidence/local-simulation.json"],
+      "gap": "No persisted two-publisher race or crash-recovery proof; ready transition trusts a caller-supplied parity boolean"
+    },
+    {
+      "name": "Local staged online values and parity",
+      "paths": ["src/featureforge/store.py", "src/featureforge/parity.py"],
+      "classification": "implemented_and_executed_locally",
+      "evidence": ["tests/test_store_and_parity.py", "evidence/local-simulation.json"],
+      "gap": "Same computation library supplies both sides; no independent online materialization or serving adapter"
+    },
+    {
+      "name": "Deterministic local failure lab",
+      "paths": ["src/featureforge/simulator.py", "src/featureforge/cli.py", "docs/failure-lab.md"],
+      "classification": "implemented_and_executed_locally",
+      "evidence": ["docs/stage0/baseline.json", "evidence/local-simulation.json"],
+      "gap": "17 local checks do not represent 17 managed runtime fault scenarios"
+    },
+    {
+      "name": "Spark adapter",
+      "paths": ["jobs/spark_point_in_time.py"],
+      "classification": "scaffolded_or_modeled",
+      "evidence": ["jobs/spark_point_in_time.py"],
+      "gap": "Reads and selects eligible revisions but does not compute the defined features, pin dataset_as_of, or show managed execution"
+    },
+    {
+      "name": "AWS Terraform topology",
+      "paths": ["infra/terraform/main.tf", "infra/terraform/versions.tf", ".github/workflows/terraform.yml"],
+      "classification": "implemented_but_runtime_unverified",
+      "evidence": ["docs/claims.yaml", "infra/terraform/README.md"],
+      "gap": "Earlier static validation is not deploy, managed workload, measurement, or teardown proof"
+    },
+    {
+      "name": "CI and OIDC identity-only workflow",
+      "paths": [".github/workflows/ci.yml", ".github/workflows/aws-oidc-identity.yml"],
+      "classification": "implemented_and_executed_locally_or_ci",
+      "evidence": ["docs/stage0/baseline.json"],
+      "gap": "Main branch reports no required checks/protection; CI Python is 3.11 while local baseline is 3.12"
+    },
+    {
+      "name": "Managed online DynamoDB writer and reader",
+      "paths": ["docs/architecture.md", "infra/terraform/main.tf"],
+      "classification": "absent_as_executable_adapter",
+      "evidence": ["docs/claims.yaml"],
+      "gap": "No managed online record/materialization/read implementation or runtime evidence"
+    }
+  ]
+}

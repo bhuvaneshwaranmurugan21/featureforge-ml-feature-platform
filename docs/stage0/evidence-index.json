@@ -1,0 +1,19 @@
+{
+  "base_sha": "85d2cf08ecfbd75d88192e55a8a6db9a6ad55397",
+  "files_sha256": {
+    ".github/workflows/ci.yml": "4f567e1e2d149864ae95370c57ad1cd7f6abebbf55facd72fcd77dfbb04825a1",
+    "README.md": "3f20620af200692da4d5c6143b7236a98c412d2666790b4befe7f6a862d8cc30",
+    "docs/claims.yaml": "1cc6c8836e6bbbf4d8c88da340a1188e29d53cb1571f5ff48d3171d7bcd73ec0",
+    "docs/stage0/README.md": "99c8541f3459d7f366681c9186a71f36d45fdf4369ebe3bcda4eaec28d62a9c1",
+    "docs/stage0/baseline.json": "fe668fb9ba38e9063e2cba374d1df0dee12ef9573fe353785847d246089e17df",
+    "docs/stage0/claims.json": "e9b194965c57d3d1045cc444954e50dc2ea7cbd35059ad6cc90e25423356b3ac",
+    "docs/stage0/fixture-decision.md": "804af03b944b8945f54278a8e9d2777f75783aa4a56b22f4446a35348a353693",
+    "docs/stage0/inventory.json": "cd0c7efcf2f93dfb5f937ab4d7f17a93882abfe2be81cf4c50df100b4bc0cf1a",
+    "docs/stage0/requirements.json": "2151c81aa1d8377110adecfbb9b0882e021ef08c035e57e5df451bd5941963cf",
+    "docs/stage0/risk-register.md": "b6ecdfb18e8af4370eb56c9bb4878bc6bf925b7cdbd114f61f560afa3f93c9d8",
+    "requirements-dev.lock": "e22f951cc476132e5484d665102571601aa10e3b37632a82fda8b9c869d551a9",
+    "tests/test_stage0_contract.py": "16a97ab9054b170af45926d0de4593cc1e7e0062bc0911f8aad5ba37b9b8b6d5",
+    "tools/validate_stage0.py": "71bc79598f5967c8f9964b24f4b7934df1a2ebe9bfea9272523d7bce1b1dc638"
+  },
+  "project": "featureforge-ml-feature-platform"
+}

@@ -3,9 +3,10 @@
 [![CI](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/ci.yml)
 [![Infrastructure](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/terraform.yml/badge.svg)](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/terraform.yml)
 
-FeatureForge is a bitemporal feature platform for payment-risk models. It produces leakage-safe,
-reproducible training datasets and publishes an online generation only after proving that
-offline and online values have exact parity.
+FeatureForge is a local bitemporal reference implementation for payment-risk features. Its
+checked fixtures exclude late-known corrections from historical training rows, reproduce
+dataset output for identical inputs, and gate a SQLite online-generation switch on a local
+offline/online comparison. Managed execution and independent parity proof remain open.
 
 Its central opinion is that a feature value needs more than an entity, value, and event time:
 
@@ -23,13 +24,19 @@ a historical training row merely because its business event happened earlier.
 
 ## Evidence boundary
 
-- **Executable and locally verified:** revision-aware source events, bitemporal point-in-time
-  datasets, definition immutability, type contracts, idempotent materialization, generation
-  isolation, exact offline/online parity, TTL, and atomic publication.
+- **Executable and locally verified for the recorded fixtures:** revision-aware source events,
+  bitemporal point-in-time selection, definition immutability, type contracts, idempotent
+  materialization, generation isolation, a local offline/online comparison and mismatch gate,
+  TTL, and a SQLite compare-and-swap publication decision. The two local paths share one
+  computation library; the comparison is not an independent correctness oracle.
 - **Production-shaped but not yet verified on AWS:** S3/Glue offline storage, DynamoDB online
   store and registry, Step Functions, EventBridge, KMS, CloudWatch, and Spark adapter.
 
 No online latency, training scale, availability, or AWS cost claim is made without a captured run.
+The current dataset manifest records cutoffs, definition digests, row count, and rows digest;
+it does not yet bind an immutable source snapshot/content digest. See the
+[Stage 0 audit](docs/stage0/README.md) and [claim registry](docs/stage0/claims.json) for exact
+evidence and remaining proof gaps.
 
 ## Architecture
 
@@ -105,7 +112,7 @@ pytest
 python -m featureforge.cli simulate --output evidence/local-simulation.json
 ```
 
-The failure lab proves 17 scenarios, including future-event and late-correction exclusion,
+The local failure lab checks 17 scenarios, including future-event and late-correction exclusion,
 definition drift, conflicting event replay, dataset reproducibility, missing entities,
 materialization replay, parity failure, type failure, TTL, stale publication, and isolated backfill.
 
