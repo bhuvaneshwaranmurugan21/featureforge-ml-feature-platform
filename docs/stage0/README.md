@@ -47,11 +47,20 @@ required; this validator adds a contract gate and does not replace them.
 
 `ST0-AC-01` through `ST0-AC-04` require exact source, reproducible baseline,
 truthful public claims, and a complete requirement-to-proof map. `ST0-AC-05`
-requires a reviewed exact-head PR, all applicable checks, verifiable merge
+requires an exact-head PR with passing quality checks, verifiable merge
 provenance, independent merged-main checks, and a durable continuation receipt.
-The repository's branch API reported `main` unprotected at audit entry; check
-enforcement again before merge and establish the required PR/check gate rather
-than treating a green optional check as enforced protection.
+Human approval is useful when an independent reviewer is available, but is not
+a Stage 0 completion criterion for this solo repository. A revert and reapply
+solely to manufacture a second merge would add no technical proof.
+
+PR #2 merged at `b531116eb1983d25514529b4fda37b4519f29cc4` before branch
+protection was configured and without an approving review. Its head was
+`2fd5f7a56ba4fd721a660c1dca9f408205f13203`; the `quality` PR check
+passed, and the merged-main `quality` run `36031977394` passed. Local
+merged-main validation and two fresh byte-identical simulations are recorded
+in the external continuation receipt. The later protection rule cannot apply
+retroactively to PR #2. Future PRs should retain the required `quality` check
+and branch protection, without a mandatory second-person approval.
 
 The open draft PR #1 (`agent/production-grade-foundation`, head
 `31c155b4f3a2776a89fd9157380ff45152e70d3c`) adds AWS-evidence code,

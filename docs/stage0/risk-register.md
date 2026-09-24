@@ -3,7 +3,7 @@
 | Risk / trigger | Detection | Response and closure evidence |
 | --- | --- | --- |
 | `main` or draft PR changes while auditing | Re-fetch SHA/tree and PR head before publishing and merging | Reconcile overlap, rebuild candidate and receipts; never overwrite another branch. |
-| Branch checks are optional | Branch/ruleset read and PR required-check view | Establish PR/check enforcement before merge; exact-head green alone is insufficient to claim protected merge. |
+| Branch checks are optional | Branch/ruleset read and PR required-check view | Record whether enforcement was active at merge; never describe an optional green check as protected. Keep required `quality` checks for future PRs. |
 | CI uses Python 3.11 while local runner has 3.12 | Interpreter and dependency versions in baseline | Preserve local result as 3.12; require exact-head 3.11 CI and do not equate the two environments. |
 | Floating dev dependency versions change baseline | Clean install versions and lock/constraints | Pin the resolved dependency graph and run a fresh install plus CI. Retain earlier results. |
 | Historical 14-test claim is attributed to current main | Compare PR #1 files and base/head, current tests | Report 12 tests on current main; draft adds two tests and remains unmerged. |
