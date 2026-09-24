@@ -1,26 +1,29 @@
 project: featureforge-ml-feature-platform
-updated: 2026-08-13
+updated: 2026-09-24
+stage0_claim_registry: docs/stage0/claims.json
 claim_levels:
   LOCAL_SIMULATION:
-    status: VERIFIED
+    status: VERIFIED_FOR_RECORDED_FIXTURES
     evidence:
       - evidence/local-simulation.json
       - tests/
-      - https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/runs/31691791167
+      - docs/stage0/baseline.json
+      - https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/runs/31722062459
     scope:
       - bitemporal revision resolution
-      - point-in-time leakage prevention
+      - point-in-time exclusion of future and late-known revisions in checked fixtures
       - immutable definition versions
-      - deterministic dataset manifests
+      - identical-input deterministic dataset manifests; source snapshot digest not yet bound
       - idempotent materialization
-      - offline/online parity
+      - local offline/online comparison from one shared computation library
       - TTL and type contracts
-      - generation isolation and pointer CAS
+      - local generation isolation and SQLite pointer CAS in checked scenarios
   TERRAFORM_STATIC:
-    status: VALIDATED_IN_CI
+    status: HISTORICALLY_VALIDATED_IN_CI
     evidence:
       - infra/terraform/
       - https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/runs/31691791184
+    evidence_head_sha: 3b0ab03a0a0ef1e936be7af40cc0c517171fd81f
     scope:
       - formatting
       - terraform validate with providers initialized

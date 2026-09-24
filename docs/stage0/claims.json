@@ -1,0 +1,62 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "base_sha": "85d2cf08ecfbd75d88192e55a8a6db9a6ad55397",
+  "claims": [
+    {
+      "id": "FF-CLAIM-01",
+      "statement": "A late payment correction is excluded from an earlier point-in-time training row in the local fixture",
+      "label": "LOCAL_VERIFIED",
+      "evidence": ["tests/test_bitemporal_dataset.py", "src/featureforge/simulator.py", "evidence/local-simulation.json", "docs/stage0/baseline.json"],
+      "limitations": "Current tests cover the checked fixtures; no independent oracle or managed Spark proof has been executed"
+    },
+    {
+      "id": "FF-CLAIM-02",
+      "statement": "SQLite rejects conflicting event replay and immutable-definition drift in the local tests and simulation",
+      "label": "LOCAL_VERIFIED",
+      "evidence": ["tests/test_registry_and_types.py", "tests/test_store_and_parity.py", "evidence/local-simulation.json"],
+      "limitations": "Local reference behavior only; timestamp tie and retraction policies still require an explicit temporal contract"
+    },
+    {
+      "id": "FF-CLAIM-03",
+      "statement": "Two identical local simulation runs and the committed simulation artifact are byte-identical",
+      "label": "LOCAL_VERIFIED",
+      "evidence": ["docs/stage0/baseline.json", "evidence/local-simulation.json"],
+      "limitations": "The current training dataset manifest does not pin a source snapshot digest; same-input rerun is a narrower claim"
+    },
+    {
+      "id": "FF-CLAIM-04",
+      "statement": "The local SQLite simulation compares staged online values to its offline values and blocks an injected mismatch",
+      "label": "LOCAL_VERIFIED",
+      "evidence": ["src/featureforge/parity.py", "src/featureforge/simulator.py", "tests/test_store_and_parity.py"],
+      "limitations": "Both paths derive from one local computation library; this is not an independent offline/online implementation comparison"
+    },
+    {
+      "id": "FF-CLAIM-05",
+      "statement": "A local SQLite active pointer rejects a stale expected version in the recorded simulation",
+      "label": "LOCAL_VERIFIED",
+      "evidence": ["src/featureforge/store.py", "src/featureforge/simulator.py", "tests/test_store_and_parity.py"],
+      "limitations": "Two independent publishers, interrupted writes, restart recovery, and a managed DynamoDB pointer are unverified"
+    },
+    {
+      "id": "FF-CLAIM-06",
+      "statement": "Terraform and Spark files describe an intended managed architecture",
+      "label": "DESIGN_ONLY",
+      "evidence": ["infra/terraform/main.tf", "jobs/spark_point_in_time.py", "docs/architecture.md"],
+      "limitations": "A historical Terraform validation ran at an earlier commit; no managed workload or scale result is established"
+    },
+    {
+      "id": "FF-CLAIM-07",
+      "statement": "Managed Glue, Spark, S3, and DynamoDB feature computation and serving",
+      "label": "UNCLAIMED",
+      "evidence": ["docs/claims.yaml", "docs/runbook.md"],
+      "limitations": "No deploy, workload, measured serving performance, cost, or teardown proof is present on main"
+    },
+    {
+      "id": "FF-CLAIM-08",
+      "statement": "Production throughput, availability, online read latency, and AWS cost",
+      "label": "UNCLAIMED",
+      "evidence": ["docs/claims.yaml", "docs/runbook.md"],
+      "limitations": "No measured managed run supports these metrics"
+    }
+  ]
+}

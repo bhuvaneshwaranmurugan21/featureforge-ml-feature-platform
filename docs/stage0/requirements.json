@@ -1,0 +1,107 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "part": 1,
+  "base_sha": "85d2cf08ecfbd75d88192e55a8a6db9a6ad55397",
+  "requirements": [
+    {
+      "id": "FF-P1-01",
+      "owner_stage": 0,
+      "requirement": "Exact repository identity and a reproducible declared-dependency baseline",
+      "validation": "Match remote/main SHA and tree; clean isolated install; run documented quality and simulation commands",
+      "negative_control": "Reject wrong project or base SHA in Stage 0 contract",
+      "evidence": ["docs/stage0/baseline.json", "docs/stage0/inventory.json"],
+      "dependencies": [],
+      "status": "observed_locally"
+    },
+    {
+      "id": "FF-P1-02",
+      "owner_stage": 0,
+      "requirement": "Every public capability claim has an evidence label, pointer, and limitation or corrected wording",
+      "validation": "Audit README, docs/claims.yaml, architecture, runbooks, evidence, code, and cited CI",
+      "negative_control": "Reject unsupported AWS_VERIFIED and missing evidence in claim registry",
+      "evidence": ["docs/stage0/claims.json", "docs/claims.yaml", "README.md"],
+      "dependencies": ["FF-P1-01"],
+      "status": "observed_locally"
+    },
+    {
+      "id": "FF-P1-03",
+      "owner_stage": 1,
+      "requirement": "Explicit event and knowledge clock semantics, window boundaries, corrections, retractions, and deterministic ties",
+      "validation": "Versioned temporal specification and hand-calculated fixtures against actual source contract",
+      "negative_control": "Ambiguous same-time conflicting revisions and invalid availability clocks fail closed",
+      "evidence": ["planned:temporal-specification", "planned:boundary-fixtures"],
+      "dependencies": ["FF-P1-01"],
+      "status": "planned"
+    },
+    {
+      "id": "FF-P1-04",
+      "owner_stage": 1,
+      "requirement": "No knowledge learned after a prediction cutoff influences that historical row",
+      "validation": "Independent oracle and before/after late-correction counterexample",
+      "negative_control": "Deliberately leaky event-time-only selection yields the wrong prior row",
+      "evidence": ["planned:independent-oracle", "planned:leakage-counterexample"],
+      "dependencies": ["FF-P1-03"],
+      "status": "planned"
+    },
+    {
+      "id": "FF-P1-05",
+      "owner_stage": 1,
+      "requirement": "Revision and retraction selection is deterministic under input permutation and replay",
+      "validation": "Differential small-history and property tests against the independent oracle",
+      "negative_control": "Changed tie rule, duplicate conflict, or lost retraction is detected",
+      "evidence": ["planned:revision-property-results"],
+      "dependencies": ["FF-P1-03", "FF-P1-04"],
+      "status": "planned"
+    },
+    {
+      "id": "FF-P1-06",
+      "owner_stage": 2,
+      "requirement": "Immutable definition and pinned input provenance reproduce training dataset content",
+      "validation": "Two clean builds from one source snapshot/definition/code frontier compare canonical row and manifest digests",
+      "negative_control": "Changed source snapshot or definition content cannot reuse the prior identity",
+      "evidence": ["planned:input-snapshot-manifest", "planned:clean-rerun-digests"],
+      "dependencies": ["FF-P1-03", "FF-P1-04"],
+      "status": "planned"
+    },
+    {
+      "id": "FF-P1-07",
+      "owner_stage": 2,
+      "requirement": "Meaningful payment-risk features and offline history produce hand-checkable point-in-time training rows",
+      "validation": "Fresh-checkout end-to-end demo and row-by-row independent oracle comparison",
+      "negative_control": "A late correction cannot rewrite the earlier prediction vector",
+      "evidence": ["planned:local-vertical-slice", "planned:row-oracle-report"],
+      "dependencies": ["FF-P1-04", "FF-P1-06"],
+      "status": "planned"
+    },
+    {
+      "id": "FF-P1-08",
+      "owner_stage": 2,
+      "requirement": "Candidates stay isolated and active generation changes through guarded compare-and-swap",
+      "validation": "Persistent local state, validation, reader pinning, and two-publisher race",
+      "negative_control": "Incomplete candidate and stale publisher cannot become active",
+      "evidence": ["planned:publication-race-trace"],
+      "dependencies": ["FF-P1-06", "FF-P1-07"],
+      "status": "planned"
+    },
+    {
+      "id": "FF-P1-09",
+      "owner_stage": 2,
+      "requirement": "Partial failure, duplicate dispatch, retry, and rollback retain a valid active generation",
+      "validation": "Fault-injection matrix and process-restart recovery on persistent local store",
+      "negative_control": "Conflicting retry or stale rollback fails without clobbering current pointer",
+      "evidence": ["planned:failure-recovery-traces"],
+      "dependencies": ["FF-P1-08"],
+      "status": "planned"
+    },
+    {
+      "id": "FF-P1-10",
+      "owner_stage": 0,
+      "requirement": "Each stage's claims and artifacts bind to exact-head PR checks and independently verified merged main",
+      "validation": "Stage receipts, required job-level CI, reviewed merge provenance, and merged-main rerun",
+      "negative_control": "Moved head or changed artifact digest invalidates the prior receipt",
+      "evidence": ["docs/stage0/evidence-index.json", "planned:external-stage0-continuation-receipt"],
+      "dependencies": ["FF-P1-01", "FF-P1-02"],
+      "status": "pending_merge_proof"
+    }
+  ]
+}
