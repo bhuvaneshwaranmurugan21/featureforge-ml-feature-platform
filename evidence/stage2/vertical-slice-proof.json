@@ -1,0 +1,114 @@
+{
+  "base_sha": "0f25178f5b163cd121717018a1f7c405a9f80499",
+  "base_tree": "370f0bd81acd95932e5c2d4226104dee8816b834",
+  "claim_boundary": "Bounded local Python and file-backed SQLite proof; no managed, scale, latency, availability, cost, Spark, DynamoDB, or AWS runtime claim.",
+  "code_identity": {
+    "digest": "3c7fd049988f50d2b2e035103d151c6dcfea398f264c730f72dd044b399c8abf",
+    "files_sha256": {
+      "src/featureforge/computation.py": "a486ccf1812e7d75f1cbf9901d23bf4b34a46cf7cca6d0d1581659b6fa3c84ac",
+      "src/featureforge/dataset.py": "e4bd3cd9cd647e359f949720fa497d0a20c47073a6d3755302f3821721bf245d",
+      "src/featureforge/lifecycle.py": "3dcaa30d67d0f62bd0bcbdca99098bee9a1a9783aa6531127cf7b9eb06c642e2",
+      "src/featureforge/model.py": "ef40ffe2a2426db5d3d648f622aba1c0b7903815e11bf07aa47583b567686e69",
+      "src/featureforge/provenance.py": "60b50d76bbe551ee2aeb994b25f915920710dc676bc7f646ce2d1b99ef59b2f5",
+      "src/featureforge/temporal.py": "2e3ee2bc2af31136cf0fe19b3392cd97e69d2141e1e23ecc13b0c17278b08761"
+    }
+  },
+  "current_views": {
+    "180000": {
+      "c1_transaction_count_24h": 3,
+      "row_count": 15,
+      "rows_digest": "b2210efe3c954d206781a187e75b3e8837dd53b015756896cf9756daa7d7346d"
+    },
+    "200005": {
+      "c1_transaction_count_24h": 4,
+      "row_count": 15,
+      "rows_digest": "0c555b45b3ed208cb9ff8f27227652cfcf17902bbab66c977b9e333b12fe50b1"
+    },
+    "200020": {
+      "c1_transaction_count_24h": 3,
+      "row_count": 15,
+      "rows_digest": "a0d4d07c590489007e8e3ab93ccade3de0319c58b6d5ce2b54dca56419bff04e"
+    }
+  },
+  "dataset": {
+    "artifact_digest": "1de78369d42bd2e21bc34596cd9e1fb40053f45f46ca2f80a7c42b52ecf2cc83",
+    "historical_unchanged_after_later_corrections": true,
+    "oracle_agreement": true,
+    "row_count": 2,
+    "rows": [
+      {
+        "customer_id": "c-1",
+        "dataset_as_of": 180000,
+        "event_cutoff": 200000,
+        "failed_payment_ratio_7d": 0.25,
+        "hours_since_successful_payment": 11.11111111111111,
+        "knowledge_cutoff": 180000,
+        "knowledge_truncated_by_dataset_as_of": false,
+        "label": 1,
+        "label_id": "label-c1",
+        "label_time": 200000,
+        "max_merchant_risk_7d": 0.9,
+        "prediction_knowledge_cutoff": 180000,
+        "successful_spend_30d_cents": 1129,
+        "transaction_count_24h": 3
+      },
+      {
+        "customer_id": "c-2",
+        "dataset_as_of": 180000,
+        "event_cutoff": 200000,
+        "failed_payment_ratio_7d": 0.0,
+        "hours_since_successful_payment": 13.88888888888889,
+        "knowledge_cutoff": 180000,
+        "knowledge_truncated_by_dataset_as_of": false,
+        "label": 0,
+        "label_id": "label-c2",
+        "label_time": 200000,
+        "max_merchant_risk_7d": 0.4,
+        "prediction_knowledge_cutoff": 180000,
+        "successful_spend_30d_cents": 40,
+        "transaction_count_24h": 1
+      }
+    ],
+    "rows_digest": "cd82a8d46e6cf0512e575b4c98ea1b1630435ca9790c5e415d49104116bf47c4"
+  },
+  "definitions": {
+    "artifact_digest": "6b31e179f871a8cbcc24443b4f14931fe5e0283e346067a331b0c1f80dff61ed",
+    "count": 5
+  },
+  "digests": {
+    "fixture_sha256": "6655c2e89b9b8bae5c767c6986c667d58307b1d47b490c6ce36e463650097cfe",
+    "oracle_sha256": "872b0acd4b8fda3683c44b2db72737bb6c2d8f0f1e25db714582e935a38602b3"
+  },
+  "labels": {
+    "artifact_id": "labels-stage2",
+    "contract": "training-request-v1",
+    "kind": "labels",
+    "manifest_digest": "e3182c99a3bce9156c752985623d8645bcd3b5c0e18601c2e557c9b2fc53756f",
+    "metadata": {
+      "event_cutoff_max": 200000,
+      "event_cutoff_min": 200000,
+      "prediction_knowledge_max": 180000,
+      "prediction_knowledge_min": 180000
+    },
+    "row_count": 2,
+    "rows_digest": "f59d5efbb954bcda520f10a004802b0d8c8e1c36c1b467092612b0a27e983a69"
+  },
+  "project": "featureforge-ml-feature-platform",
+  "result": "PASS",
+  "source": {
+    "artifact_id": "source-stage2",
+    "contract": "payment-event-v2",
+    "kind": "source",
+    "manifest_digest": "ec5665dc6f7a77ce5c999a227185a1a08b3ecc240745484e02884cc784316c45",
+    "metadata": {
+      "distinct_event_count": 6,
+      "event_time_max": 200000,
+      "event_time_min": 113600,
+      "knowledge_time_max": 200010,
+      "knowledge_time_min": 113600
+    },
+    "row_count": 8,
+    "rows_digest": "aa484ef0fdfd645653a5d577db5ab1d92df89eeb1e1a53802a036a03243ee3f9"
+  },
+  "stage": "part1-stage2"
+}

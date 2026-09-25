@@ -1,0 +1,239 @@
+{
+  "base_sha": "0f25178f5b163cd121717018a1f7c405a9f80499",
+  "base_tree": "370f0bd81acd95932e5c2d4226104dee8816b834",
+  "fault_points": [
+    {
+      "expected": "snapshot absent",
+      "id": 1,
+      "name": "malformed source",
+      "observed": "rejected:ContractError",
+      "result": "PASS"
+    },
+    {
+      "expected": "source durable",
+      "id": 2,
+      "name": "accepted source before generation",
+      "observed": "reopened",
+      "result": "PASS"
+    },
+    {
+      "expected": "not visible",
+      "id": 3,
+      "name": "generation before offline completion",
+      "observed": "pointer unchanged",
+      "result": "PASS"
+    },
+    {
+      "expected": "digest check rejects",
+      "id": 4,
+      "name": "partial offline artifact",
+      "observed": "contract test",
+      "result": "PASS"
+    },
+    {
+      "expected": "FAILED",
+      "id": 5,
+      "name": "partial candidate",
+      "observed": "contract test",
+      "result": "PASS"
+    },
+    {
+      "expected": "validation rejects",
+      "id": 6,
+      "name": "missing or tampered manifest",
+      "observed": "contract test",
+      "result": "PASS"
+    },
+    {
+      "expected": "FAILED",
+      "id": 7,
+      "name": "candidate count or digest mismatch",
+      "observed": "contract test",
+      "result": "PASS"
+    },
+    {
+      "expected": "validation rejects",
+      "id": 8,
+      "name": "definition digest type or TTL mismatch",
+      "observed": "contract test",
+      "result": "PASS"
+    },
+    {
+      "expected": "FAILED",
+      "id": 9,
+      "name": "oracle or transfer mismatch",
+      "observed": "False",
+      "result": "PASS"
+    },
+    {
+      "expected": "rejected",
+      "id": 10,
+      "name": "activation before validation",
+      "observed": "True",
+      "result": "PASS"
+    },
+    {
+      "expected": "READY and resumable",
+      "id": 11,
+      "name": "interruption after validation",
+      "observed": "generation-a READY before race",
+      "result": "PASS"
+    },
+    {
+      "expected": "semantic CAS conflict",
+      "id": 12,
+      "name": "competing stale activation",
+      "observed": "semantic-cas-conflict",
+      "result": "PASS"
+    },
+    {
+      "expected": "receipt replay",
+      "id": 13,
+      "name": "acknowledgement loss after commit",
+      "observed": "True",
+      "result": "PASS"
+    },
+    {
+      "expected": "state recovered",
+      "id": 14,
+      "name": "restart during resumable work",
+      "observed": "database reopened",
+      "result": "PASS"
+    },
+    {
+      "expected": "same receipt",
+      "id": 15,
+      "name": "identical duplicate dispatch",
+      "observed": "3",
+      "result": "PASS"
+    },
+    {
+      "expected": "rejected",
+      "id": 16,
+      "name": "conflicting duplicate dispatch",
+      "observed": "True",
+      "result": "PASS"
+    },
+    {
+      "expected": "pointer unchanged",
+      "id": 17,
+      "name": "rollback interruption before commit",
+      "observed": "transactional contract test",
+      "result": "PASS"
+    },
+    {
+      "expected": "rejected",
+      "id": 18,
+      "name": "stale rollback",
+      "observed": "True",
+      "result": "PASS"
+    },
+    {
+      "expected": "present before and absent at",
+      "id": 19,
+      "name": "TTL boundary",
+      "observed": "4/None",
+      "result": "PASS"
+    },
+    {
+      "expected": "explicit failure",
+      "id": 20,
+      "name": "pinned generation unavailable",
+      "observed": "contract test",
+      "result": "PASS"
+    }
+  ],
+  "final": {
+    "history": [
+      {
+        "from_generation": null,
+        "operation_id": "activate-base",
+        "operation_kind": "activate",
+        "pointer_version": 1,
+        "to_generation": "generation-base"
+      },
+      {
+        "from_generation": "generation-base",
+        "operation_id": "activate-generation-a",
+        "operation_kind": "activate",
+        "pointer_version": 2,
+        "to_generation": "generation-a"
+      },
+      {
+        "from_generation": "generation-a",
+        "operation_id": "activate-current-lost-ack",
+        "operation_kind": "activate",
+        "pointer_version": 3,
+        "to_generation": "generation-current"
+      },
+      {
+        "from_generation": "generation-current",
+        "operation_id": "rollback-to-a",
+        "operation_kind": "rollback",
+        "pointer_version": 4,
+        "to_generation": "generation-a"
+      }
+    ],
+    "pointer": {
+      "generation_id": "generation-a",
+      "version": 4
+    },
+    "statuses": {
+      "generation-a": "ACTIVE",
+      "generation-b": "READY",
+      "generation-bad": "FAILED",
+      "generation-base": "RETIRED",
+      "generation-current": "RETIRED"
+    }
+  },
+  "idempotency": {
+    "conflicting_replay_rejected": true,
+    "lost_ack_observed": true,
+    "replayed_pointer_version": 3
+  },
+  "immutability": {
+    "changed_source_rejected": true,
+    "exact_artifact_replay": "replayed"
+  },
+  "pinned_reader": {
+    "base_before_switch": 3,
+    "generation_a_after_switch": 4,
+    "generation_a_before_switch": 4,
+    "new_request_after_switch": 3
+  },
+  "project": "featureforge-ml-feature-platform",
+  "publication": {
+    "base_receipt": {
+      "contract": "publication-receipt-v1",
+      "from_generation": null,
+      "generation_id": "generation-base",
+      "kind": "activate",
+      "pointer_version": 1,
+      "receipt_digest": "e4d29a32d8afe30d34390cec18fe3595469d42d4aaf5c7a6dd9a23cea08ae23d"
+    },
+    "race_predecessor_reads": {
+      "generation-a": [
+        "generation-base",
+        1
+      ],
+      "generation-b": [
+        "generation-base",
+        1
+      ]
+    },
+    "race_results": {
+      "generation-a": "committed",
+      "generation-b": "semantic-cas-conflict"
+    },
+    "rollback_receipt": {
+      "contract": "publication-receipt-v1",
+      "from_generation": "generation-current",
+      "generation_id": "generation-a",
+      "kind": "rollback",
+      "pointer_version": 4,
+      "receipt_digest": "5f458a3b0b2f7731b83aa36dab75f712988b3a3cd0440f5470b1ea54940fb4a9"
+    }
+  },
+  "result": "PASS",
+  "stage": "part1-stage2"
+}

@@ -25,6 +25,7 @@ jobs:
       - run: pytest
       - run: python tools/validate_stage0.py
       - run: python tools/validate_stage1.py
+      - run: python tools/validate_stage2.py
       - name: Regenerate current deterministic simulation evidence
         run: |
           python -m featureforge.cli simulate --output /tmp/featureforge-evidence.json
@@ -42,3 +43,8 @@ jobs:
         run: |
           python -m tools.run_stage1_proof --output /tmp/featureforge-stage1-proof.json
           cmp /tmp/featureforge-stage1-proof.json evidence/stage1/temporal-proof.json
+      - name: Regenerate deterministic Stage 2 lifecycle proofs
+        run: |
+          python -m tools.run_stage2_proof --output-dir /tmp/featureforge-stage2-proof
+          cmp /tmp/featureforge-stage2-proof/vertical-slice-proof.json evidence/stage2/vertical-slice-proof.json
+          cmp /tmp/featureforge-stage2-proof/failure-recovery-proof.json evidence/stage2/failure-recovery-proof.json

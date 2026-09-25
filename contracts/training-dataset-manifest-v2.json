@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:training-dataset-manifest:v2",
+  "title": "FeatureForge provenance-bound training dataset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code_tree", "contract", "definition_set_digest", "label_snapshot_digest", "production_manifest", "source_snapshot_digest", "manifest_digest"],
+  "properties": {
+    "code_tree": {"type": "string", "minLength": 1},
+    "contract": {"const": "training-dataset-manifest-v2"},
+    "definition_set_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "label_snapshot_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "production_manifest": {"type": "object"},
+    "source_snapshot_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

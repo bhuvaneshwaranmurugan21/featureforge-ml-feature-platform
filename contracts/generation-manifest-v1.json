@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:generation-manifest:v1",
+  "title": "FeatureForge candidate generation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["candidate_count", "candidate_digest", "code_tree", "contract", "dataset_manifest_digest", "definition_set_digest", "event_cutoff", "expected_predecessor", "generation_id", "knowledge_cutoff", "label_snapshot_digest", "source_snapshot_digest"],
+  "properties": {
+    "candidate_count": {"type": "integer", "minimum": 0},
+    "candidate_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "code_tree": {"type": "string", "minLength": 1},
+    "contract": {"const": "generation-manifest-v1"},
+    "dataset_manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "definition_set_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "event_cutoff": {"type": "integer", "minimum": 0},
+    "expected_predecessor": {"type": ["string", "null"]},
+    "generation_id": {"type": "string", "minLength": 1},
+    "knowledge_cutoff": {"type": "integer", "minimum": 0},
+    "label_snapshot_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "source_snapshot_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

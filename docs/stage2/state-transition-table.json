@@ -1,0 +1,15 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part1-stage2",
+  "base_sha": "0f25178f5b163cd121717018a1f7c405a9f80499",
+  "transitions": [
+    {"from": "CREATED", "action": "begin_build", "requires": ["generation_manifest"], "to": "BUILDING", "replay": "no-op while BUILDING"},
+    {"from": "BUILDING", "action": "put_candidate_batch", "requires": ["known_definition", "matching_generation", "immutable_key"], "to": "BUILDING", "replay": "same row replays; changed row rejects"},
+    {"from": "BUILDING", "action": "seal_candidate", "requires": ["durable_candidate_rows"], "to": "VALIDATING", "replay": "reject"},
+    {"from": "VALIDATING", "action": "validate_candidate", "requires": ["linked_artifacts", "expected_current_artifact"], "to": "READY", "condition": "all persisted checks match", "replay": "reject"},
+    {"from": "VALIDATING", "action": "validate_candidate", "requires": ["validation_receipt"], "to": "FAILED", "condition": "any persisted check mismatches", "replay": "reject"},
+    {"from": "READY", "action": "activate", "requires": ["passing_receipt", "expected_generation", "expected_version", "operation_id"], "to": "ACTIVE", "transaction": "pointer+statuses+history+operation receipt", "replay": "return stored receipt"},
+    {"from": "ACTIVE", "action": "activate_other", "requires": ["successful CAS"], "to": "RETIRED", "transaction": "same as target activation", "replay": "return stored receipt"},
+    {"from": "RETIRED", "action": "rollback", "requires": ["passing_receipt", "expected_generation", "expected_version", "new operation_id"], "to": "ACTIVE", "transaction": "pointer+statuses+history+operation receipt", "replay": "return stored receipt"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:training-request:v1",
+  "title": "FeatureForge point-in-time training request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["label_id", "customer_id", "label_time", "prediction_knowledge_time", "value"],
+  "properties": {
+    "label_id": {"type": "string", "minLength": 1},
+    "customer_id": {"type": "string", "minLength": 1},
+    "label_time": {"type": "integer", "minimum": 0},
+    "prediction_knowledge_time": {"type": "integer", "minimum": 0},
+    "value": {"type": "integer"}
+  }
+}

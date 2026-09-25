@@ -6,8 +6,9 @@ Adopt **bitemporal feature generations**.
 
 Business time answers “when did the fact occur?” Knowledge time answers “when could this
 platform have used this revision?” Both are required to make historical training defensible.
-A generation binds the source frontier, `dataset_as_of`, feature-definition set, offline values,
-staged online values, parity report, and publication decision.
+A generation binds immutable source and label snapshots, `dataset_as_of`, the persisted
+feature-definition set, code identity, offline dataset, explicit current-view candidate,
+validation receipt, and publication decision.
 
 ## Temporal semantics
 
@@ -17,29 +18,32 @@ window, and TTL. This remains deterministic even when a source corrects historic
 
 ## Publication semantics
 
-Materialization never writes into the active serving namespace. A new generation is built in
-isolation. Offline and staged online values are compared across value, event time, knowledge
-time, definition digest, entity, and feature. A DynamoDB conditional update changes the active
-pointer only after every gate passes. The preceding generation is retained for rollback.
+Materialization never writes into the active serving namespace. Locally, a new generation is built
+in isolation and becomes `READY` only from persisted artifact-link, count, digest, and exact-row
+validation. `BEGIN IMMEDIATE` then atomically checks expected generation/version, updates the
+pointer and statuses, appends history, and stores an idempotent receipt. The AWS mapping remains a
+design reference rather than Stage 2 evidence.
 
 ## State machine
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Building
-    Building --> Quarantined: quality or parity fails
-    Quarantined --> Building: repair and rematerialize
-    Building --> Ready: all proofs pass
-    Ready --> Active: pointer CAS
-    Active --> Retired: replacement published
-    Retired --> Active: rollback pointer CAS
+    [*] --> CREATED
+    CREATED --> BUILDING: begin build
+    BUILDING --> VALIDATING: seal candidate
+    VALIDATING --> FAILED: persisted mismatch
+    VALIDATING --> READY: persisted proof passes
+    READY --> ACTIVE: guarded pointer CAS
+    ACTIVE --> RETIRED: replacement published
+    RETIRED --> ACTIVE: guarded rollback CAS
 ```
 
 ## Serving behavior
 
-The online store contains one latest record per generation/entity/feature. A read first resolves
-the active generation, then looks up the feature and enforces TTL. Missing and expired values
-remain explicit; defaulting belongs to the model contract, not hidden storage behavior.
+The online store contains one record per generation/entity/feature. A logical read resolves the
+active generation once and keeps that token for every feature lookup. TTL is loaded from the
+persisted definition bound to the value. Missing and expired values remain explicit; defaulting
+belongs to the model contract, not hidden storage behavior.
 
 ## Primary references
 

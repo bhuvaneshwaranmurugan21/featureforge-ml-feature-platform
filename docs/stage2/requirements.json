@@ -1,0 +1,58 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "part": 1,
+  "stage": 2,
+  "base_sha": "0f25178f5b163cd121717018a1f7c405a9f80499",
+  "requirements": [
+    {
+      "id": "FF-P1-06",
+      "status": "local_verified_pending_merge",
+      "requirement": "Immutable definitions and pinned input provenance reproduce training dataset content",
+      "specification": ["docs/stage2/lifecycle-specification.md"],
+      "implementation": ["src/featureforge/provenance.py", "src/featureforge/lifecycle.py"],
+      "tests": ["tests/test_stage2_provenance.py"],
+      "negative_controls": ["changed_source_identity", "definition_drift_after_restart", "unsupported_schema_version"],
+      "evidence": ["evidence/stage2/vertical-slice-proof.json"]
+    },
+    {
+      "id": "FF-P1-07",
+      "status": "local_verified_pending_merge",
+      "requirement": "Meaningful payment-risk computation produces hand-checkable point-in-time training rows and explicit current views",
+      "specification": ["docs/stage2/lifecycle-specification.md", "docs/stage2/walkthrough.md"],
+      "implementation": ["src/featureforge/dataset.py", "src/featureforge/computation.py", "src/featureforge/provenance.py"],
+      "tests": ["tests/stage2_oracle.py", "tests/test_stage2_lifecycle.py"],
+      "negative_controls": ["oracle_value_mismatch", "late_correction", "later_retraction"],
+      "evidence": ["evidence/stage2/vertical-slice-proof.json"]
+    },
+    {
+      "id": "FF-P1-08",
+      "status": "local_verified_pending_merge",
+      "requirement": "Candidate generations remain isolated and publication uses evidence-derived guarded compare-and-swap with pinned reads",
+      "specification": ["docs/stage2/lifecycle-specification.md", "docs/stage2/state-transition-table.json"],
+      "implementation": ["src/featureforge/lifecycle.py"],
+      "tests": ["tests/test_stage2_lifecycle.py"],
+      "negative_controls": ["publish_before_validation", "post_validation_tamper", "two_publisher_race", "ttl_boundary"],
+      "evidence": ["evidence/stage2/failure-recovery-proof.json"]
+    },
+    {
+      "id": "FF-P1-09",
+      "status": "local_verified_pending_merge",
+      "requirement": "Partial failure, duplicate dispatch, retry, restart, lost acknowledgement, and rollback preserve a valid active generation",
+      "specification": ["docs/stage2/lifecycle-specification.md"],
+      "implementation": ["src/featureforge/lifecycle.py"],
+      "tests": ["tests/test_stage2_lifecycle.py", "tests/test_stage2_contract.py"],
+      "negative_controls": ["conflicting_operation_reuse", "stale_rollback", "partial_candidate", "pinned_generation_unavailable"],
+      "evidence": ["evidence/stage2/failure-recovery-proof.json"]
+    },
+    {
+      "id": "FF-P1-10",
+      "status": "local_verified_pending_merge",
+      "requirement": "Exact-head gates, protected merge, merged-main verification, and continuation evidence close Part 1",
+      "specification": ["docs/stage2/walkthrough.md"],
+      "implementation": [".github/workflows/ci.yml", "tools/validate_stage2.py"],
+      "tests": ["tests/test_stage2_contract.py"],
+      "negative_controls": ["wrong_project", "wrong_base", "missing_requirement", "stale_digest", "overclaim", "incomplete_fault_matrix"],
+      "evidence": ["evidence/stage2/evidence-index.json"]
+    }
+  ]
+}

@@ -5,10 +5,11 @@
 
 FeatureForge is a local bitemporal reference implementation for payment-risk features. Its
 checked fixtures exclude late-known corrections from historical training rows, apply typed
-retractions only when knowable, reproduce dataset output for identical inputs, and gate a SQLite
-online-generation switch on a local offline/online comparison. An independent primitive-record
-oracle checks the bounded local temporal histories. Managed execution and independently deployed
-offline/online parity remain open.
+retractions only when knowable, reproduce provenance-bound dataset output for identical inputs,
+and gate a file-backed SQLite generation switch on persisted validation evidence. An independent
+primitive-record oracle checks bounded historical and current views. The local lifecycle includes
+semantic CAS contention, generation-pinned reads, restart-safe idempotency, lost-acknowledgement
+recovery, TTL, and guarded rollback. Managed execution remains open.
 
 Its central opinion is that a feature value needs more than an entity, value, and event time:
 
@@ -29,19 +30,22 @@ a historical training row merely because its business event happened earlier.
 - **Executable and locally verified for the recorded fixtures:** revision-aware source events,
   bitemporal point-in-time selection, deterministic revision replay, typed retractions,
   definition immutability, type contracts, idempotent
-  materialization, generation isolation, a local offline/online comparison and mismatch gate,
-  TTL, and a SQLite compare-and-swap publication decision. The two materialization paths share one
-  computation library. Stage 1's temporal oracle is structurally independent of production
-  selection and arithmetic, but it is not an independently deployed serving implementation.
+  materialization, immutable source/label/dataset manifests, persistent definition authority,
+  generation isolation, evidence-derived readiness, semantic compare-and-swap contention,
+  generation-pinned reads, restart-safe operation replay, lost-ack recovery, guarded rollback,
+  and definition-bound TTL. Stage 2's primitive-record oracle is structurally independent of
+  production selection, computation, dataset, lifecycle, and canonicalization code, but it is not
+  an independently deployed serving implementation.
 - **Production-shaped but not yet verified on AWS:** S3/Glue offline storage, DynamoDB online
   store and registry, Step Functions, EventBridge, KMS, CloudWatch, and Spark adapter.
 
 No online latency, training scale, availability, or AWS cost claim is made without a captured run.
-The current dataset manifest records cutoffs, definition digests, row count, and rows digest;
-it does not yet bind an immutable source snapshot/content digest. See the
+The Stage 2 dataset manifest binds immutable source, label, definition-set, code, cutoff, count,
+and ordered-row identities. See the
 [Stage 0 audit](docs/stage0/README.md),
 [Stage 1 temporal authority](docs/stage1/temporal-specification.md), and
-[Stage 1 claim registry](docs/stage1/claims.json) for exact evidence and remaining proof gaps.
+[Stage 2 lifecycle authority](docs/stage2/lifecycle-specification.md) for exact evidence and
+remaining proof gaps.
 
 ## Architecture
 
@@ -104,9 +108,11 @@ manifest digest.
 6. Backfills write a new generation and cannot mutate the active generation.
 7. Online staging uses the latest value per entity/feature from one generation.
 8. Exact value, timestamp, definition, entity, and generation parity is required.
-9. Only parity-proven generations can become active.
-10. Publication uses compare-and-swap; a stale publisher cannot overwrite a newer decision.
-11. Serving enforces TTL and returns an explicit missing value rather than stale data.
+9. Only generations with a persisted, passing, artifact-bound validation receipt can become active.
+10. Publication uses expected-generation and expected-version CAS; a stale publisher or rollback cannot overwrite a newer decision.
+11. One logical read pins one generation; publication cannot mix values inside the request.
+12. Exact operation replay returns the committed receipt; conflicting operation reuse fails closed.
+13. TTL comes from the persisted definition and returns missing at the exact expiry boundary.
 
 ## Run it
 
@@ -118,6 +124,8 @@ source .venv/bin/activate
 python -m pip install -e '.[dev]'
 pytest
 python -m featureforge.cli simulate --output /tmp/featureforge-evidence.json
+python -m tools.run_stage2_proof --output-dir /tmp/featureforge-stage2-evidence
+python tools/validate_stage2.py
 ```
 
 The local failure lab checks 17 scenarios, including future-event and late-correction exclusion,
@@ -125,7 +133,9 @@ definition drift, conflicting event replay, dataset reproducibility, missing ent
 materialization replay, parity failure, type failure, TTL, stale publication, and isolated backfill.
 The Stage 1 proof adds typed retractions, hand-calculated boundary fixtures, all 5,040 permutations
 of the golden history, 36 bounded cases, and 350 deterministic property examples against an
-independent test oracle.
+independent test oracle. Stage 2 adds a 20-point persisted failure matrix, strict ingestion and
+artifact integrity, independent training/current-view agreement, a real two-connection semantic
+CAS loser, reader pinning across a switch, restart and lost-ack replay, and guarded rollback.
 
 ## Repository map
 
@@ -144,7 +154,7 @@ docs/              ADR, runbook, failure lab, and claim registry
 | Semantic object | Local oracle | AWS reference component |
 |---|---|---|
 | Versioned source facts | SQLite event revisions | S3/Iceberg bitemporal source table |
-| Immutable definition | In-memory registry + digest | DynamoDB registry + deployment artifact digest |
+| Immutable definition | Persistent SQLite authority + digest | DynamoDB registry + deployment artifact digest |
 | Offline generation | SQLite values | S3/Glue/Iceberg generation namespace |
 | Online generation | SQLite online table | DynamoDB generation-prefixed keys |
 | Dataset manifest | Canonical JSON digest | Versioned, KMS-encrypted S3 evidence |
@@ -155,10 +165,9 @@ for the exact evidence required before any managed-runtime claim.
 
 ## Interview walkthrough
 
-Use one late correction: payment `p-1` occurred at 10:00, the prediction was made at 10:05,
-and the correction arrived at 10:10. Event-time-only backfills leak the corrected value into the
-10:05 row. FeatureForge retains both clocks, reconstructs what was knowable at 10:05, binds the
-result to a definition digest, and publishes serving state only after parity.
+Use the [Stage 2 walkthrough](docs/stage2/walkthrough.md): explain the hand-calculated historical
+row, correction and retraction, immutable provenance, failed candidate isolation, validation
+receipt, one-winner CAS race, pinned read, lost acknowledgement replay, and stale-safe rollback.
 
 ## License
 

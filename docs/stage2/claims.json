@@ -1,0 +1,35 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part1-stage2",
+  "base_sha": "0f25178f5b163cd121717018a1f7c405a9f80499",
+  "claims": [
+    {
+      "id": "FF-ST2-CLAIM-01",
+      "label": "LOCAL_VERIFIED",
+      "statement": "Pinned source, label, definition, and code identities reproduce the bounded training rows and three explicit current views, with field-level agreement against the independent oracle.",
+      "evidence": ["evidence/stage2/vertical-slice-proof.json", "tests/stage2_oracle.py"],
+      "limitations": "Bounded fixture and local Python execution only; not a proof for arbitrary data or another execution engine."
+    },
+    {
+      "id": "FF-ST2-CLAIM-02",
+      "label": "LOCAL_VERIFIED",
+      "statement": "The file-backed SQLite lifecycle isolates candidates, derives readiness from stored validation evidence, admits one semantic CAS winner, pins readers, and applies definition-bound TTL.",
+      "evidence": ["evidence/stage2/failure-recovery-proof.json", "tests/test_stage2_lifecycle.py"],
+      "limitations": "Single-node SQLite transaction semantics; not a distributed control-plane claim."
+    },
+    {
+      "id": "FF-ST2-CLAIM-03",
+      "label": "LOCAL_VERIFIED",
+      "statement": "Exact retry after restart, lost acknowledgement, conflicting operation reuse, guarded rollback, and stale rollback behave as recorded for the deterministic Stage 2 scenario.",
+      "evidence": ["evidence/stage2/failure-recovery-proof.json"],
+      "limitations": "Deterministic bounded failure injection; no chaos, availability, durability, or disaster-recovery claim."
+    },
+    {
+      "id": "FF-ST2-CLAIM-04",
+      "label": "UNCLAIMED",
+      "statement": "Spark, DynamoDB, AWS services, distributed transactions, scale, latency, availability, durability, and cost have the same behavior.",
+      "evidence": ["docs/stage2/lifecycle-specification.md"],
+      "limitations": "Stage 2 performs no AWS operation, Terraform runtime change, managed workload, scale test, latency measurement, availability test, or cost measurement."
+    }
+  ]
+}

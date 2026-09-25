@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:source-snapshot-manifest:v1",
+  "title": "FeatureForge source snapshot manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["artifact_id", "contract", "kind", "metadata", "row_count", "rows_digest", "manifest_digest"],
+  "properties": {
+    "artifact_id": {"type": "string", "minLength": 1},
+    "contract": {"const": "payment-event-v2"},
+    "kind": {"const": "source"},
+    "metadata": {"type": "object"},
+    "row_count": {"type": "integer", "minimum": 0},
+    "rows_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

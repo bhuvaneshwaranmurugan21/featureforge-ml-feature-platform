@@ -1,0 +1,17 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part1-stage2",
+  "base_sha": "0f25178f5b163cd121717018a1f7c405a9f80499",
+  "base_tree": "370f0bd81acd95932e5c2d4226104dee8816b834",
+  "branch": "part1-stage2-local-vertical-slice",
+  "predecessor_gates": {
+    "ruff": "passed",
+    "strict_mypy": "passed",
+    "pytest": {"passed": 33, "coverage_percent": 90.58},
+    "stage0_validator": "passed",
+    "stage1_validator": "passed",
+    "stage1_simulation_byte_identical": true,
+    "stage1_temporal_proof_byte_identical": true
+  },
+  "dependency_decision": "No new dependency. Strict typed decoding is sufficient for the Stage 2 runtime contract boundary."
+}
