@@ -43,11 +43,12 @@ class FeatureStore:
         self.connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS events (
+                revision_id TEXT PRIMARY KEY,
                 event_id TEXT NOT NULL,
                 knowledge_time INTEGER NOT NULL,
                 payload_json TEXT NOT NULL,
                 payload_digest TEXT NOT NULL,
-                PRIMARY KEY(event_id, knowledge_time)
+                UNIQUE(event_id, knowledge_time)
             );
             CREATE TABLE IF NOT EXISTS generations (
                 generation_id TEXT PRIMARY KEY,
@@ -103,23 +104,42 @@ class FeatureStore:
         payload = event.as_dict()
         payload_digest = digest(payload)
         prior = self.connection.execute(
-            "SELECT payload_digest FROM events WHERE event_id = ? AND knowledge_time = ?",
-            (event.event_id, event.knowledge_time),
+            "SELECT payload_digest FROM events WHERE revision_id = ?",
+            (event.revision_id,),
         ).fetchone()
         if prior:
             if prior["payload_digest"] != payload_digest:
                 raise ReplayConflict("an event revision was replayed with different content")
             return "replayed"
+        same_clock = self.connection.execute(
+            "SELECT revision_id FROM events WHERE event_id = ? AND knowledge_time = ?",
+            (event.event_id, event.knowledge_time),
+        ).fetchone()
+        if same_clock:
+            raise ReplayConflict("an event has two revisions at the same knowledge time")
+        prior_event = self.connection.execute(
+            "SELECT payload_json FROM events WHERE event_id = ? LIMIT 1", (event.event_id,)
+        ).fetchone()
+        if prior_event:
+            prior_payload: dict[str, Any] = json.loads(prior_event["payload_json"])
+            if prior_payload["customer_id"] != event.customer_id:
+                raise ReplayConflict("a logical event cannot change customer identity")
         self.connection.execute(
-            "INSERT INTO events VALUES (?, ?, ?, ?)",
-            (event.event_id, event.knowledge_time, canonical_json(payload), payload_digest),
+            "INSERT INTO events VALUES (?, ?, ?, ?, ?)",
+            (
+                event.revision_id,
+                event.event_id,
+                event.knowledge_time,
+                canonical_json(payload),
+                payload_digest,
+            ),
         )
         return "appended"
 
     def events(self) -> tuple[PaymentEvent, ...]:
         result: list[PaymentEvent] = []
         for row in self.connection.execute(
-            "SELECT payload_json FROM events ORDER BY knowledge_time, event_id"
+            "SELECT payload_json FROM events ORDER BY knowledge_time, event_id, revision_id"
         ):
             payload: dict[str, Any] = json.loads(row["payload_json"])
             result.append(PaymentEvent(**payload))

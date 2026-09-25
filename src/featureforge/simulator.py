@@ -161,7 +161,14 @@ def run_failure_lab() -> dict[str, Any]:
     record("online_ttl", served == 3 and expired is None, {"fresh": served, "expired": expired})
 
     bad_definition = FeatureDefinition(
-        "bad_ratio", 1, "integer", 100, "failed_payment_ratio", 100, "type mismatch injection"
+        "bad_ratio",
+        1,
+        "integer",
+        100,
+        "failed_payment_ratio",
+        None,
+        "type mismatch injection",
+        0,
     )
     record(
         "type_contract_enforced",

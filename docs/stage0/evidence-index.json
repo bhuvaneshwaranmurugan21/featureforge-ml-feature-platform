@@ -1,8 +1,8 @@
 {
   "base_sha": "85d2cf08ecfbd75d88192e55a8a6db9a6ad55397",
   "files_sha256": {
-    ".github/workflows/ci.yml": "4f567e1e2d149864ae95370c57ad1cd7f6abebbf55facd72fcd77dfbb04825a1",
-    "README.md": "3f20620af200692da4d5c6143b7236a98c412d2666790b4befe7f6a862d8cc30",
+    ".github/workflows/ci.yml": "305888eac981f8ef81c961a92bd905a0cc3fafd7cdd52224500965687642bbae",
+    "README.md": "f1a04bdd29cc03a85e409a68bd293287220cd3a4bbcc1fd7c970bf7fbe09431f",
     "docs/claims.yaml": "1cc6c8836e6bbbf4d8c88da340a1188e29d53cb1571f5ff48d3171d7bcd73ec0",
     "docs/stage0/README.md": "5a323093ba32b5a98ec22e0d346a281c2b0e6b25d1d6f0db84c290bf11cdfa9c",
     "docs/stage0/baseline.json": "fe668fb9ba38e9063e2cba374d1df0dee12ef9573fe353785847d246089e17df",
@@ -11,7 +11,7 @@
     "docs/stage0/inventory.json": "cd0c7efcf2f93dfb5f937ab4d7f17a93882abfe2be81cf4c50df100b4bc0cf1a",
     "docs/stage0/requirements.json": "34ea61e9363bf2a65c7413bf4b19bcdf3c2f71d9ba7f210b119a9d7ee37e04a0",
     "docs/stage0/risk-register.md": "56a81e14d078a865dd6b2e918a9b26f86e888b8f010d62896f98b72e0e79880b",
-    "requirements-dev.lock": "e22f951cc476132e5484d665102571601aa10e3b37632a82fda8b9c869d551a9",
+    "requirements-dev.lock": "491a938bc842e220e151fcb1084732a2503378c94a45c2652317ee1fed962e95",
     "tests/test_stage0_contract.py": "16a97ab9054b170af45926d0de4593cc1e7e0062bc0911f8aad5ba37b9b8b6d5",
     "tools/validate_stage0.py": "522d5e565bd5132388c1c79989d80b0561f7f4dc90cbd00cec9021a5bb826d60"
   },

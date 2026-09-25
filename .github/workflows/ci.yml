@@ -24,16 +24,21 @@ jobs:
       - run: mypy src
       - run: pytest
       - run: python tools/validate_stage0.py
-      - name: Regenerate deterministic evidence
+      - run: python tools/validate_stage1.py
+      - name: Regenerate current deterministic simulation evidence
         run: |
           python -m featureforge.cli simulate --output /tmp/featureforge-evidence.json
           python - <<'PY'
           import json
           from pathlib import Path
           generated = Path('/tmp/featureforge-evidence.json').read_bytes()
-          committed = Path('evidence/local-simulation.json').read_bytes()
+          committed = Path('evidence/stage1/local-simulation.json').read_bytes()
           evidence = json.loads(generated)
           assert evidence['result'] == 'PASS'
           assert evidence['production_claim'] is False
           assert generated == committed, 'simulation differs from committed evidence'
           PY
+      - name: Regenerate deterministic Stage 1 temporal proof
+        run: |
+          python -m tools.run_stage1_proof --output /tmp/featureforge-stage1-proof.json
+          cmp /tmp/featureforge-stage1-proof.json evidence/stage1/temporal-proof.json

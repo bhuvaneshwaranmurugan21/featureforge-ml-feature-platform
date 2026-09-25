@@ -1,0 +1,22 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part1-stage1",
+  "base_sha": "ce2646754065145cbf609f286c588bbaa4fb3284",
+  "base_tree": "37322993da45e3f1880726ad20fe603c09d7c22e",
+  "environment": {"python": "3.12.14", "declared_dependency_install": "passed"},
+  "predecessor": {
+    "ruff": "passed",
+    "strict_mypy": "passed",
+    "pytest": {"passed": 17, "failed": 0, "coverage_percent": 91.63},
+    "stage0_validator": "passed",
+    "simulation_sha256": "86ed47b18f3a99328f8c5a9ace30059403fad6662409a39dc5af1c69d936d7e2",
+    "simulation_byte_identical": true
+  },
+  "dependency_probe": {
+    "hypothesis": "6.168.1",
+    "pytest": "9.1.1",
+    "python": "3.12.14",
+    "existing_tests_passed": 17,
+    "result": "passed"
+  }
+}

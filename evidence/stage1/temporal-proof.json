@@ -1,0 +1,88 @@
+{
+  "base_sha": "ce2646754065145cbf609f286c588bbaa4fb3284",
+  "claim_boundary": "local bounded temporal proof; no AWS, scale, or cross-engine claim",
+  "digests": {
+    "contract_v2": "65373f09f3647f9a70c68e705d7983b132df0ee61c7598c1bda87b6a862b7fdf",
+    "decision_table": "be96880e7141f52744e6ee90c82c3798b165b3cc0499e9ad80ca1d468d7cdf49",
+    "fixture": "f6690307c7870ff95ed26ad559d6daf966fe247ea89a9db7238e97623bd6a8d9",
+    "specification": "0c23d5b8969649785a682cdad55117538d5f432bc143159b4cdf9ad90bc1cf50"
+  },
+  "golden_cases": [
+    {
+      "case": "before_correction",
+      "knowledge_cutoff": 180,
+      "matched": true,
+      "selected_revision_ids": [
+        "lower-r1",
+        "p-1-r1",
+        "p-2-r1",
+        "p-3-r1"
+      ],
+      "values": {
+        "count_100s": 3,
+        "failed_ratio_100s": 0.3333333333333333,
+        "hours_since_success_100s": 0.011111111111111112,
+        "max_risk_100s": 0.9,
+        "spend_100s": 130
+      }
+    },
+    {
+      "case": "after_correction",
+      "knowledge_cutoff": 205,
+      "matched": true,
+      "selected_revision_ids": [
+        "lower-r1",
+        "p-1-r2",
+        "p-2-r1",
+        "p-3-r1",
+        "upper-r1"
+      ],
+      "values": {
+        "count_100s": 4,
+        "failed_ratio_100s": 0.25,
+        "hours_since_success_100s": 0.0,
+        "max_risk_100s": 0.9,
+        "spend_100s": 260
+      }
+    },
+    {
+      "case": "after_retraction",
+      "knowledge_cutoff": 220,
+      "matched": true,
+      "selected_revision_ids": [
+        "lower-r1",
+        "p-1-r2",
+        "p-2-r1",
+        "upper-r1"
+      ],
+      "values": {
+        "count_100s": 3,
+        "failed_ratio_100s": 0.3333333333333333,
+        "hours_since_success_100s": 0.0,
+        "max_risk_100s": 0.7,
+        "spend_100s": 230
+      }
+    }
+  ],
+  "negative_controls": {
+    "customer_identity_change": true,
+    "invalid_knowledge_clock": true,
+    "leaky_event_time_only_detected": true,
+    "payload_bearing_retraction": true,
+    "revision_id_content_conflict": true,
+    "same_event_same_knowledge_time": true
+  },
+  "oracle_independence": {
+    "oracle_sha256": "5cc46198eaa4971234899eeb59cfc9b20564ea275cc1ef91619276a1873b770e",
+    "production_imports_in_oracle": []
+  },
+  "project": "featureforge-ml-feature-platform",
+  "properties": {
+    "bounded_single_event_cases": 36,
+    "exhaustive_permutations": 5040,
+    "hypothesis_derandomized_examples": 350,
+    "hypothesis_source_sha256": "a28e501326b9152e35ab0109127eec461fd281af79f1289f55058709227223b3"
+  },
+  "result": "PASS",
+  "stage": "part1-stage1"
+}

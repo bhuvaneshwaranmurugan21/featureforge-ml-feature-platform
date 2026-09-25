@@ -1,0 +1,19 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part1-stage1",
+  "base_sha": "ce2646754065145cbf609f286c588bbaa4fb3284",
+  "decisions": [
+    {"case": "event_on_upper_boundary", "result": "included"},
+    {"case": "event_on_lower_window_boundary", "result": "excluded"},
+    {"case": "revision_on_knowledge_cutoff", "result": "included"},
+    {"case": "revision_after_knowledge_cutoff", "result": "excluded"},
+    {"case": "exact_revision_replay", "result": "idempotent"},
+    {"case": "revision_id_different_content", "result": "fail_closed"},
+    {"case": "same_event_same_knowledge_time", "result": "fail_closed"},
+    {"case": "customer_changes_within_event", "result": "fail_closed"},
+    {"case": "knowledge_time_before_event_time", "result": "fail_closed"},
+    {"case": "retraction_before_cutoff", "result": "logical_event_absent"},
+    {"case": "retraction_after_cutoff", "result": "prior_revision_visible"},
+    {"case": "dataset_frontier_before_prediction_cutoff", "result": "truncate_and_record"}
+  ]
+}

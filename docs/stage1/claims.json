@@ -1,0 +1,35 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part1-stage1",
+  "base_sha": "ce2646754065145cbf609f286c588bbaa4fb3284",
+  "claims": [
+    {
+      "id": "FF-ST1-CLAIM-01",
+      "label": "LOCAL_VERIFIED",
+      "statement": "The local temporal kernel reconstructs corrections and typed retractions at explicit event and knowledge cutoffs for the checked bounded domain.",
+      "evidence": ["evidence/stage1/temporal-proof.json", "tests/test_stage1_temporal_golden.py"],
+      "limitations": "Local Python proof over hand-calculated, bounded exhaustive, and deterministic generated cases; no managed engine or scale result."
+    },
+    {
+      "id": "FF-ST1-CLAIM-02",
+      "label": "LOCAL_VERIFIED",
+      "statement": "Exact revision replay and all 5,040 permutations of the seven-revision golden history produce one canonical local result.",
+      "evidence": ["evidence/stage1/temporal-proof.json", "tests/test_stage1_temporal_golden.py"],
+      "limitations": "This proves the declared local bounded history, not arbitrary distributed ingestion ordering."
+    },
+    {
+      "id": "FF-ST1-CLAIM-03",
+      "label": "LOCAL_VERIFIED",
+      "statement": "A structurally independent primitive-record oracle agrees with production on the checked histories and detects the deliberate event-time-only leakage control.",
+      "evidence": ["tests/temporal_oracle.py", "evidence/stage1/temporal-proof.json"],
+      "limitations": "The oracle is a local test authority, not an independently deployed offline or online implementation."
+    },
+    {
+      "id": "FF-ST1-CLAIM-04",
+      "label": "UNCLAIMED",
+      "statement": "Managed Spark, Glue, S3, or DynamoDB execution has the same temporal behavior.",
+      "evidence": ["docs/stage1/temporal-specification.md"],
+      "limitations": "Stage 1 performed no AWS deployment, managed workload, cross-engine parity run, scale test, latency measurement, or cost measurement."
+    }
+  ]
+}
