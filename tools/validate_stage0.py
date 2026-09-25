@@ -127,7 +127,8 @@ def validate(root: Path, *, check_index: bool = True, expect_head: str | None = 
             f"{row['id']}: missing, self, or forward dependency",
         )
         _check(
-            row.get("status") in {"observed_locally", "planned", "pending_merge_proof"},
+            row.get("status")
+            in {"observed_locally", "planned", "pending_merge_proof", "merged_main_verified"},
             f"{row['id']}: invalid proof status",
         )
         _check(

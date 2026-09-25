@@ -97,11 +97,11 @@
       "id": "FF-P1-10",
       "owner_stage": 0,
       "requirement": "Each stage's claims and artifacts bind to exact-head PR checks and independently verified merged main",
-      "validation": "Stage receipts, required job-level CI, reviewed merge provenance, and merged-main rerun",
+      "validation": "Stage receipts, job-level CI, recorded merge provenance, and merged-main rerun; record whether branch protection was active at merge",
       "negative_control": "Moved head or changed artifact digest invalidates the prior receipt",
       "evidence": ["docs/stage0/evidence-index.json", "planned:external-stage0-continuation-receipt"],
       "dependencies": ["FF-P1-01", "FF-P1-02"],
-      "status": "pending_merge_proof"
+      "status": "merged_main_verified"
     }
   ]
 }
