@@ -1,5 +1,18 @@
 # Managed execution and publication runbook
 
+## Local Stage 2 qualification
+
+Before translating semantics to a managed runtime, run `pytest`, all three stage validators, and
+regenerate both Stage 2 proofs. Confirm the source, label, definition-set, dataset, expected-current,
+and generation artifacts reopen with the same canonical digests. Require a persisted passing
+validation receipt, expected active generation, expected pointer version, and a unique operation ID
+for publication. Pin one generation per logical read. Retry a lost acknowledgement with the exact
+same operation ID and request; changed content must be rejected. Treat rollback as a new guarded
+publication and retain the failed or retired generation for inspection.
+
+The exact commands and committed outputs are in `docs/stage2/walkthrough.md`. These local steps do
+not replace the managed evidence requirements below.
+
 ## Preconditions
 
 - Feature owners approve versioned definitions, types, TTLs, null policy, and owners.

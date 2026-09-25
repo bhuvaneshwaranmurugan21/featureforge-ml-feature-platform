@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:definition-set-manifest:v1",
+  "title": "FeatureForge immutable definition set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "definitions", "definition_set_digest"],
+  "properties": {
+    "contract": {"const": "feature-definition-set-v1"},
+    "definitions": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+    "definition_set_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

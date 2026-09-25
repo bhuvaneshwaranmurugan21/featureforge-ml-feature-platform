@@ -1,0 +1,42 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part1-stage2",
+  "base_sha": "0f25178f5b163cd121717018a1f7c405a9f80499",
+  "links": {
+    "FF-P1-06": {
+      "contracts": ["contracts/source-snapshot-manifest-v1.json", "contracts/training-request-v1.json", "contracts/definition-set-manifest-v1.json", "contracts/training-dataset-manifest-v2.json"],
+      "fixture": "tests/fixtures/stage2-lifecycle.json",
+      "oracle": "tests/stage2_oracle.py",
+      "production": ["src/featureforge/provenance.py", "src/featureforge/lifecycle.py"],
+      "proof": "evidence/stage2/vertical-slice-proof.json"
+    },
+    "FF-P1-07": {
+      "contracts": ["contracts/training-dataset-manifest-v2.json"],
+      "fixture": "tests/fixtures/stage2-lifecycle.json",
+      "oracle": "tests/stage2_oracle.py",
+      "production": ["src/featureforge/dataset.py", "src/featureforge/computation.py", "src/featureforge/provenance.py"],
+      "proof": "evidence/stage2/vertical-slice-proof.json"
+    },
+    "FF-P1-08": {
+      "contracts": ["contracts/generation-manifest-v1.json", "contracts/validation-receipt-v1.json", "contracts/publication-receipt-v1.json"],
+      "fixture": "tests/fixtures/stage2-lifecycle.json",
+      "oracle": "tests/stage2_oracle.py",
+      "production": ["src/featureforge/lifecycle.py"],
+      "proof": "evidence/stage2/failure-recovery-proof.json"
+    },
+    "FF-P1-09": {
+      "contracts": ["contracts/publication-receipt-v1.json"],
+      "fixture": "tests/fixtures/stage2-lifecycle.json",
+      "oracle": "tests/stage2_oracle.py",
+      "production": ["src/featureforge/lifecycle.py"],
+      "proof": "evidence/stage2/failure-recovery-proof.json"
+    },
+    "FF-P1-10": {
+      "contracts": ["docs/stage2/requirements.json"],
+      "fixture": "tests/fixtures/stage2-lifecycle.json",
+      "oracle": "tests/stage2_oracle.py",
+      "production": ["tools/validate_stage2.py", ".github/workflows/ci.yml"],
+      "proof": "evidence/stage2/evidence-index.json"
+    }
+  }
+}

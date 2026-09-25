@@ -1,5 +1,5 @@
 project: featureforge-ml-feature-platform
-updated: 2026-09-24
+updated: 2026-09-25
 stage0_claim_registry: docs/stage0/claims.json
 claim_levels:
   LOCAL_SIMULATION:
@@ -13,11 +13,18 @@ claim_levels:
       - bitemporal revision resolution
       - point-in-time exclusion of future and late-known revisions in checked fixtures
       - immutable definition versions
-      - identical-input deterministic dataset manifests; source snapshot digest not yet bound
+      - identical-input deterministic dataset manifests bound to immutable source, label, definition-set, code, cutoff, count, and row identities
       - idempotent materialization
       - local offline/online comparison from one shared computation library
       - TTL and type contracts
-      - local generation isolation and SQLite pointer CAS in checked scenarios
+      - persistent definition authority and generation isolation
+      - evidence-derived readiness and post-validation digest recheck
+      - two-connection semantic SQLite pointer CAS in the bounded race
+      - generation-pinned reads, definition-bound TTL, restart-safe idempotency, lost-ack recovery, and guarded rollback
+    stage2_evidence:
+      - evidence/stage2/vertical-slice-proof.json
+      - evidence/stage2/failure-recovery-proof.json
+      - docs/stage2/claims.json
   TERRAFORM_STATIC:
     status: HISTORICALLY_VALIDATED_IN_CI
     evidence:

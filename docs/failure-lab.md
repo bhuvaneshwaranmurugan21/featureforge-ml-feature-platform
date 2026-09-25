@@ -19,4 +19,11 @@ Run `make evidence`. The command exits non-zero unless every check passes.
 | Type mismatch | Float calculation declared integer | Contract blocks value |
 | Backfill | Build historical generation | Active pointer remains unchanged |
 
-The lab verifies reference semantics, not Spark, Glue, S3, DynamoDB, or Step Functions.
+Stage 2 additionally executes the required 20-point matrix in
+`evidence/stage2/failure-recovery-proof.json`: malformed/partial/tampered inputs, premature
+publication, semantic CAS contention, process restart, duplicate and conflicting dispatch,
+post-commit acknowledgement loss, rollback interruption, stale rollback, TTL boundaries, and
+pinned-generation failure. The validator requires all 20 ordered controls and adversarial tests
+prove that deleting or falsifying one fails closed.
+
+The lab verifies bounded local reference semantics, not Spark, Glue, S3, DynamoDB, or Step Functions.

@@ -1,0 +1,28 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "event_cutoff": 200000,
+  "historical_knowledge_cutoff": 180000,
+  "current_cutoffs": [180000, 200005, 200020],
+  "definitions": [
+    {"name": "transaction_count_24h", "version": 1, "value_type": "integer", "ttl_seconds": 172800, "computation": "transaction_count", "window_seconds": 86400, "description": "Transactions observed during the prior 24 hours.", "empty_default": 0},
+    {"name": "successful_spend_30d_cents", "version": 1, "value_type": "integer", "ttl_seconds": 2678400, "computation": "successful_spend_cents", "window_seconds": 2592000, "description": "Successful payment amount during the prior 30 days.", "empty_default": 0},
+    {"name": "failed_payment_ratio_7d", "version": 1, "value_type": "float", "ttl_seconds": 691200, "computation": "failed_payment_ratio", "window_seconds": 604800, "description": "Share of observed payments that failed during the prior seven days.", "empty_default": 0.0},
+    {"name": "hours_since_successful_payment", "version": 1, "value_type": "float", "ttl_seconds": 2678400, "computation": "hours_since_success", "window_seconds": 2592000, "description": "Hours since the most recent successful payment.", "empty_default": null},
+    {"name": "max_merchant_risk_7d", "version": 1, "value_type": "float", "ttl_seconds": 691200, "computation": "max_merchant_risk", "window_seconds": 604800, "description": "Maximum merchant risk observed during the prior seven days.", "empty_default": null}
+  ],
+  "events": [
+    {"event_id": "boundary", "revision_id": "boundary-r1", "customer_id": "c-1", "event_time": 113600, "knowledge_time": 113600, "operation": "upsert", "amount_cents": 999, "status": "succeeded", "merchant_risk": 0.1},
+    {"event_id": "p-1", "revision_id": "p-1-r1", "customer_id": "c-1", "event_time": 120000, "knowledge_time": 120005, "operation": "upsert", "amount_cents": 100, "status": "succeeded", "merchant_risk": 0.2},
+    {"event_id": "p-1", "revision_id": "p-1-r2", "customer_id": "c-1", "event_time": 120000, "knowledge_time": 199990, "operation": "upsert", "amount_cents": 150, "status": "succeeded", "merchant_risk": 0.3},
+    {"event_id": "p-2", "revision_id": "p-2-r1", "customer_id": "c-1", "event_time": 140000, "knowledge_time": 140005, "operation": "upsert", "amount_cents": 50, "status": "failed", "merchant_risk": 0.7},
+    {"event_id": "p-3", "revision_id": "p-3-r1", "customer_id": "c-1", "event_time": 160000, "knowledge_time": 160005, "operation": "upsert", "amount_cents": 30, "status": "succeeded", "merchant_risk": 0.9},
+    {"event_id": "p-3", "revision_id": "p-3-r2", "customer_id": "c-1", "event_time": 160000, "knowledge_time": 200010, "operation": "retract", "amount_cents": null, "status": null, "merchant_risk": null},
+    {"event_id": "upper", "revision_id": "upper-r1", "customer_id": "c-1", "event_time": 200000, "knowledge_time": 200000, "operation": "upsert", "amount_cents": 80, "status": "succeeded", "merchant_risk": 0.5},
+    {"event_id": "c2-p1", "revision_id": "c2-p1-r1", "customer_id": "c-2", "event_time": 150000, "knowledge_time": 150000, "operation": "upsert", "amount_cents": 40, "status": "succeeded", "merchant_risk": 0.4}
+  ],
+  "labels": [
+    {"label_id": "label-c1", "customer_id": "c-1", "label_time": 200000, "prediction_knowledge_time": 180000, "value": 1},
+    {"label_id": "label-c2", "customer_id": "c-2", "label_time": 200000, "prediction_knowledge_time": 180000, "value": 0}
+  ],
+  "expected_current_transaction_counts": {"180000": 3, "200005": 4, "200020": 3}
+}

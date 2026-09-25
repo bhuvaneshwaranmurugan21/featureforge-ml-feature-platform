@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:publication-receipt:v1",
+  "title": "FeatureForge activation or rollback receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "from_generation", "generation_id", "kind", "pointer_version", "receipt_digest"],
+  "properties": {
+    "contract": {"const": "publication-receipt-v1"},
+    "from_generation": {"type": ["string", "null"]},
+    "generation_id": {"type": "string", "minLength": 1},
+    "kind": {"enum": ["activate", "rollback"]},
+    "pointer_version": {"type": "integer", "minimum": 1},
+    "receipt_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

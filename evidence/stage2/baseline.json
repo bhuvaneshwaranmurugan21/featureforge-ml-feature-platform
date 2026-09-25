@@ -1,0 +1,41 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part1-stage2",
+  "base_sha": "0f25178f5b163cd121717018a1f7c405a9f80499",
+  "base_tree": "370f0bd81acd95932e5c2d4226104dee8816b834",
+  "environment": {
+    "python": "3.12.14",
+    "sqlite": "3.53.1",
+    "pip": "25.0.1",
+    "ruff": "0.16.8",
+    "mypy": "2.3.1",
+    "pytest": "9.1.1",
+    "coverage": "7.16.1",
+    "hypothesis": "6.168.1"
+  },
+  "predecessor": {
+    "declared_dependency_install": "passed",
+    "ruff": "passed",
+    "strict_mypy": "passed",
+    "pytest": {"passed": 33, "failed": 0, "coverage_percent": 90.58},
+    "stage0_validator": "passed",
+    "stage1_validator": "passed",
+    "stage1_simulation_byte_identical": true,
+    "stage1_temporal_proof_byte_identical": true
+  },
+  "dependency_probe": {
+    "result": "not_needed",
+    "decision": "No new runtime or development package was added; strict typed decoding covers the Stage 2 contract boundary."
+  },
+  "stage2_candidate": {
+    "ruff": "passed",
+    "strict_mypy": "passed",
+    "pytest": {"passed": 58, "failed": 0, "coverage_percent": 90.60},
+    "stage0_validator": "passed",
+    "stage1_validator": "passed",
+    "stage2_validator": "passed",
+    "vertical_slice_proof_sha256": "9b0bb099c8ec6054b6becff588abd5cf998f9660a38f55f2f2c72c476dcd71f4",
+    "failure_recovery_proof_sha256": "89b6d9d949bbe524c4e697aaf832fafb107fd9c4c6db3a056696f3ba852bae8d",
+    "proofs_byte_identical_across_clean_runs": true
+  }
+}
