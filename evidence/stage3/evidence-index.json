@@ -1,0 +1,33 @@
+{
+  "base_sha": "d7fa3b4a2d529dca4e8ee03b8eaf58637b583a12",
+  "base_tree": "383e56b3ddbe0f1c4ab6faa7e72270c50684f306",
+  "files_sha256": {
+    ".github/workflows/ci.yml": "ee17af756a65c11d64685806dd231ffe376639e2c80f10390cd5b77741a8cace",
+    "Makefile": "055f453d02d5956acd809ed4bb9e6e364d5ea316452a8cad7f860251081b1cfd",
+    "README.md": "beeef59e6f38d3aa9be02d70687565edf79c3a981b6bedaf220fea629c649672",
+    "contracts/affected-scope-plan-v1.json": "734718f595b35b84792ba6c27de10f74dcf04aa813ba76d7912bfedeaa71dddf",
+    "contracts/spark-offline-generation-v1.json": "1da77177f915200407b8791535e5382e32643106bf6d26b197217dcce1f91b13",
+    "docs/architecture.md": "1af70ea7819d6316eb49dce3b01a71fa7912525b144964a4a7e9c93a2658c657",
+    "docs/claims.yaml": "9c8c89483a3dcb07ed1f2c503f8e8282d3662fa38060a20271c7ecf9898cb97b",
+    "docs/runbook.md": "47567d98b02b8717a96de298bfb6f45fd62075cadb0d4d2c9f0aa76d65c13e45",
+    "docs/stage3/claims.json": "06714f716400087060bca356f3fc0d378654dc16759a741bbcf7288de67f6cee",
+    "docs/stage3/failure-repair-log.md": "cf92826fe93948c5517edcd41f2945645200b498c1eec6f97f72751ea22379a6",
+    "docs/stage3/predecessor.json": "983bcd64e83f9a6bb609bf66d696a93a3d19af089ca92dd2f7afe96ea4e8c755",
+    "docs/stage3/requirements.json": "0a718da2d659e56c03195446fc95512c616ee8be8ba646e2c47628a6a3835eae",
+    "docs/stage3/spark-incremental-specification.md": "016767b61a0ec38e4853bfdac619dd38df130c825f25e4ac48e2f863d502d980",
+    "docs/stage3/traceability.json": "639d2f3583899a55c1ae7bcd4adb3c6c0c903d03696601fb967b286db518e7a8",
+    "docs/stage3/walkthrough.md": "c163ba0eed2cf17df644e1f7f18d8c4d7a5fbfb824a2d7b40fec514e04986f35",
+    "evidence/stage3/baseline.json": "f7b240308a04e612e9f9050936a70d6e99b555d03203857526f3e00525623fce",
+    "evidence/stage3/failure-recovery-proof.json": "62c2f6e55c9964c8fe309d6f2d093ac2f5ee7b33575b69b274c496b6dc09e4c7",
+    "evidence/stage3/spark-proof.json": "58e6ba459060aca962398d056bf2f16c3e13eee55c155134661578b1f64d2d72",
+    "jobs/spark_point_in_time.py": "d723ea5ffe82a6c04fcc6892508243ee32cac40ec8e15f11cf206ff01b20fb28",
+    "pyproject.toml": "73f77b79f999edc54744e49bfb040c671468dc69cd30c854215e2d3905d2376f",
+    "requirements-dev.lock": "5d7964b44c13c97a164d45463938325e598111730eaac3719ac2795cafe847c8",
+    "src/featureforge/spark_runtime.py": "1303a6bb0df43e9f6c87fa2c6c47d4004d8c2214c86dbad1c87cdca27426aa0f",
+    "tests/stage3_oracle.py": "07f30aed199caf463fccac8b3108d37f955b45c6d7857d68867c2793fd11d717",
+    "tests/test_stage3_spark.py": "b170d97961b2117a2d5cf7dfe7013b81658ca39595e2a43b38efccc118388622",
+    "tools/run_stage3_proof.py": "3d608b4c1db1ec57bb36b43f61370761dd7b8abf48e2dedad5ea90143f43a757",
+    "tools/validate_stage3.py": "70d0ed63a2c4965b9e57d89bc9cdfbd3ad71eb16e290dbf2d6a1813b6a108f3a"
+  },
+  "project": "featureforge-ml-feature-platform"
+}

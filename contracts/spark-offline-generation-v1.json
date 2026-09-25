@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:spark-offline-generation:v1",
+  "title": "FeatureForge Spark offline generation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "generation_id",
+    "event_cutoff",
+    "knowledge_cutoff",
+    "definition_set_digest",
+    "source_digest",
+    "customer_digest",
+    "row_count",
+    "rows_digest",
+    "diagnostics"
+  ],
+  "properties": {
+    "contract": {"const": "spark-offline-generation-v1"},
+    "generation_id": {"type": "string", "minLength": 1},
+    "event_cutoff": {"type": "integer", "minimum": 0},
+    "knowledge_cutoff": {"type": "integer", "minimum": 0},
+    "definition_set_digest": {"$ref": "#/$defs/digest"},
+    "source_digest": {"$ref": "#/$defs/digest"},
+    "customer_digest": {"$ref": "#/$defs/digest"},
+    "row_count": {"type": "integer", "minimum": 0},
+    "rows_digest": {"$ref": "#/$defs/digest"},
+    "artifact_digest": {"$ref": "#/$defs/digest"},
+    "diagnostics": {"type": "object"},
+    "incremental": {"type": "object"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

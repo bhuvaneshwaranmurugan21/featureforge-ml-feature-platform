@@ -1,0 +1,28 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage1-global-stage3",
+  "acceptance_criteria": [
+    {"id": "ST3-AC-01", "requirement": "Authorized base commit and tree plus every Part 1 predecessor gate are independently verified."},
+    {"id": "ST3-AC-02", "requirement": "Stage 0, Stage 1, and Stage 2 deterministic proofs remain unchanged and reproducible."},
+    {"id": "ST3-AC-03", "requirement": "Python 3.11+, Java 17, PySpark 3.5.9, and Py4J 0.10.9.9 form a pinned compatible local matrix."},
+    {"id": "ST3-AC-04", "requirement": "Malformed, ambiguous, or incompatible inputs fail closed before feature output is accepted."},
+    {"id": "ST3-AC-05", "requirement": "Spark computes all five governed FeatureForge definitions with typed empty defaults."},
+    {"id": "ST3-AC-06", "requirement": "Latest knowable revision selection applies knowledge time before business-time and window filtering."},
+    {"id": "ST3-AC-07", "requirement": "Every committed golden frontier agrees exactly with an independent standard-library oracle."},
+    {"id": "ST3-AC-08", "requirement": "Future knowledge and retracted state cannot leak into an earlier frontier."},
+    {"id": "ST3-AC-09", "requirement": "Canonical output is invariant to source order, definition order, customer order, and shuffle configuration."},
+    {"id": "ST3-AC-10", "requirement": "Open-lower and closed-upper windows, empty customers, exact boundaries, and no-success cases are deterministic."},
+    {"id": "ST3-AC-11", "requirement": "Offline generations are immutable, manifest-bound, complete-marker guarded, and tamper evident."},
+    {"id": "ST3-AC-12", "requirement": "Affected-scope planning is conservative across inserts, corrections, retractions, and event-time movement."},
+    {"id": "ST3-AC-13", "requirement": "Canonical incremental output is byte-equivalent to canonical full-rebuild output."},
+    {"id": "ST3-AC-14", "requirement": "Preserved values are re-enveloped with the target generation and target knowledge frontier."},
+    {"id": "ST3-AC-15", "requirement": "Unsafe scope size or unverifiable predecessor state triggers full rebuild or rejection, never partial success."},
+    {"id": "ST3-AC-16", "requirement": "Seeded balanced, skewed, and high-cardinality workloads are deterministic and cover distinct bounded sizes."},
+    {"id": "ST3-AC-17", "requirement": "Evidence captures structural physical-plan, partition, row-count, and skew diagnostics without timing claims."},
+    {"id": "ST3-AC-18", "requirement": "Work avoided is reported as bounded pair counts derived from manifests, not extrapolated production savings."},
+    {"id": "ST3-AC-19", "requirement": "Interrupted, replayed, tampered, and corrupt-predecessor paths isolate failure and recover deterministically."},
+    {"id": "ST3-AC-20", "requirement": "Spark and recovery proofs regenerate byte-for-byte and are digest bound."},
+    {"id": "ST3-AC-21", "requirement": "Lint, strict typing, full tests, coverage, security-oriented validators, and contamination checks pass."},
+    {"id": "ST3-AC-22", "requirement": "Exact-head CI and review gates pass, then merged main is independently reproduced and receipt bound."}
+  ]
+}

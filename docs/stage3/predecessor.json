@@ -1,0 +1,20 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "authorized_base_commit": "d7fa3b4a2d529dca4e8ee03b8eaf58637b583a12",
+  "authorized_base_tree": "383e56b3ddbe0f1c4ab6faa7e72270c50684f306",
+  "part1_status": "verified-complete",
+  "predecessor_test_count": 58,
+  "predecessor_coverage_percent": 90.6,
+  "predecessor_validators": ["stage0", "stage1", "stage2"],
+  "scope_exclusions": [
+    "aws",
+    "terraform-runtime",
+    "deployment",
+    "release",
+    "tag",
+    "history-rewrite",
+    "force-push",
+    "branch-protection-change",
+    "other-project"
+  ]
+}

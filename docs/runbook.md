@@ -13,6 +13,16 @@ publication and retain the failed or retired generation for inspection.
 The exact commands and committed outputs are in `docs/stage2/walkthrough.md`. These local steps do
 not replace the managed evidence requirements below.
 
+## Local Stage 3 qualification
+
+Install `.[dev,spark]` with Java 17. Run the full predecessor suite, `validate_stage0.py` through
+`validate_stage3.py`, and regenerate both Stage 3 proofs twice. Require byte equality with committed
+evidence. Inspect the affected-scope reasons, confirm incremental and full row digests match, confirm
+preserved rows carry the target generation and knowledge frontier, and reject any Cartesian product.
+Exercise exact replay, partial staging, tampering, corrupt predecessor, and full-rebuild fallback. The
+bounded pair counts and partition distribution are correctness diagnostics, not managed-runtime
+performance evidence.
+
 ## Preconditions
 
 - Feature owners approve versioned definitions, types, TTLs, null policy, and owners.

@@ -21,7 +21,10 @@ dev = [
     "ruff>=0.6",
 ]
 aws = ["boto3>=1.35"]
-spark = ["pyspark>=3.5"]
+spark = [
+    "py4j==0.10.9.9",
+    "pyspark==3.5.9",
+]
 
 [project.scripts]
 featureforge = "featureforge.cli:main"

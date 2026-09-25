@@ -1,0 +1,26 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage1-global-stage3",
+  "claims": [
+    {
+      "claim": "A bounded local Java 17 and Spark 3.5.9 harness computes all five governed features with bitemporal revision semantics.",
+      "evidence": ["evidence/stage3/spark-proof.json", "tests/stage3_oracle.py"],
+      "scope": "local deterministic evidence only"
+    },
+    {
+      "claim": "The demonstrated incremental generation equals an independent full rebuild and re-envelopes preserved rows at the target frontier.",
+      "evidence": ["evidence/stage3/spark-proof.json", "tests/test_stage3_spark.py"],
+      "scope": "committed fixture and seeded bounded workloads"
+    },
+    {
+      "claim": "Immutable local generation artifacts reject partial, tampered, conflicting, and corrupt-predecessor states.",
+      "evidence": ["evidence/stage3/failure-recovery-proof.json"],
+      "scope": "local filesystem artifact protocol"
+    }
+  ],
+  "explicit_non_claims": [
+    "No production-scale throughput, latency, cost, or SLA claim.",
+    "No managed Spark, cloud deployment, AWS, online serving, or Terraform-runtime claim.",
+    "No claim that structural local diagnostics predict production performance."
+  ]
+}

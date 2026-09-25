@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:affected-scope-plan:v1",
+  "title": "FeatureForge conservative affected-scope plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_knowledge_cutoff",
+    "target_knowledge_cutoff",
+    "mode",
+    "affected_pairs",
+    "reasons",
+    "source_digest",
+    "plan_digest"
+  ],
+  "properties": {
+    "base_knowledge_cutoff": {"type": "integer", "minimum": 0},
+    "target_knowledge_cutoff": {"type": "integer", "minimum": 0},
+    "mode": {"enum": ["incremental", "full"]},
+    "affected_pairs": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [{"type": "string"}, {"type": "string"}],
+        "items": false
+      }
+    },
+    "reasons": {"type": "array", "items": {"type": "string"}},
+    "source_digest": {"$ref": "#/$defs/digest"},
+    "plan_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

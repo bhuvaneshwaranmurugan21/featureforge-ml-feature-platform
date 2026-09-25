@@ -1,17 +1,17 @@
 {
   "base_sha": "85d2cf08ecfbd75d88192e55a8a6db9a6ad55397",
   "files_sha256": {
-    ".github/workflows/ci.yml": "d16868ad3ba29defe16b1596fb47cbcf461b9cbaae8b84958cd4a228f50394f7",
-    "README.md": "c487e2e4165dbc759032397ab2e36fcaf0ff1ca4b560ecb53f43892713bfd62e",
-    "docs/claims.yaml": "c601ad06780ba2215aa603da3e1041d4a27f35568878d26e840340047cfcfda9",
+    ".github/workflows/ci.yml": "ee17af756a65c11d64685806dd231ffe376639e2c80f10390cd5b77741a8cace",
+    "README.md": "beeef59e6f38d3aa9be02d70687565edf79c3a981b6bedaf220fea629c649672",
+    "docs/claims.yaml": "9c8c89483a3dcb07ed1f2c503f8e8282d3662fa38060a20271c7ecf9898cb97b",
     "docs/stage0/README.md": "5a323093ba32b5a98ec22e0d346a281c2b0e6b25d1d6f0db84c290bf11cdfa9c",
-    "docs/stage0/baseline.json": "fe668fb9ba38e9063e2cba374d1df0dee12ef9573fe353785847d246089e17df",
+    "docs/stage0/baseline.json": "ab187817163d7ab8223f095049b78884439083cc02861f73e5f48416987cbcb3",
     "docs/stage0/claims.json": "e9b194965c57d3d1045cc444954e50dc2ea7cbd35059ad6cc90e25423356b3ac",
     "docs/stage0/fixture-decision.md": "804af03b944b8945f54278a8e9d2777f75783aa4a56b22f4446a35348a353693",
     "docs/stage0/inventory.json": "cd0c7efcf2f93dfb5f937ab4d7f17a93882abfe2be81cf4c50df100b4bc0cf1a",
     "docs/stage0/requirements.json": "34ea61e9363bf2a65c7413bf4b19bcdf3c2f71d9ba7f210b119a9d7ee37e04a0",
     "docs/stage0/risk-register.md": "56a81e14d078a865dd6b2e918a9b26f86e888b8f010d62896f98b72e0e79880b",
-    "requirements-dev.lock": "491a938bc842e220e151fcb1084732a2503378c94a45c2652317ee1fed962e95",
+    "requirements-dev.lock": "5d7964b44c13c97a164d45463938325e598111730eaac3719ac2795cafe847c8",
     "tests/test_stage0_contract.py": "16a97ab9054b170af45926d0de4593cc1e7e0062bc0911f8aad5ba37b9b8b6d5",
     "tools/validate_stage0.py": "522d5e565bd5132388c1c79989d80b0561f7f4dc90cbd00cec9021a5bb826d60"
   },

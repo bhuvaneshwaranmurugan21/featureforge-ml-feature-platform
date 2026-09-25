@@ -10,6 +10,9 @@ and gate a file-backed SQLite generation switch on persisted validation evidence
 primitive-record oracle checks bounded historical and current views. The local lifecycle includes
 semantic CAS contention, generation-pinned reads, restart-safe idempotency, lost-acknowledgement
 recovery, TTL, and guarded rollback. Managed execution remains open.
+Stage 3 adds a real local Java 17/PySpark 3.5.9 computation path, conservative affected-scope
+planning, target-frontier re-enveloping, immutable manifest-bound offline generations, and an
+incremental-versus-full-rebuild differential proof.
 
 Its central opinion is that a feature value needs more than an entity, value, and event time:
 
@@ -35,16 +38,19 @@ a historical training row merely because its business event happened earlier.
   generation-pinned reads, restart-safe operation replay, lost-ack recovery, guarded rollback,
   and definition-bound TTL. Stage 2's primitive-record oracle is structurally independent of
   production selection, computation, dataset, lifecycle, and canonicalization code, but it is not
-  an independently deployed serving implementation.
+  an independently deployed serving implementation. Stage 3's separate primitive-record oracle
+  checks all five Spark-computed features at three knowledge frontiers; seeded balanced, skewed,
+  and high-cardinality workloads provide bounded structural diagnostics.
 - **Production-shaped but not yet verified on AWS:** S3/Glue offline storage, DynamoDB online
-  store and registry, Step Functions, EventBridge, KMS, CloudWatch, and Spark adapter.
+  store and registry, Step Functions, EventBridge, KMS, and CloudWatch.
 
 No online latency, training scale, availability, or AWS cost claim is made without a captured run.
 The Stage 2 dataset manifest binds immutable source, label, definition-set, code, cutoff, count,
 and ordered-row identities. See the
 [Stage 0 audit](docs/stage0/README.md),
 [Stage 1 temporal authority](docs/stage1/temporal-specification.md), and
-[Stage 2 lifecycle authority](docs/stage2/lifecycle-specification.md) for exact evidence and
+[Stage 2 lifecycle authority](docs/stage2/lifecycle-specification.md), and
+[Stage 3 Spark authority](docs/stage3/spark-incremental-specification.md) for exact evidence and
 remaining proof gaps.
 
 ## Architecture
@@ -113,19 +119,24 @@ manifest digest.
 11. One logical read pins one generation; publication cannot mix values inside the request.
 12. Exact operation replay returns the committed receipt; conflicting operation reuse fails closed.
 13. TTL comes from the persisted definition and returns missing at the exact expiry boundary.
+14. Incremental scope may over-select but cannot omit a changed feature key.
+15. Preserved values are re-enveloped at the target generation and knowledge frontier.
+16. A corrupt predecessor, unsafe scope, partial artifact, or digest mismatch cannot yield a
+    successful incremental generation.
 
 ## Run it
 
-Requires Python 3.11+.
+Requires Python 3.11+ and Java 17.
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -e '.[dev]'
+python -m pip install -e '.[dev,spark]'
 pytest
 python -m featureforge.cli simulate --output /tmp/featureforge-evidence.json
 python -m tools.run_stage2_proof --output-dir /tmp/featureforge-stage2-evidence
-python tools/validate_stage2.py
+python -m tools.run_stage3_proof --output-dir /tmp/featureforge-stage3-evidence
+python tools/validate_stage3.py
 ```
 
 The local failure lab checks 17 scenarios, including future-event and late-correction exclusion,
@@ -136,11 +147,14 @@ of the golden history, 36 bounded cases, and 350 deterministic property examples
 independent test oracle. Stage 2 adds a 20-point persisted failure matrix, strict ingestion and
 artifact integrity, independent training/current-view agreement, a real two-connection semantic
 CAS loser, reader pinning across a switch, restart and lost-ack replay, and guarded rollback.
+Stage 3 adds exact Spark/oracle agreement at three knowledge frontiers, source/definition/customer
+order invariance, an integer-precision guard, incremental/full equality, conservative-scope mutation
+testing, three seeded workload profiles, and immutable-artifact restart/tamper/fallback recovery.
 
 ## Repository map
 
 ```text
-src/featureforge/  bitemporal computation, registry, dataset, parity, and publication kernel
+src/featureforge/  bitemporal computation, Spark backfill, registry, dataset, parity, and publication kernel
 tests/             temporal leakage, failure, parity, and replay tests
 contracts/         versioned source contract
 jobs/              production-shaped Spark point-in-time adapter
@@ -165,9 +179,9 @@ for the exact evidence required before any managed-runtime claim.
 
 ## Interview walkthrough
 
-Use the [Stage 2 walkthrough](docs/stage2/walkthrough.md): explain the hand-calculated historical
-row, correction and retraction, immutable provenance, failed candidate isolation, validation
-receipt, one-winner CAS race, pinned read, lost acknowledgement replay, and stale-safe rollback.
+Use the [Stage 3 walkthrough](docs/stage3/walkthrough.md): explain the two clocks, independent
+oracle, correction/retraction frontier sequence, conservative affected scope, target-frontier
+re-enveloping, incremental/full equality, bounded work avoided, and immutable-artifact recovery.
 
 ## License
 

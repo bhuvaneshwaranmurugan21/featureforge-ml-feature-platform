@@ -1,43 +1,52 @@
-"""Production-shaped Spark point-in-time adapter.
-
-The executable reference semantics live in featureforge.dataset. This adapter deliberately
-does not contribute to local claims until it is run against a managed catalog and recorded.
-"""
+"""Bounded local entry point for the verified Stage 3 Spark generation path."""
 
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
+from typing import Any
+
+from featureforge.model import FeatureDefinition, PaymentEvent
+from featureforge.spark_runtime import create_local_spark, full_rebuild, write_generation
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--events-uri", required=True)
-    parser.add_argument("--labels-uri", required=True)
-    parser.add_argument("--output-uri", required=True)
+    parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--output-root", type=Path, required=True)
     args = parser.parse_args()
+    payload: dict[str, Any] = json.loads(args.input.read_text(encoding="utf-8"))
+    required = {
+        "generation_id",
+        "definitions",
+        "events",
+        "customer_ids",
+        "event_cutoff",
+        "knowledge_cutoff",
+    }
+    if set(payload) != required:
+        raise SystemExit(
+            f"input shape mismatch: missing={sorted(required - set(payload))}, "
+            f"unknown={sorted(set(payload) - required)}"
+        )
+    definitions = tuple(FeatureDefinition(**row) for row in payload["definitions"])
+    events = tuple(PaymentEvent(**row) for row in payload["events"])
+    spark = create_local_spark("featureforge-stage3-generation")
     try:
-        from pyspark.sql import SparkSession, Window
-        from pyspark.sql import functions as F
-    except ImportError as error:
-        raise SystemExit("install the spark extra to run this adapter") from error
-
-    spark = SparkSession.builder.appName("featureforge-point-in-time").getOrCreate()
-    events = spark.read.parquet(args.events_uri).alias("e")
-    labels = spark.read.parquet(args.labels_uri).alias("l")
-    eligible = labels.join(
-        events,
-        (F.col("l.customer_id") == F.col("e.customer_id"))
-        & (F.col("e.event_time") <= F.col("l.label_time"))
-        & (F.col("e.knowledge_time") <= F.col("l.label_time")),
-        "left",
-    )
-    revisions = Window.partitionBy("l.label_id", "e.event_id").orderBy(
-        F.col("e.knowledge_time").desc()
-    )
-    eligible.withColumn("revision_rank", F.row_number().over(revisions)).where(
-        F.col("revision_rank") == 1
-    ).write.mode("overwrite").parquet(args.output_uri)
-    spark.stop()
+        build = full_rebuild(
+            spark,
+            payload["generation_id"],
+            definitions,
+            events,
+            tuple(payload["customer_ids"]),
+            event_cutoff=payload["event_cutoff"],
+            knowledge_cutoff=payload["knowledge_cutoff"],
+        )
+        outcome = write_generation(build, args.output_root)
+        print(f"{outcome}:{build.generation_id}:{build.manifest['rows_digest']}")
+    finally:
+        spark.stop()
 
 
 if __name__ == "__main__":
