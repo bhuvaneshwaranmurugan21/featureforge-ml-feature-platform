@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:payment-event:v2",
+  "title": "PaymentEventRevision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "revision_id",
+    "customer_id",
+    "event_time",
+    "knowledge_time",
+    "operation",
+    "amount_cents",
+    "status",
+    "merchant_risk"
+  ],
+  "properties": {
+    "event_id": {"type": "string", "minLength": 1},
+    "revision_id": {"type": "string", "minLength": 1},
+    "customer_id": {"type": "string", "minLength": 1},
+    "event_time": {"type": "integer", "minimum": 0},
+    "knowledge_time": {"type": "integer", "minimum": 0},
+    "operation": {"enum": ["upsert", "retract"]},
+    "amount_cents": {"type": ["integer", "null"], "minimum": 0},
+    "status": {"enum": ["succeeded", "failed", null]},
+    "merchant_risk": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "operation": {"const": "upsert"},
+        "amount_cents": {"type": "integer"},
+        "status": {"enum": ["succeeded", "failed"]},
+        "merchant_risk": {"type": "number"}
+      }
+    },
+    {
+      "properties": {
+        "operation": {"const": "retract"},
+        "amount_cents": {"type": "null"},
+        "status": {"type": "null"},
+        "merchant_risk": {"type": "null"}
+      }
+    }
+  ],
+  "$comment": "Cross-field clock, replay, tie, and entity invariants are enforced by featureforge.temporal and documented in docs/stage1/temporal-specification.md."
+}

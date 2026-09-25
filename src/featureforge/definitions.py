@@ -15,6 +15,7 @@ def payment_features() -> tuple[FeatureDefinition, ...]:
             "transaction_count",
             DAY,
             "Transactions observed during the prior 24 hours.",
+            0,
         ),
         FeatureDefinition(
             "successful_spend_30d_cents",
@@ -24,6 +25,7 @@ def payment_features() -> tuple[FeatureDefinition, ...]:
             "successful_spend_cents",
             30 * DAY,
             "Successful payment amount during the prior 30 days.",
+            0,
         ),
         FeatureDefinition(
             "failed_payment_ratio_7d",
@@ -33,6 +35,7 @@ def payment_features() -> tuple[FeatureDefinition, ...]:
             "failed_payment_ratio",
             7 * DAY,
             "Share of observed payments that failed during the prior seven days.",
+            0.0,
         ),
         FeatureDefinition(
             "hours_since_successful_payment",
@@ -42,6 +45,7 @@ def payment_features() -> tuple[FeatureDefinition, ...]:
             "hours_since_success",
             30 * DAY,
             "Hours since the most recent successful payment.",
+            None,
         ),
         FeatureDefinition(
             "max_merchant_risk_7d",
@@ -51,5 +55,6 @@ def payment_features() -> tuple[FeatureDefinition, ...]:
             "max_merchant_risk",
             7 * DAY,
             "Maximum merchant risk observed during the prior seven days.",
+            None,
         ),
     )

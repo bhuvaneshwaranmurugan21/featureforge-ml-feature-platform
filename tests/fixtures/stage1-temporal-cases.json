@@ -1,0 +1,28 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "event_cutoff": 200,
+  "window_seconds": 100,
+  "customer_id": "c-1",
+  "definitions": [
+    {"name": "count_100s", "version": 1, "value_type": "integer", "ttl_seconds": 200, "computation": "transaction_count", "window_seconds": 100, "description": "Count in the open-left closed-right 100 second window.", "empty_default": 0},
+    {"name": "spend_100s", "version": 1, "value_type": "integer", "ttl_seconds": 200, "computation": "successful_spend_cents", "window_seconds": 100, "description": "Successful spend in the 100 second window.", "empty_default": 0},
+    {"name": "failed_ratio_100s", "version": 1, "value_type": "float", "ttl_seconds": 200, "computation": "failed_payment_ratio", "window_seconds": 100, "description": "Failed share in the 100 second window.", "empty_default": 0.0},
+    {"name": "hours_since_success_100s", "version": 1, "value_type": "float", "ttl_seconds": 200, "computation": "hours_since_success", "window_seconds": 100, "description": "Hours since latest successful payment in the window.", "empty_default": null},
+    {"name": "max_risk_100s", "version": 1, "value_type": "float", "ttl_seconds": 200, "computation": "max_merchant_risk", "window_seconds": 100, "description": "Maximum risk in the window.", "empty_default": null}
+  ],
+  "events": [
+    {"event_id": "lower", "revision_id": "lower-r1", "customer_id": "c-1", "event_time": 100, "knowledge_time": 100, "operation": "upsert", "amount_cents": 999, "status": "succeeded", "merchant_risk": 0.1},
+    {"event_id": "p-1", "revision_id": "p-1-r1", "customer_id": "c-1", "event_time": 120, "knowledge_time": 125, "operation": "upsert", "amount_cents": 100, "status": "succeeded", "merchant_risk": 0.2},
+    {"event_id": "p-1", "revision_id": "p-1-r2", "customer_id": "c-1", "event_time": 120, "knowledge_time": 190, "operation": "upsert", "amount_cents": 150, "status": "succeeded", "merchant_risk": 0.3},
+    {"event_id": "p-2", "revision_id": "p-2-r1", "customer_id": "c-1", "event_time": 140, "knowledge_time": 145, "operation": "upsert", "amount_cents": 50, "status": "failed", "merchant_risk": 0.7},
+    {"event_id": "upper", "revision_id": "upper-r1", "customer_id": "c-1", "event_time": 200, "knowledge_time": 200, "operation": "upsert", "amount_cents": 80, "status": "succeeded", "merchant_risk": 0.5},
+    {"event_id": "p-3", "revision_id": "p-3-r1", "customer_id": "c-1", "event_time": 160, "knowledge_time": 170, "operation": "upsert", "amount_cents": 30, "status": "succeeded", "merchant_risk": 0.9},
+    {"event_id": "p-3", "revision_id": "p-3-r2", "customer_id": "c-1", "event_time": 160, "knowledge_time": 210, "operation": "retract", "amount_cents": null, "status": null, "merchant_risk": null}
+  ],
+  "cases": [
+    {"name": "before_correction", "knowledge_cutoff": 180, "selected_revision_ids": ["lower-r1", "p-1-r1", "p-2-r1", "p-3-r1"], "values": {"count_100s": 3, "spend_100s": 130, "failed_ratio_100s": 0.3333333333333333, "hours_since_success_100s": 0.011111111111111112, "max_risk_100s": 0.9}},
+    {"name": "after_correction", "knowledge_cutoff": 205, "selected_revision_ids": ["lower-r1", "p-1-r2", "p-2-r1", "p-3-r1", "upper-r1"], "values": {"count_100s": 4, "spend_100s": 260, "failed_ratio_100s": 0.25, "hours_since_success_100s": 0.0, "max_risk_100s": 0.9}},
+    {"name": "after_retraction", "knowledge_cutoff": 220, "selected_revision_ids": ["lower-r1", "p-1-r2", "p-2-r1", "upper-r1"], "values": {"count_100s": 3, "spend_100s": 230, "failed_ratio_100s": 0.3333333333333333, "hours_since_success_100s": 0.0, "max_risk_100s": 0.7}}
+  ],
+  "leaky_event_time_only": {"knowledge_cutoff": 180, "wrong_spend_100s": 230}
+}

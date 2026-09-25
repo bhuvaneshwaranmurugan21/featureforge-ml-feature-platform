@@ -1,0 +1,31 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part1-stage1",
+  "base_sha": "ce2646754065145cbf609f286c588bbaa4fb3284",
+  "links": {
+    "FF-P1-03": {
+      "clauses": ["Clocks and row cutoffs", "Eligibility and windows", "Logical events, revisions, and replay", "Corrections and retractions"],
+      "contract": "contracts/payment-event-v2.json",
+      "fixture": "tests/fixtures/stage1-temporal-cases.json",
+      "oracle": "tests/temporal_oracle.py",
+      "production": ["src/featureforge/model.py", "src/featureforge/temporal.py"],
+      "proof": "evidence/stage1/temporal-proof.json"
+    },
+    "FF-P1-04": {
+      "clauses": ["Clocks and row cutoffs", "Rejected alternatives"],
+      "contract": "contracts/payment-event-v2.json",
+      "fixture": "tests/fixtures/stage1-temporal-cases.json",
+      "oracle": "tests/temporal_oracle.py",
+      "production": ["src/featureforge/temporal.py", "src/featureforge/dataset.py"],
+      "proof": "evidence/stage1/temporal-proof.json"
+    },
+    "FF-P1-05": {
+      "clauses": ["Logical events, revisions, and replay", "Corrections and retractions"],
+      "contract": "contracts/payment-event-v2.json",
+      "fixture": "tests/fixtures/stage1-temporal-cases.json",
+      "oracle": "tests/temporal_oracle.py",
+      "production": ["src/featureforge/temporal.py", "src/featureforge/store.py"],
+      "proof": "evidence/stage1/temporal-proof.json"
+    }
+  }
+}

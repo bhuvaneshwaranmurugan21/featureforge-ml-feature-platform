@@ -4,6 +4,7 @@
 # explicit limitations in docs/stage0/baseline.json.
 ast-serialize==0.11.2
 coverage==7.16.1
+hypothesis==6.168.1
 iniconfig==2.3.0
 librt==0.15.0
 mypy==2.3.1
@@ -16,4 +17,5 @@ pytest==9.1.1
 pytest-cov==7.1.0
 ruff==0.16.8
 setuptools==84.0.0
+sortedcontainers==2.4.0
 typing-extensions==4.16.0

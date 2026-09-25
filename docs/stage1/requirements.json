@@ -1,0 +1,38 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "part": 1,
+  "stage": 1,
+  "base_sha": "ce2646754065145cbf609f286c588bbaa4fb3284",
+  "requirements": [
+    {
+      "id": "FF-P1-03",
+      "status": "local_verified_pending_merge",
+      "requirement": "Explicit event and knowledge clocks, boundaries, corrections, retractions, replay, and deterministic tie behavior",
+      "specification": ["docs/stage1/temporal-specification.md", "docs/stage1/decision-table.json"],
+      "implementation": ["contracts/payment-event-v2.json", "src/featureforge/model.py", "src/featureforge/temporal.py"],
+      "tests": ["tests/test_stage1_temporal_golden.py", "tests/test_stage1_store_contract.py"],
+      "negative_controls": ["same_event_same_knowledge_time", "revision_id_content_conflict", "customer_identity_change"],
+      "evidence": ["evidence/stage1/temporal-proof.json"]
+    },
+    {
+      "id": "FF-P1-04",
+      "status": "local_verified_pending_merge",
+      "requirement": "Knowledge learned after prediction cannot influence an earlier historical row",
+      "specification": ["docs/stage1/temporal-specification.md"],
+      "implementation": ["src/featureforge/temporal.py", "src/featureforge/dataset.py"],
+      "tests": ["tests/test_stage1_temporal_golden.py", "tests/test_stage1_temporal_properties.py"],
+      "negative_controls": ["leaky_event_time_only_detected"],
+      "evidence": ["tests/fixtures/stage1-temporal-cases.json", "evidence/stage1/temporal-proof.json"]
+    },
+    {
+      "id": "FF-P1-05",
+      "status": "local_verified_pending_merge",
+      "requirement": "Revision and retraction selection remains deterministic under input permutation and replay",
+      "specification": ["docs/stage1/temporal-specification.md", "docs/stage1/decision-table.json"],
+      "implementation": ["src/featureforge/temporal.py", "src/featureforge/store.py"],
+      "tests": ["tests/test_stage1_temporal_golden.py", "tests/test_stage1_temporal_properties.py", "tests/test_stage1_store_contract.py"],
+      "negative_controls": ["revision_id_content_conflict", "same_event_same_knowledge_time"],
+      "evidence": ["evidence/stage1/temporal-proof.json"]
+    }
+  ]
+}

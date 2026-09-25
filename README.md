@@ -4,9 +4,11 @@
 [![Infrastructure](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/terraform.yml/badge.svg)](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/terraform.yml)
 
 FeatureForge is a local bitemporal reference implementation for payment-risk features. Its
-checked fixtures exclude late-known corrections from historical training rows, reproduce
-dataset output for identical inputs, and gate a SQLite online-generation switch on a local
-offline/online comparison. Managed execution and independent parity proof remain open.
+checked fixtures exclude late-known corrections from historical training rows, apply typed
+retractions only when knowable, reproduce dataset output for identical inputs, and gate a SQLite
+online-generation switch on a local offline/online comparison. An independent primitive-record
+oracle checks the bounded local temporal histories. Managed execution and independently deployed
+offline/online parity remain open.
 
 Its central opinion is that a feature value needs more than an entity, value, and event time:
 
@@ -25,18 +27,21 @@ a historical training row merely because its business event happened earlier.
 ## Evidence boundary
 
 - **Executable and locally verified for the recorded fixtures:** revision-aware source events,
-  bitemporal point-in-time selection, definition immutability, type contracts, idempotent
+  bitemporal point-in-time selection, deterministic revision replay, typed retractions,
+  definition immutability, type contracts, idempotent
   materialization, generation isolation, a local offline/online comparison and mismatch gate,
-  TTL, and a SQLite compare-and-swap publication decision. The two local paths share one
-  computation library; the comparison is not an independent correctness oracle.
+  TTL, and a SQLite compare-and-swap publication decision. The two materialization paths share one
+  computation library. Stage 1's temporal oracle is structurally independent of production
+  selection and arithmetic, but it is not an independently deployed serving implementation.
 - **Production-shaped but not yet verified on AWS:** S3/Glue offline storage, DynamoDB online
   store and registry, Step Functions, EventBridge, KMS, CloudWatch, and Spark adapter.
 
 No online latency, training scale, availability, or AWS cost claim is made without a captured run.
 The current dataset manifest records cutoffs, definition digests, row count, and rows digest;
 it does not yet bind an immutable source snapshot/content digest. See the
-[Stage 0 audit](docs/stage0/README.md) and [claim registry](docs/stage0/claims.json) for exact
-evidence and remaining proof gaps.
+[Stage 0 audit](docs/stage0/README.md),
+[Stage 1 temporal authority](docs/stage1/temporal-specification.md), and
+[Stage 1 claim registry](docs/stage1/claims.json) for exact evidence and remaining proof gaps.
 
 ## Architecture
 
@@ -66,15 +71,18 @@ temporal and publication semantics that must remain true whichever engines imple
 
 ## Point-in-time rule
 
-For label time `L` and dataset snapshot `A`, a source revision is eligible only when:
+For event cutoff/label time `L`, prediction knowledge cutoff `K`, and dataset snapshot `A`, a
+source revision is eligible only when:
 
 ```text
-event_time <= L AND knowledge_time <= min(L, A)
+event_time <= L AND knowledge_time <= min(K, A)
 ```
 
-Within those boundaries, the latest known revision of each event is selected. Window and TTL
-policies then apply. Every produced dataset includes label IDs, definition digests, `dataset_as_of`,
-row count, rows digest, and manifest digest.
+Within those boundaries, the latest known non-retracted revision of each event is selected.
+Equal-knowledge-time conflicts fail closed; input order never breaks a tie. Window and TTL
+policies then apply. Every row records requested and effective cutoffs plus truncation, and every
+dataset includes label IDs, definition digests, `dataset_as_of`, row count, rows digest, and
+manifest digest.
 
 ## Included feature product
 
@@ -89,7 +97,7 @@ row count, rows digest, and manifest digest.
 ## Invariants
 
 1. A feature definition version is immutable; changed logic requires a new version.
-2. An event revision identity is `(event_id, knowledge_time)` and conflicting replay is blocked.
+2. An immutable `revision_id` identifies a revision; conflicting ID reuse and same-clock ties fail closed.
 3. Training rows see neither future events nor revisions learned after prediction time.
 4. Dataset manifests bind rows to definition digests and source knowledge cutoff.
 5. Materialization replay is valid only when its canonical value digest is unchanged.
@@ -109,12 +117,15 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[dev]'
 pytest
-python -m featureforge.cli simulate --output evidence/local-simulation.json
+python -m featureforge.cli simulate --output /tmp/featureforge-evidence.json
 ```
 
 The local failure lab checks 17 scenarios, including future-event and late-correction exclusion,
 definition drift, conflicting event replay, dataset reproducibility, missing entities,
 materialization replay, parity failure, type failure, TTL, stale publication, and isolated backfill.
+The Stage 1 proof adds typed retractions, hand-calculated boundary fixtures, all 5,040 permutations
+of the golden history, 36 bounded cases, and 350 deterministic property examples against an
+independent test oracle.
 
 ## Repository map
 
