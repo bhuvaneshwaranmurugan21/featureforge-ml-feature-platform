@@ -157,7 +157,7 @@ testing, three seeded workload profiles, and immutable-artifact restart/tamper/f
 src/featureforge/  bitemporal computation, Spark backfill, registry, dataset, parity, and publication kernel
 tests/             temporal leakage, failure, parity, and replay tests
 contracts/         versioned source contract
-jobs/              production-shaped Spark point-in-time adapter
+jobs/              bounded local Spark point-in-time entry point
 infra/terraform/   AWS reference topology
 evidence/          reproducible local proof artifact
 docs/              ADR, runbook, failure lab, and claim registry
