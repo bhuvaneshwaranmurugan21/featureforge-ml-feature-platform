@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:online-active-pointer:v1",
+  "title": "FeatureForge online active-generation pointer",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "feature_set", "generation_id", "pointer_version"],
+  "properties": {
+    "contract": {"const": "online-active-pointer-v1"},
+    "feature_set": {"type": "string", "minLength": 1},
+    "generation_id": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "pointer_version": {"type": "integer", "minimum": 0}
+  }
+}

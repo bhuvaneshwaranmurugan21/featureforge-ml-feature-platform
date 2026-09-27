@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:online-serving-result:v1",
+  "title": "FeatureForge typed online serving result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "status",
+    "feature_set",
+    "generation_id",
+    "customer_id",
+    "feature_name",
+    "definition_digest",
+    "record_digest",
+    "value"
+  ],
+  "properties": {
+    "contract": {"const": "online-serving-result-v1"},
+    "status": {
+      "enum": [
+        "FOUND",
+        "ABSENT",
+        "EXPIRED",
+        "STALE",
+        "DEFINITION_MISMATCH",
+        "GENERATION_UNAVAILABLE",
+        "CORRUPT_RECORD",
+        "STORAGE_FAILURE",
+        "THROTTLED"
+      ]
+    },
+    "feature_set": {"type": "string", "minLength": 1},
+    "generation_id": {"type": "string", "minLength": 1},
+    "customer_id": {"type": "string", "minLength": 1},
+    "feature_name": {"type": "string", "minLength": 1},
+    "definition_digest": {
+      "oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[0-9a-f]{64}$"}]
+    },
+    "record_digest": {
+      "oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[0-9a-f]{64}$"}]
+    },
+    "value": {
+      "oneOf": [{"type": "null"}, {"type": "integer"}, {"type": "number"}]
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage2-global-stage4",
+  "acceptance_criteria": [
+    {"id": "ST4-AC-01", "requirement": "The authorized Stage 3 main commit, tree, continuation identities, and repository isolation are independently verified before Stage 4 work."},
+    {"id": "ST4-AC-02", "requirement": "All Stage 0 through Stage 3 validators and deterministic proofs remain reproducible before and after Stage 4."},
+    {"id": "ST4-AC-03", "requirement": "Versioned online record, plan, validation, activation, pointer, and serving contracts freeze canonical identities and typed values."},
+    {"id": "ST4-AC-04", "requirement": "Entity-generation keys, access paths, pagination, and the candidate lifecycle are explicit and never infer active state from recency."},
+    {"id": "ST4-AC-05", "requirement": "Invalid values, unsupported transitions, identity reuse, corrupt state, and cross-service atomicity assumptions fail closed with typed outcomes."},
+    {"id": "ST4-AC-06", "requirement": "Pinned AWS SDK dependencies validate low-level DynamoDB item, query, candidate-control, conditional-write, and activation-transaction request shapes without runtime access."},
+    {"id": "ST4-AC-07", "requirement": "A file-backed SQLite adapter proves the declared observable semantics across pagination, restart, and independent concurrent connections."},
+    {"id": "ST4-AC-08", "requirement": "Each deterministic materialization plan binds one verified offline generation, definition set, source identity, expected key set, count, and aggregate digest."},
+    {"id": "ST4-AC-09", "requirement": "Candidate writes are generation-isolated, conditionally idempotent, persistent, and reject conflicting operation or record identity reuse."},
+    {"id": "ST4-AC-10", "requirement": "Restart resumes only missing work and exact keyset reconciliation verifies count, uniqueness, content digests, and the ordered aggregate before issuing a receipt."},
+    {"id": "ST4-AC-11", "requirement": "Partial, extra, duplicate, corrupt, tampered, or mismatched candidates cannot become VALIDATED or ACTIVE."},
+    {"id": "ST4-AC-12", "requirement": "Activation binds the candidate to its exact validation receipt, expected generation, expected pointer version, and immutable operation identity."},
+    {"id": "ST4-AC-13", "requirement": "Pointer activation is compare-and-swap guarded; stale or failed publication preserves the prior active generation."},
+    {"id": "ST4-AC-14", "requirement": "Two real local publishers racing from the same pointer yield exactly one commit and one semantic conflict."},
+    {"id": "ST4-AC-15", "requirement": "A lost activation acknowledgement survives process restart and exact replay returns the original receipt without another pointer event."},
+    {"id": "ST4-AC-16", "requirement": "A reader pins one generation for its request; pointer changes cannot mix generations and retained historical generations remain explicit."},
+    {"id": "ST4-AC-17", "requirement": "TTL is an asynchronous cleanup hint while serving eligibility is checked synchronously with exact controlled-clock expiry and freshness boundaries."},
+    {"id": "ST4-AC-18", "requirement": "Serving distinguishes FOUND, ABSENT, EXPIRED, STALE, DEFINITION_MISMATCH, GENERATION_UNAVAILABLE, CORRUPT_RECORD, and STORAGE_FAILURE."},
+    {"id": "ST4-AC-19", "requirement": "Online expiry or retirement never mutates immutable offline generations or changes historical reconstruction."},
+    {"id": "ST4-AC-20", "requirement": "Bounded seeded retries, durable attempt records, partial progress, duplicate dispatch, timeout, corruption, exhaustion, and recovery produce deterministic isolated outcomes."},
+    {"id": "ST4-AC-21", "requirement": "Deterministic capacity evidence reports item bytes, service-limit headroom, request counts, entity concentration, and reconciliation work for bounded profiles."},
+    {"id": "ST4-AC-22", "requirement": "Capacity conclusions state assumptions, redesign thresholds, and explicit non-claims for live AWS performance, cost, scaling, and availability."},
+    {"id": "ST4-AC-23", "requirement": "Lint, strict typing, dependency integrity, complete tests and coverage, validators, contamination checks, and byte-identical Stage 4 proof regeneration pass."},
+    {"id": "ST4-AC-24", "requirement": "The unchanged reviewed head and base satisfy required CI and review gates; merged main is independently reproduced and bound by a continuation receipt."}
+  ]
+}

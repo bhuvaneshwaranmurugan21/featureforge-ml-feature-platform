@@ -1,0 +1,37 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage2-global-stage4",
+  "authorized_base_commit": "15fbe0a66a74cd340a717266fb80ee36388411bc",
+  "authorized_base_tree": "437f33ed2f0c5aa469bd5c52a741a675e849144a",
+  "branch": "part2-stage4-online-materialization",
+  "repository_isolated": true,
+  "predecessor_gates_passed": true,
+  "prechange_suite": {
+    "tests_passed": 80,
+    "coverage_percent": 90.73,
+    "ruff": "passed",
+    "strict_mypy": "passed",
+    "dependency_integrity": "passed",
+    "stage0_through_stage3_validators": "passed",
+    "deterministic_proofs": "byte-identical"
+  },
+  "qualified_runtime": {
+    "python_requirement": ">=3.11",
+    "java_major": 17,
+    "pyspark": "3.5.9",
+    "py4j": "0.10.9.9",
+    "boto3": "1.43.103",
+    "botocore": "1.43.103",
+    "jmespath": "1.1.0",
+    "s3transfer": "0.19.2",
+    "python_dateutil": "2.9.0.post0",
+    "six": "1.17.0",
+    "urllib3": "2.8.0"
+  },
+  "stage3_proofs": {
+    "spark_sha256": "58e6ba459060aca962398d056bf2f16c3e13eee55c155134661578b1f64d2d72",
+    "recovery_sha256": "62c2f6e55c9964c8fe309d6f2d093ac2f5ee7b33575b69b274c496b6dc09e4c7"
+  },
+  "aws_runtime_executed": false,
+  "dynamodb_runtime_executed": false
+}

@@ -13,6 +13,10 @@ recovery, TTL, and guarded rollback. Managed execution remains open.
 Stage 3 adds a real local Java 17/PySpark 3.5.9 computation path, conservative affected-scope
 planning, target-frontier re-enveloping, immutable manifest-bound offline generations, and an
 incremental-versus-full-rebuild differential proof.
+Stage 4 adds an isolated online-generation materialization contract, exact paginated reconciliation,
+receipt-bound activation, request-scoped generation pinning, typed serving outcomes, and deterministic
+recovery. Its DynamoDB request dictionaries are statically validated against the pinned Botocore
+service model; no live AWS execution is claimed.
 
 Its central opinion is that a feature value needs more than an entity, value, and event time:
 
@@ -41,8 +45,12 @@ a historical training row merely because its business event happened earlier.
   an independently deployed serving implementation. Stage 3's separate primitive-record oracle
   checks all five Spark-computed features at three knowledge frontiers; seeded balanced, skewed,
   and high-cardinality workloads provide bounded structural diagnostics.
-- **Production-shaped but not yet verified on AWS:** S3/Glue offline storage, DynamoDB online
-  store and registry, Step Functions, EventBridge, KMS, and CloudWatch.
+  Stage 4's independent serializer oracle checks the canonical online envelopes; its file-backed
+  adapter verifies isolation, reconciliation, concurrent CAS, pinned reads, and restart recovery.
+- **Implementation-present and statically validated:** DynamoDB low-level record, query,
+  candidate-control, conditional-write, and transactional activation request shapes.
+- **Production-shaped but not yet verified on AWS:** S3/Glue offline storage, live DynamoDB online
+  behavior, Step Functions, EventBridge, KMS, and CloudWatch.
 
 No online latency, training scale, availability, or AWS cost claim is made without a captured run.
 The Stage 2 dataset manifest binds immutable source, label, definition-set, code, cutoff, count,
@@ -50,7 +58,8 @@ and ordered-row identities. See the
 [Stage 0 audit](docs/stage0/README.md),
 [Stage 1 temporal authority](docs/stage1/temporal-specification.md), and
 [Stage 2 lifecycle authority](docs/stage2/lifecycle-specification.md), and
-[Stage 3 Spark authority](docs/stage3/spark-incremental-specification.md) for exact evidence and
+[Stage 3 Spark authority](docs/stage3/spark-incremental-specification.md), and
+[Stage 4 online authority](docs/stage4/online-materialization-specification.md) for exact evidence and
 remaining proof gaps.
 
 ## Architecture
@@ -118,11 +127,15 @@ manifest digest.
 10. Publication uses expected-generation and expected-version CAS; a stale publisher or rollback cannot overwrite a newer decision.
 11. One logical read pins one generation; publication cannot mix values inside the request.
 12. Exact operation replay returns the committed receipt; conflicting operation reuse fails closed.
-13. TTL comes from the persisted definition and returns missing at the exact expiry boundary.
+13. TTL comes from the persisted definition; synchronous serving returns `EXPIRED` at equality.
 14. Incremental scope may over-select but cannot omit a changed feature key.
 15. Preserved values are re-enveloped at the target generation and knowledge frontier.
 16. A corrupt predecessor, unsafe scope, partial artifact, or digest mismatch cannot yield a
     successful incremental generation.
+17. An online candidate remains invisible until exact reconciliation and receipt-bound activation.
+18. Online publication requires an expected-generation/version CAS and records immutable history.
+19. A logical online request pins one generation; pointer movement cannot mix its feature values.
+20. DynamoDB cleanup TTL is never used as the serving-eligibility authority.
 
 ## Run it
 
@@ -131,12 +144,13 @@ Requires Python 3.11+ and Java 17.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -e '.[dev,spark]'
+python -m pip install -e '.[dev,spark,aws]'
 pytest
 python -m featureforge.cli simulate --output /tmp/featureforge-evidence.json
 python -m tools.run_stage2_proof --output-dir /tmp/featureforge-stage2-evidence
 python -m tools.run_stage3_proof --output-dir /tmp/featureforge-stage3-evidence
-python tools/validate_stage3.py
+python -m tools.run_stage4_proof --output-dir /tmp/featureforge-stage4-evidence
+python tools/validate_stage4.py
 ```
 
 The local failure lab checks 17 scenarios, including future-event and late-correction exclusion,
@@ -150,11 +164,14 @@ CAS loser, reader pinning across a switch, restart and lost-ack replay, and guar
 Stage 3 adds exact Spark/oracle agreement at three knowledge frontiers, source/definition/customer
 order invariance, an integer-precision guard, incremental/full equality, conservative-scope mutation
 testing, three seeded workload profiles, and immutable-artifact restart/tamper/fallback recovery.
+Stage 4 adds canonical online-record/oracle agreement, valid low-level DynamoDB request shapes,
+four-page exact reconciliation, a real two-connection activation race, lost-ack restart replay,
+typed TTL/freshness results, durable retry attempts, and bounded service-limit calculations.
 
 ## Repository map
 
 ```text
-src/featureforge/  bitemporal computation, Spark backfill, registry, dataset, parity, and publication kernel
+src/featureforge/  bitemporal computation, Spark backfill, online materialization, and publication kernel
 tests/             temporal leakage, failure, parity, and replay tests
 contracts/         versioned source contract
 jobs/              bounded local Spark point-in-time entry point
@@ -170,7 +187,7 @@ docs/              ADR, runbook, failure lab, and claim registry
 | Versioned source facts | SQLite event revisions | S3/Iceberg bitemporal source table |
 | Immutable definition | Persistent SQLite authority + digest | DynamoDB registry + deployment artifact digest |
 | Offline generation | SQLite values | S3/Glue/Iceberg generation namespace |
-| Online generation | SQLite online table | DynamoDB generation-prefixed keys |
+| Online generation | File-backed SQLite candidate namespace | DynamoDB generation-prefixed keys |
 | Dataset manifest | Canonical JSON digest | Versioned, KMS-encrypted S3 evidence |
 | Atomic publication | SQLite CAS | DynamoDB conditional pointer update |
 
@@ -179,9 +196,9 @@ for the exact evidence required before any managed-runtime claim.
 
 ## Interview walkthrough
 
-Use the [Stage 3 walkthrough](docs/stage3/walkthrough.md): explain the two clocks, independent
-oracle, correction/retraction frontier sequence, conservative affected scope, target-frontier
-re-enveloping, incremental/full equality, bounded work avoided, and immutable-artifact recovery.
+Use the [Stage 4 walkthrough](docs/stage4/walkthrough.md): explain the two clocks, Stage 3 immutable
+generation, independent online serializer oracle, candidate isolation, exact reconciliation,
+receipt-bound CAS activation, lost-ack recovery, pinned reads, and the explicit AWS non-claims.
 
 ## License
 

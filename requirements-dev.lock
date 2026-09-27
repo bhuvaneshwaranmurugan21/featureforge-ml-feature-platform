@@ -3,9 +3,12 @@
 # versions, not wheel hashes; package provenance and build isolation remain
 # explicit limitations in docs/stage0/baseline.json.
 ast-serialize==0.11.2
+boto3==1.43.103
+botocore==1.43.103
 coverage==7.16.1
 hypothesis==6.168.1
 iniconfig==2.3.0
+jmespath==1.1.0
 librt==0.15.0
 mypy==2.3.1
 mypy-extensions==1.1.0
@@ -17,7 +20,11 @@ Pygments==2.21.0
 pyspark==3.5.9
 pytest==9.1.1
 pytest-cov==7.1.0
+python-dateutil==2.9.0.post0
 ruff==0.16.8
+s3transfer==0.19.2
+six==1.17.0
 setuptools==84.0.0
 sortedcontainers==2.4.0
 typing-extensions==4.16.0
+urllib3==2.8.0
