@@ -29,7 +29,7 @@
     {
       "check": "dataset_reproducibility",
       "passed": true,
-      "proof": "f50a6560ddb0a8343d034b573c24a2b672f85761fe12a22016574f9820ced341"
+      "proof": "555f0122981bdec0fabf6ed30bc13f69d25e24a207d6f5a63911071a0d5f5a35"
     },
     {
       "check": "offline_materialization",
@@ -47,7 +47,7 @@
       "proof": [
         {
           "customer_id": "missing-customer",
-          "definition_digest": "3f3db8aed5ef708ebacb6522ce9d417270375be4e42d7dc2a9bd7f8c7fe2b8c8",
+          "definition_digest": "57a045827680950b3da8e3ccb668fbb64ed83b127ba2df50313b19f07f878abf",
           "event_time": 5000,
           "feature_name": "transaction_count_24h",
           "generation_id": "g-1",
@@ -56,7 +56,7 @@
         },
         {
           "customer_id": "missing-customer",
-          "definition_digest": "2e90c899a5ca472478b8ee5cb1b0994f083ff5d9acba4de15c9319f66e2bb389",
+          "definition_digest": "2961e6633d15466aff74787d7034d80337cd82c927e21b0035aa5d494a572146",
           "event_time": 5000,
           "feature_name": "successful_spend_30d_cents",
           "generation_id": "g-1",
@@ -65,7 +65,7 @@
         },
         {
           "customer_id": "missing-customer",
-          "definition_digest": "4801fe6030655eab75654c4dffa65b121fb81c2bbf9c240ccf4cee04f91c8d6e",
+          "definition_digest": "d8447e858b3e26b21229c6419ac2f0a89eca911b8083b1bdc7344e2454477c9a",
           "event_time": 5000,
           "feature_name": "failed_payment_ratio_7d",
           "generation_id": "g-1",
@@ -74,7 +74,7 @@
         },
         {
           "customer_id": "missing-customer",
-          "definition_digest": "d06b7c4c383b89654e7998952a59ef328bf13186cfa53c2652857039c6d0ffd7",
+          "definition_digest": "562a07a0865fef267a0565971435a268f3906315c3205a9d11b1459d1c917068",
           "event_time": 5000,
           "feature_name": "hours_since_successful_payment",
           "generation_id": "g-1",
@@ -83,7 +83,7 @@
         },
         {
           "customer_id": "missing-customer",
-          "definition_digest": "82e73b4902575e8693f710598766c175b9c405242a262b7526596c50bc17205f",
+          "definition_digest": "cacc92e12a75ba1875c6740dfc8704429c700858ae6e563a8c4befe2cae134d7",
           "event_time": 5000,
           "feature_name": "max_merchant_risk_7d",
           "generation_id": "g-1",
@@ -113,7 +113,7 @@
             "customer_id": "c-1",
             "expected": {
               "customer_id": "c-1",
-              "definition_digest": "3f3db8aed5ef708ebacb6522ce9d417270375be4e42d7dc2a9bd7f8c7fe2b8c8",
+              "definition_digest": "57a045827680950b3da8e3ccb668fbb64ed83b127ba2df50313b19f07f878abf",
               "event_time": 5000,
               "feature_name": "transaction_count_24h",
               "generation_id": "g-1",
@@ -123,7 +123,7 @@
             "feature_name": "transaction_count_24h",
             "online": {
               "customer_id": "c-1",
-              "definition_digest": "3f3db8aed5ef708ebacb6522ce9d417270375be4e42d7dc2a9bd7f8c7fe2b8c8",
+              "definition_digest": "57a045827680950b3da8e3ccb668fbb64ed83b127ba2df50313b19f07f878abf",
               "event_time": 5000,
               "feature_name": "transaction_count_24h",
               "generation_id": "g-1",
@@ -135,7 +135,7 @@
             "customer_id": "missing-customer",
             "expected": {
               "customer_id": "missing-customer",
-              "definition_digest": "3f3db8aed5ef708ebacb6522ce9d417270375be4e42d7dc2a9bd7f8c7fe2b8c8",
+              "definition_digest": "57a045827680950b3da8e3ccb668fbb64ed83b127ba2df50313b19f07f878abf",
               "event_time": 5000,
               "feature_name": "transaction_count_24h",
               "generation_id": "g-1",
@@ -145,7 +145,7 @@
             "feature_name": "transaction_count_24h",
             "online": {
               "customer_id": "missing-customer",
-              "definition_digest": "3f3db8aed5ef708ebacb6522ce9d417270375be4e42d7dc2a9bd7f8c7fe2b8c8",
+              "definition_digest": "57a045827680950b3da8e3ccb668fbb64ed83b127ba2df50313b19f07f878abf",
               "event_time": 5000,
               "feature_name": "transaction_count_24h",
               "generation_id": "g-1",
@@ -154,7 +154,7 @@
             }
           }
         ],
-        "proof_digest": "f5525731528f9fa36cd6d7f49c277d90d8e4c80b2098d3b9e7125b4cad79073a"
+        "proof_digest": "934ed574792a90f71a0c3535e907d6d5ed7742020871b2237f1a009f2968fdf2"
       }
     },
     {
@@ -195,7 +195,7 @@
     }
   ],
   "claim_level": "LOCAL_SIMULATION",
-  "evidence_digest": "07d242110e6a16de5f2f5b67003813bfa7c4897d3303ec3e547ad36f87bfc716",
+  "evidence_digest": "ba2b9dee2401e6d78f1bda7745528dee3619c8a3223f4d5661bf5c424621073e",
   "metrics": {
     "checks_passed": 17,
     "checks_total": 17

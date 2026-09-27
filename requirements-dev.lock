@@ -12,7 +12,9 @@ mypy-extensions==1.1.0
 packaging==26.3
 pathspec==1.1.1
 pluggy==1.6.0
+py4j==0.10.9.9
 Pygments==2.21.0
+pyspark==3.5.9
 pytest==9.1.1
 pytest-cov==7.1.0
 ruff==0.16.8

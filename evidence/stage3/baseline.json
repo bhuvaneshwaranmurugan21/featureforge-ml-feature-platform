@@ -1,0 +1,50 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage1-global-stage3",
+  "observed_date_utc": "2026-09-25",
+  "authorized_base_commit": "d7fa3b4a2d529dca4e8ee03b8eaf58637b583a12",
+  "authorized_base_tree": "383e56b3ddbe0f1c4ab6faa7e72270c50684f306",
+  "isolation": "fresh detached clone, dedicated Stage 3 branch, disposable virtual environment and Spark workspace",
+  "predecessor_gates_passed": true,
+  "predecessor": {
+    "tests": "58 passed",
+    "coverage_percent": 90.6,
+    "ruff": "passed",
+    "strict_mypy": "passed",
+    "validators": ["stage0", "stage1", "stage2"],
+    "proofs": ["stage1 temporal", "stage2 vertical slice", "stage2 failure recovery"]
+  },
+  "qualified_runtime": {
+    "python": ">=3.11",
+    "java_major": 17,
+    "pyspark": "3.5.9",
+    "py4j": "0.10.9.9",
+    "spark_master": "local[2]",
+    "driver_bind_address": "127.0.0.1",
+    "timezone": "UTC",
+    "adaptive_execution": false
+  },
+  "stage3_local_closure": {
+    "ruff": "passed",
+    "strict_mypy_source_files": 15,
+    "tests": "80 passed",
+    "coverage_percent": 90.73,
+    "coverage_minimum_percent": 85,
+    "spark_proof_sha256": "58e6ba459060aca962398d056bf2f16c3e13eee55c155134661578b1f64d2d72",
+    "failure_recovery_proof_sha256": "62c2f6e55c9964c8fe309d6f2d093ac2f5ee7b33575b69b274c496b6dc09e4c7",
+    "proof_double_regeneration": "byte-identical",
+    "stage3_validator": "passed"
+  },
+  "transparent_repair": {
+    "finding": "legacy evidence/local-simulation.json predated Stage 1 empty_default definition identity",
+    "authority": "evidence/stage1/local-simulation.json and current deterministic simulator output",
+    "repair": "refreshed the legacy compatibility copy and mechanically regenerated predecessor evidence indexes",
+    "behavioral_change": false
+  },
+  "external_closure": {
+    "exact_head_ci": "pending until push",
+    "review_gate": "pending until pull request",
+    "merged_main_reproduction": "pending until merge",
+    "continuation_receipt": "pending until merged-main verification"
+  }
+}

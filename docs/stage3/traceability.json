@@ -1,0 +1,28 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage1-global-stage3",
+  "mappings": [
+    {"acceptance": "ST3-AC-01", "evidence": ["docs/stage3/predecessor.json", "evidence/stage3/baseline.json"]},
+    {"acceptance": "ST3-AC-02", "evidence": ["evidence/stage1/temporal-proof.json", "evidence/stage2/vertical-slice-proof.json", "evidence/stage2/failure-recovery-proof.json"]},
+    {"acceptance": "ST3-AC-03", "evidence": ["pyproject.toml", "requirements-dev.lock", "evidence/stage3/spark-proof.json"]},
+    {"acceptance": "ST3-AC-04", "evidence": ["tests/test_stage3_spark.py", "src/featureforge/spark_runtime.py"]},
+    {"acceptance": "ST3-AC-05", "evidence": ["evidence/stage3/spark-proof.json", "src/featureforge/spark_runtime.py"]},
+    {"acceptance": "ST3-AC-06", "evidence": ["docs/stage3/spark-incremental-specification.md", "tests/test_stage3_spark.py"]},
+    {"acceptance": "ST3-AC-07", "evidence": ["tests/stage3_oracle.py", "evidence/stage3/spark-proof.json"]},
+    {"acceptance": "ST3-AC-08", "evidence": ["tests/test_stage3_spark.py", "evidence/stage3/spark-proof.json"]},
+    {"acceptance": "ST3-AC-09", "evidence": ["tests/test_stage3_spark.py", "evidence/stage3/spark-proof.json"]},
+    {"acceptance": "ST3-AC-10", "evidence": ["tests/test_stage3_spark.py", "evidence/stage3/spark-proof.json"]},
+    {"acceptance": "ST3-AC-11", "evidence": ["contracts/spark-offline-generation-v1.json", "evidence/stage3/failure-recovery-proof.json"]},
+    {"acceptance": "ST3-AC-12", "evidence": ["src/featureforge/spark_runtime.py", "tests/test_stage3_spark.py"]},
+    {"acceptance": "ST3-AC-13", "evidence": ["evidence/stage3/spark-proof.json", "tests/test_stage3_spark.py"]},
+    {"acceptance": "ST3-AC-14", "evidence": ["evidence/stage3/spark-proof.json", "tests/test_stage3_spark.py"]},
+    {"acceptance": "ST3-AC-15", "evidence": ["evidence/stage3/failure-recovery-proof.json", "tests/test_stage3_spark.py"]},
+    {"acceptance": "ST3-AC-16", "evidence": ["evidence/stage3/spark-proof.json", "src/featureforge/spark_runtime.py"]},
+    {"acceptance": "ST3-AC-17", "evidence": ["evidence/stage3/spark-proof.json"]},
+    {"acceptance": "ST3-AC-18", "evidence": ["evidence/stage3/spark-proof.json", "docs/stage3/claims.json"]},
+    {"acceptance": "ST3-AC-19", "evidence": ["evidence/stage3/failure-recovery-proof.json"]},
+    {"acceptance": "ST3-AC-20", "evidence": ["tools/run_stage3_proof.py", ".github/workflows/ci.yml"]},
+    {"acceptance": "ST3-AC-21", "evidence": ["tools/validate_stage3.py", ".github/workflows/ci.yml"]},
+    {"acceptance": "ST3-AC-22", "evidence": ["continuation receipt created after independently verified merged main"]}
+  ]
+}

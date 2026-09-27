@@ -45,6 +45,16 @@ active generation once and keeps that token for every feature lookup. TTL is loa
 persisted definition bound to the value. Missing and expired values remain explicit; defaulting
 belongs to the model contract, not hidden storage behavior.
 
+## Spark backfill semantics
+
+The Stage 3 local Spark path ranks source revisions by knowledge time for each logical event, removes
+retracted state, then applies event and feature-window cutoffs. Full output is canonicalized and bound
+to an immutable generation manifest. Incremental planning compares authoritative event state between
+two knowledge frontiers and conservatively marks every definition whose old or new event time can
+enter its window. A threshold selects a full rebuild. Otherwise Spark recomputes affected customers,
+unaffected values are re-enveloped under the target frontier, and the complete output must equal an
+independent full rebuild. See `docs/stage3/spark-incremental-specification.md`.
+
 ## Primary references
 
 - [Feast point-in-time joins](https://docs.feast.dev/getting-started/concepts/point-in-time-joins)

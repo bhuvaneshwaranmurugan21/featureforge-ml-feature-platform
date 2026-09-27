@@ -25,6 +25,16 @@ claim_levels:
       - evidence/stage2/vertical-slice-proof.json
       - evidence/stage2/failure-recovery-proof.json
       - docs/stage2/claims.json
+    stage3_evidence:
+      - evidence/stage3/spark-proof.json
+      - evidence/stage3/failure-recovery-proof.json
+      - docs/stage3/claims.json
+    stage3_scope:
+      - bounded local Java 17 and PySpark 3.5.9 execution
+      - exact independent-oracle agreement for five features at three knowledge frontiers
+      - conservative affected-scope planning and incremental/full canonical equality
+      - target-frontier re-enveloping and digest-bound immutable local generations
+      - deterministic balanced, skewed, and high-cardinality structural diagnostics
   TERRAFORM_STATIC:
     status: HISTORICALLY_VALIDATED_IN_CI
     evidence:
