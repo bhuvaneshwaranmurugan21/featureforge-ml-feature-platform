@@ -25,6 +25,7 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: PIP_CONSTRAINT="$GITHUB_WORKSPACE/requirements-dev.lock" python -m pip install -e '.[dev,spark]'
+      - run: PIP_CONSTRAINT="$GITHUB_WORKSPACE/requirements-dev.lock" python -m pip install -e '.[aws]'
       - run: ruff check .
       - run: mypy src
       - run: pytest
@@ -32,6 +33,7 @@ jobs:
       - run: python tools/validate_stage1.py
       - run: python tools/validate_stage2.py
       - run: python tools/validate_stage3.py
+      - run: python tools/validate_stage4.py
       - name: Regenerate current deterministic simulation evidence
         run: |
           python -m featureforge.cli simulate --output /tmp/featureforge-evidence.json
@@ -59,3 +61,8 @@ jobs:
           python -m tools.run_stage3_proof --output-dir /tmp/featureforge-stage3-proof
           cmp /tmp/featureforge-stage3-proof/spark-proof.json evidence/stage3/spark-proof.json
           cmp /tmp/featureforge-stage3-proof/failure-recovery-proof.json evidence/stage3/failure-recovery-proof.json
+      - name: Regenerate deterministic Stage 4 online proofs
+        run: |
+          python -m tools.run_stage4_proof --output-dir /tmp/featureforge-stage4-proof
+          cmp /tmp/featureforge-stage4-proof/online-proof.json evidence/stage4/online-proof.json
+          cmp /tmp/featureforge-stage4-proof/failure-recovery-proof.json evidence/stage4/failure-recovery-proof.json

@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:online-feature-record:v1",
+  "title": "FeatureForge online feature record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "feature_set",
+    "generation_id",
+    "customer_id",
+    "feature_name",
+    "definition_digest",
+    "value",
+    "event_cutoff",
+    "knowledge_cutoff",
+    "source_digest",
+    "offline_rows_digest",
+    "operation_id",
+    "materialized_at",
+    "expires_at",
+    "ttl_epoch_seconds",
+    "partition_key",
+    "sort_key",
+    "record_digest"
+  ],
+  "properties": {
+    "contract": {"const": "online-feature-record-v1"},
+    "feature_set": {"type": "string", "minLength": 1},
+    "generation_id": {"type": "string", "minLength": 1},
+    "customer_id": {"type": "string", "minLength": 1},
+    "feature_name": {"type": "string", "minLength": 1},
+    "definition_digest": {"$ref": "#/$defs/digest"},
+    "value": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "integer"],
+          "properties": {"kind": {"const": "integer"}, "integer": {"type": "integer"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "decimal"],
+          "properties": {
+            "kind": {"const": "float"},
+            "decimal": {"type": "string", "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {"kind": {"const": "null"}}
+        }
+      ]
+    },
+    "event_cutoff": {"type": "integer", "minimum": 0},
+    "knowledge_cutoff": {"type": "integer", "minimum": 0},
+    "source_digest": {"$ref": "#/$defs/digest"},
+    "offline_rows_digest": {"$ref": "#/$defs/digest"},
+    "operation_id": {"type": "string", "minLength": 1},
+    "materialized_at": {"type": "integer", "minimum": 0},
+    "expires_at": {"type": "integer", "minimum": 0},
+    "ttl_epoch_seconds": {"type": "integer", "minimum": 0},
+    "partition_key": {"type": "string", "minLength": 1},
+    "sort_key": {"type": "string", "minLength": 1},
+    "record_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

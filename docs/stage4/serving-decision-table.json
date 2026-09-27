@@ -1,0 +1,16 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "contract": "online-serving-decision-v1",
+  "precedence": [
+    {"condition": "generation absent or not retained", "status": "GENERATION_UNAVAILABLE"},
+    {"condition": "entity-feature key absent", "status": "ABSENT"},
+    {"condition": "definition digest differs", "status": "DEFINITION_MISMATCH"},
+    {"condition": "record content digest differs", "status": "CORRUPT_RECORD"},
+    {"condition": "request_time >= expires_at", "status": "EXPIRED"},
+    {"condition": "request_time - knowledge_cutoff > maximum_freshness_age", "status": "STALE"},
+    {"condition": "record is valid and eligible", "status": "FOUND"},
+    {"condition": "storage access fails", "status": "STORAGE_FAILURE"}
+  ],
+  "ttl_semantics": "ttl_epoch_seconds is cleanup metadata; synchronous eligibility uses expires_at",
+  "freshness_equality": "age equal to maximum_freshness_age remains eligible"
+}

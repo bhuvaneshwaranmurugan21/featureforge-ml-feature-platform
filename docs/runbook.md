@@ -23,6 +23,15 @@ Exercise exact replay, partial staging, tampering, corrupt predecessor, and full
 bounded pair counts and partition distribution are correctness diagnostics, not managed-runtime
 performance evidence.
 
+## Local Stage 4 qualification
+
+Install `.[dev,spark,aws]` with Java 17. Run the full suite and `validate_stage0.py` through
+`validate_stage4.py`. Regenerate both Stage 4 proofs twice and require byte equality with committed
+evidence. Inspect the exact candidate count/digest, paginated traversal, request-model validation,
+one-winner activation race, lost-ack restart replay, pinned-reader result, TTL/freshness boundaries,
+retry ledger, item-limit headroom, and explicit non-claims. These checks make no AWS call and do not
+replace managed-runtime evidence.
+
 ## Preconditions
 
 - Feature owners approve versioned definitions, types, TTLs, null policy, and owners.
@@ -43,6 +52,9 @@ performance evidence.
 8. Inject one staged online mismatch and prove publication is blocked.
 9. Repair/rematerialize, re-run type, freshness, null-rate, distribution, and parity gates.
 10. Conditionally swap the online pointer and observe latency, errors, missing rate, and skew.
+
+The managed execution steps above are future operational requirements, not actions performed by
+the Stage 4 local/CI proof.
 
 ## Roll back
 

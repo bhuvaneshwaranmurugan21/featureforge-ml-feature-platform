@@ -1,7 +1,7 @@
 .PHONY: install test lint evidence
 
 install:
-	python -m pip install -e '.[dev,spark]'
+	python -m pip install -e '.[dev,spark,aws]'
 
 test:
 	pytest
@@ -15,7 +15,9 @@ evidence:
 	python -m tools.run_stage1_proof --output evidence/stage1/temporal-proof.json
 	python -m tools.run_stage2_proof --output-dir evidence/stage2
 	python -m tools.run_stage3_proof --output-dir evidence/stage3
+	python -m tools.run_stage4_proof --output-dir evidence/stage4
 	python tools/validate_stage0.py
 	python tools/validate_stage1.py
 	python tools/validate_stage2.py
 	python tools/validate_stage3.py
+	python tools/validate_stage4.py

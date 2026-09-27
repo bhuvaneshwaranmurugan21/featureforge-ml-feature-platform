@@ -1,0 +1,30 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage2-global-stage4",
+  "mappings": [
+    {"acceptance": "ST4-AC-01", "evidence": ["docs/stage4/predecessor.json", "evidence/stage4/baseline.json"]},
+    {"acceptance": "ST4-AC-02", "evidence": [".github/workflows/ci.yml", "evidence/stage1/temporal-proof.json", "evidence/stage2/vertical-slice-proof.json", "evidence/stage3/spark-proof.json"]},
+    {"acceptance": "ST4-AC-03", "evidence": ["contracts/online-feature-record-v1.json", "contracts/online-materialization-plan-v1.json", "contracts/online-validation-receipt-v1.json", "contracts/online-activation-receipt-v1.json", "contracts/online-active-pointer-v1.json", "contracts/online-serving-result-v1.json"]},
+    {"acceptance": "ST4-AC-04", "evidence": ["docs/stage4/online-materialization-specification.md", "docs/stage4/state-transition-table.json", "src/featureforge/online.py"]},
+    {"acceptance": "ST4-AC-05", "evidence": ["tests/test_stage4_online.py", "docs/stage4/serving-decision-table.json"]},
+    {"acceptance": "ST4-AC-06", "evidence": ["requirements-dev.lock", "evidence/stage4/online-proof.json", "tests/test_stage4_online.py"]},
+    {"acceptance": "ST4-AC-07", "evidence": ["src/featureforge/online.py", "evidence/stage4/failure-recovery-proof.json"]},
+    {"acceptance": "ST4-AC-08", "evidence": ["evidence/stage4/online-proof.json", "tests/stage4_oracle.py"]},
+    {"acceptance": "ST4-AC-09", "evidence": ["src/featureforge/online.py", "tests/test_stage4_online.py"]},
+    {"acceptance": "ST4-AC-10", "evidence": ["evidence/stage4/online-proof.json", "evidence/stage4/failure-recovery-proof.json"]},
+    {"acceptance": "ST4-AC-11", "evidence": ["tests/test_stage4_online.py", "evidence/stage4/failure-recovery-proof.json"]},
+    {"acceptance": "ST4-AC-12", "evidence": ["contracts/online-activation-receipt-v1.json", "src/featureforge/online.py"]},
+    {"acceptance": "ST4-AC-13", "evidence": ["tests/test_stage4_online.py", "evidence/stage4/failure-recovery-proof.json"]},
+    {"acceptance": "ST4-AC-14", "evidence": ["evidence/stage4/failure-recovery-proof.json"]},
+    {"acceptance": "ST4-AC-15", "evidence": ["evidence/stage4/failure-recovery-proof.json"]},
+    {"acceptance": "ST4-AC-16", "evidence": ["tests/test_stage4_online.py", "evidence/stage4/online-proof.json"]},
+    {"acceptance": "ST4-AC-17", "evidence": ["docs/stage4/serving-decision-table.json", "tests/test_stage4_online.py"]},
+    {"acceptance": "ST4-AC-18", "evidence": ["contracts/online-serving-result-v1.json", "tests/test_stage4_online.py"]},
+    {"acceptance": "ST4-AC-19", "evidence": ["docs/stage4/online-materialization-specification.md", "tools/validate_stage4.py"]},
+    {"acceptance": "ST4-AC-20", "evidence": ["evidence/stage4/failure-recovery-proof.json", "docs/stage4/failure-repair-log.md"]},
+    {"acceptance": "ST4-AC-21", "evidence": ["evidence/stage4/online-proof.json"]},
+    {"acceptance": "ST4-AC-22", "evidence": ["docs/stage4/claims.json", "docs/stage4/online-materialization-specification.md"]},
+    {"acceptance": "ST4-AC-23", "evidence": ["tools/validate_stage4.py", ".github/workflows/ci.yml", "evidence/stage4/evidence-index.json"]},
+    {"acceptance": "ST4-AC-24", "evidence": ["continuation receipt created only after independently verified merged main"]}
+  ]
+}

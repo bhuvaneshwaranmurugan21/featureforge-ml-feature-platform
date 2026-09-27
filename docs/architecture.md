@@ -55,6 +55,20 @@ enter its window. A threshold selects a full rebuild. Otherwise Spark recomputes
 unaffected values are re-enveloped under the target frontier, and the complete output must equal an
 independent full rebuild. See `docs/stage3/spark-incremental-specification.md`.
 
+## Online materialization semantics
+
+Stage 4 maps one immutable Stage 3 generation into generation-prefixed entity/feature records.
+Records remain invisible while `WRITING`; deterministic keyset reconciliation must verify the exact
+key set, content digests, count, and aggregate before producing a validation receipt. Activation
+condition-checks that receipt and compare-and-swaps the explicit active pointer. A lost response is
+recovered from the persisted operation receipt, not by guessing whether the pointer changed.
+
+The production boundary builds low-level DynamoDB PutItem, Query, and TransactWriteItems requests
+and validates them against a pinned Botocore service model without credentials or network calls.
+The file-backed SQLite adapter proves the modeled outcomes, including separate-connection CAS and
+restart persistence; it is not a DynamoDB emulator. See
+`docs/stage4/online-materialization-specification.md`.
+
 ## Primary references
 
 - [Feast point-in-time joins](https://docs.feast.dev/getting-started/concepts/point-in-time-joins)

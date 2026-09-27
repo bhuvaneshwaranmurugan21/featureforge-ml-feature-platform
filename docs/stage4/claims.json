@@ -1,0 +1,16 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage2-global-stage4",
+  "verified_claims": [
+    "The online materialization and serving contract passes bounded local and CI execution.",
+    "Candidate isolation, exact reconciliation, guarded activation, pinned reads, synchronous eligibility, and restart replay are locally verified.",
+    "Low-level DynamoDB request shapes are implementation-present and statically validated against the pinned Botocore service model.",
+    "Capacity results are deterministic structural calculations over bounded fixtures."
+  ],
+  "explicit_non_claims": [
+    "No AWS or DynamoDB runtime was executed.",
+    "No DynamoDB latency, throughput, throttling probability, adaptive-capacity, autoscaling, availability, durability, or cost claim is made.",
+    "The SQLite adapter is not presented as an emulator of DynamoDB internals.",
+    "No deployment, Terraform runtime change, production scale, release, or SLO was verified."
+  ]
+}

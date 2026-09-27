@@ -1,5 +1,5 @@
 project: featureforge-ml-feature-platform
-updated: 2026-09-25
+updated: 2026-09-27
 stage0_claim_registry: docs/stage0/claims.json
 claim_levels:
   LOCAL_SIMULATION:
@@ -35,6 +35,28 @@ claim_levels:
       - conservative affected-scope planning and incremental/full canonical equality
       - target-frontier re-enveloping and digest-bound immutable local generations
       - deterministic balanced, skewed, and high-cardinality structural diagnostics
+    stage4_evidence:
+      - evidence/stage4/online-proof.json
+      - evidence/stage4/failure-recovery-proof.json
+      - docs/stage4/claims.json
+    stage4_scope:
+      - bounded local online candidate isolation and exact paginated reconciliation
+      - independent canonical online-record oracle agreement
+      - receipt-bound pointer CAS with concurrent one-winner proof
+      - generation-pinned reads, typed serving outcomes, and synchronous TTL eligibility
+      - durable interruption, retry, lost-acknowledgement, and restart recovery
+      - bounded structural item-size, request-count, and partition-concentration calculations
+  DYNAMODB_REQUEST_BOUNDARY:
+    status: IMPLEMENTATION_PRESENT_STATICALLY_VALIDATED
+    evidence:
+      - src/featureforge/online.py
+      - evidence/stage4/online-proof.json
+      - tests/test_stage4_online.py
+    scope:
+      - low-level DynamoDB record and candidate-control PutItem shapes
+      - generation-pinned Query shape and pagination token
+      - receipt condition check, pointer CAS, and immutable activation operation transaction shape
+    explicit_limit: no live DynamoDB or AWS request was executed
   TERRAFORM_STATIC:
     status: HISTORICALLY_VALIDATED_IN_CI
     evidence:

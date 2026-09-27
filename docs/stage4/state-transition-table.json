@@ -1,0 +1,18 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "contract": "online-candidate-state-machine-v1",
+  "transitions": [
+    {"from": "ABSENT", "to": "WRITING", "guard": "new generation and operation identities"},
+    {"from": "WRITING", "to": "WRITING", "guard": "exact retry or durable missing-record resume"},
+    {"from": "WRITING", "to": "VALIDATED", "guard": "exact reconciliation receipt committed"},
+    {"from": "VALIDATED", "to": "ACTIVE", "guard": "receipt-bound pointer CAS commits"},
+    {"from": "ACTIVE", "to": "RETIRED", "guard": "a later validated generation activates"}
+  ],
+  "forbidden": [
+    "WRITING to ACTIVE",
+    "VALIDATED record mutation",
+    "RETIRED to WRITING",
+    "pointer update without exact receipt and expected version",
+    "operation identity reuse with different content"
+  ]
+}

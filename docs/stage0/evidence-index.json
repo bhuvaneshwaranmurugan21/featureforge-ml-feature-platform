@@ -1,9 +1,9 @@
 {
   "base_sha": "85d2cf08ecfbd75d88192e55a8a6db9a6ad55397",
   "files_sha256": {
-    ".github/workflows/ci.yml": "ee17af756a65c11d64685806dd231ffe376639e2c80f10390cd5b77741a8cace",
-    "README.md": "459ae97cc98ad075f2b774cf510cab96659f99dfbc84d0d2817c6b969db4b75e",
-    "docs/claims.yaml": "9c8c89483a3dcb07ed1f2c503f8e8282d3662fa38060a20271c7ecf9898cb97b",
+    ".github/workflows/ci.yml": "8ea8a0b3c31a271869a6255cc4db2465260640eb32f5aca18bf2b1aec099be03",
+    "README.md": "5e32cc421caf56f124805b33f138e3340c373e5e45545dcd79d4d418f0cf8c04",
+    "docs/claims.yaml": "d046fe48e62222311e0a83bbca73c5c87bf8e67cfc682790c53bc80b4cd6c3c8",
     "docs/stage0/README.md": "5a323093ba32b5a98ec22e0d346a281c2b0e6b25d1d6f0db84c290bf11cdfa9c",
     "docs/stage0/baseline.json": "ab187817163d7ab8223f095049b78884439083cc02861f73e5f48416987cbcb3",
     "docs/stage0/claims.json": "e9b194965c57d3d1045cc444954e50dc2ea7cbd35059ad6cc90e25423356b3ac",
@@ -11,7 +11,7 @@
     "docs/stage0/inventory.json": "cd0c7efcf2f93dfb5f937ab4d7f17a93882abfe2be81cf4c50df100b4bc0cf1a",
     "docs/stage0/requirements.json": "34ea61e9363bf2a65c7413bf4b19bcdf3c2f71d9ba7f210b119a9d7ee37e04a0",
     "docs/stage0/risk-register.md": "56a81e14d078a865dd6b2e918a9b26f86e888b8f010d62896f98b72e0e79880b",
-    "requirements-dev.lock": "5d7964b44c13c97a164d45463938325e598111730eaac3719ac2795cafe847c8",
+    "requirements-dev.lock": "6cbc9f858fa182ca95513ca621e677ee2d66bb8b9027d2506efc57e0d0de734f",
     "tests/test_stage0_contract.py": "16a97ab9054b170af45926d0de4593cc1e7e0062bc0911f8aad5ba37b9b8b6d5",
     "tools/validate_stage0.py": "522d5e565bd5132388c1c79989d80b0561f7f4dc90cbd00cec9021a5bb826d60"
   },
