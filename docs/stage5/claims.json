@@ -1,0 +1,16 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage3-global-stage5",
+  "claims": [
+    {"class": "LOCAL_VERIFIED", "claim": "Independent expected-state parity, all nine activation gates, controlled-clock eligibility, pointer preservation, and public-API recovery pass in bounded local and CI execution."},
+    {"class": "MEASURED", "claim": "A frozen 3-by-3 local workload matrix retained 486 correctness-bound raw trials and deterministic summaries."},
+    {"class": "DESIGN_ONLY", "claim": "Versioned bounded telemetry events and operator diagnosis rules are implementation-present without a deployed telemetry backend."},
+    {"class": "UNCLAIMED", "claim": "AWS and DynamoDB runtime performance, cloud cost, service availability, production scale, and SLO compliance are not established."}
+  ],
+  "explicit_non_claims": [
+    "No AWS, DynamoDB, Glue, Terraform, deployment, or release operation was executed.",
+    "Local SQLite timing is not evidence of DynamoDB latency or concurrency behavior.",
+    "Small local Spark timing is not a production throughput or scalability result.",
+    "No cost, availability, durability, alert delivery, or production SLO claim is made."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage5-benchmark-trial:v1",
+  "title": "FeatureForge bounded benchmark trial",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "case_id", "operation", "profile", "size_class", "trial", "warm", "duration_ns", "input_digest", "output_digest", "correctness_passed", "trial_digest"],
+  "properties": {
+    "contract": {"const": "stage5-benchmark-trial-v1"},
+    "case_id": {"type": "string", "minLength": 1},
+    "operation": {"type": "string", "minLength": 1},
+    "profile": {"type": "string", "minLength": 1},
+    "size_class": {"type": "string", "minLength": 1},
+    "trial": {"type": "integer", "minimum": 0},
+    "warm": {"type": "boolean"},
+    "duration_ns": {"type": "integer", "minimum": 1},
+    "input_digest": {"$ref": "#/$defs/digest"},
+    "output_digest": {"$ref": "#/$defs/digest"},
+    "correctness_passed": {"const": true},
+    "trial_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {"digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}

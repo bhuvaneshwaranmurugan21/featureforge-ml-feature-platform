@@ -1,0 +1,21 @@
+{
+  "contract": "featureforge-stage5-benchmark-protocol-v1",
+  "status": "frozen-before-publishable-measurement",
+  "seed": 73,
+  "event_cutoff": 300000,
+  "base_knowledge_cutoff": 300000,
+  "target_knowledge_cutoff": 300001,
+  "shuffle_partitions": 4,
+  "size_matrix": [
+    {"size_class": "small", "customers": 4, "events": 12},
+    {"size_class": "medium", "customers": 8, "events": 24},
+    {"size_class": "large", "customers": 12, "events": 48}
+  ],
+  "profiles": ["balanced", "skewed", "high-cardinality"],
+  "operations": ["workload_input_validation", "spark_full_rebuild", "affected_scope_planning", "spark_incremental_rebuild", "artifact_roundtrip", "online_materialize_reconcile", "independent_parity", "activation_decision_cas", "generation_pinned_reads"],
+  "trials": {"cold": 1, "warm": 5, "outlier_policy": "retain every valid completed trial"},
+  "timing_clock": "time.perf_counter_ns monotonic",
+  "correctness_gate": "A trial is retained only with its stable input/output digest and a successful operation-specific invariant; a mismatch aborts measurement.",
+  "resource_ceiling": {"maximum_customers": 12, "maximum_events": 48, "maximum_output_rows": 60, "local_spark_threads": 2},
+  "claims_boundary": "Environment-bound local measurements only; not AWS, DynamoDB, Glue, production scale, cost, availability, or an SLO."
+}

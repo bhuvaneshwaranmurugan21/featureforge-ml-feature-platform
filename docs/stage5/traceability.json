@@ -1,0 +1,31 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage3-global-stage5",
+  "mappings": [
+    {"acceptance": "ST5-AC-01", "evidence": ["docs/stage5/predecessor.json", "evidence/stage5/baseline.json"]},
+    {"acceptance": "ST5-AC-02", "evidence": ["src/featureforge/expected.py", "tests/test_stage5_expected.py", "evidence/stage5/platform-proof.json"]},
+    {"acceptance": "ST5-AC-03", "evidence": ["evidence/stage5/platform-proof.json", "docs/stage5/parity-activation-specification.md"]},
+    {"acceptance": "ST5-AC-04", "evidence": ["src/featureforge/expected.py", "tests/test_stage5_expected.py"]},
+    {"acceptance": "ST5-AC-05", "evidence": ["tests/test_stage5_expected.py", "evidence/stage5/failure-recovery-proof.json"]},
+    {"acceptance": "ST5-AC-06", "evidence": ["tests/test_stage5_assurance.py", "evidence/stage5/failure-recovery-proof.json"]},
+    {"acceptance": "ST5-AC-07", "evidence": ["src/featureforge/online.py", "tests/test_stage5_assurance.py"]},
+    {"acceptance": "ST5-AC-08", "evidence": ["src/featureforge/assurance.py", "docs/stage5/freshness-observability-specification.md"]},
+    {"acceptance": "ST5-AC-09", "evidence": ["tests/test_stage5_assurance.py", "evidence/stage5/platform-proof.json"]},
+    {"acceptance": "ST5-AC-10", "evidence": ["src/featureforge/assurance.py", "contracts/stage5-telemetry-event-v1.json"]},
+    {"acceptance": "ST5-AC-11", "evidence": ["tests/test_stage5_assurance.py", "docs/stage5/freshness-observability-specification.md"]},
+    {"acceptance": "ST5-AC-12", "evidence": ["docs/stage5/diagnosis-decision-table.json", "docs/stage5/walkthrough.md"]},
+    {"acceptance": "ST5-AC-13", "evidence": ["docs/stage5/benchmark-protocol.json", "contracts/stage5-benchmark-trial-v1.json"]},
+    {"acceptance": "ST5-AC-14", "evidence": ["evidence/stage5/benchmark-raw.json", "evidence/stage5/benchmark-summary.json"]},
+    {"acceptance": "ST5-AC-15", "evidence": ["evidence/stage5/benchmark-raw.json", "tools/summarize_stage5_benchmark.py"]},
+    {"acceptance": "ST5-AC-16", "evidence": ["tools/run_stage5_benchmark.py", "evidence/stage5/benchmark-raw.json"]},
+    {"acceptance": "ST5-AC-17", "evidence": ["docs/stage5/performance-analysis.md", "evidence/stage5/benchmark-raw.json"]},
+    {"acceptance": "ST5-AC-18", "evidence": ["docs/stage5/claims.json", "docs/claims.yaml"]},
+    {"acceptance": "ST5-AC-19", "evidence": ["docs/stage5/claims.json", "evidence/stage5/baseline.json"]},
+    {"acceptance": "ST5-AC-20", "evidence": ["evidence/stage5/failure-recovery-proof.json", "docs/stage5/failure-repair-log.md"]},
+    {"acceptance": "ST5-AC-21", "evidence": ["docs/stage5/walkthrough.md", "tools/run_stage5_proof.py"]},
+    {"acceptance": "ST5-AC-22", "evidence": ["tools/validate_stage5.py", ".github/workflows/ci.yml", "evidence/stage5/evidence-index.json"]},
+    {"acceptance": "ST5-AC-23", "evidence": ["Part 2 receipt created only after exact-head CI, review, protected merge, push CI, and tree equality"]},
+    {"acceptance": "ST5-AC-24", "evidence": ["Part 2 receipt created only after fresh merged-main reproduction"]},
+    {"acceptance": "ST5-AC-25", "evidence": ["Part 2 completion receipt created only after independently verified merged main"]}
+  ]
+}

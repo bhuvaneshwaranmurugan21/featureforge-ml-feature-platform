@@ -46,6 +46,17 @@ claim_levels:
       - generation-pinned reads, typed serving outcomes, and synchronous TTL eligibility
       - durable interruption, retry, lost-acknowledgement, and restart recovery
       - bounded structural item-size, request-count, and partition-concentration calculations
+    stage5_evidence:
+      - evidence/stage5/platform-proof.json
+      - evidence/stage5/failure-recovery-proof.json
+      - evidence/stage5/benchmark-raw.json
+      - evidence/stage5/benchmark-summary.json
+      - docs/stage5/claims.json
+    stage5_scope:
+      - independent primitive-input expected-state projection and exhaustive bounded parity
+      - persisted nine-gate activation policy bound to the existing pointer CAS
+      - controlled-clock freshness and cardinality-bounded structured telemetry
+      - frozen local 3-by-3 benchmark with 486 retained correctness-bound trials
   DYNAMODB_REQUEST_BOUNDARY:
     status: IMPLEMENTATION_PRESENT_STATICALLY_VALIDATED
     evidence:

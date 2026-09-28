@@ -1,0 +1,15 @@
+{
+  "contract": "featureforge-stage5-diagnosis-table-v1",
+  "rows": [
+    {"signal": "SOURCE_INCOMPLETE", "layer": "source admission", "impact": "candidate rejected", "action": "repair frontier completeness and rebuild immutable receipts"},
+    {"signal": "affected-scope-threshold", "layer": "Spark planner", "impact": "full fallback", "action": "inspect changed entities and accept deterministic full rebuild"},
+    {"signal": "ONLINE_RECONCILIATION_FAILED", "layer": "materialization", "impact": "candidate isolated", "action": "resume idempotent missing writes and reconcile exact keyset"},
+    {"signal": "PARITY_FAILED", "layer": "independent comparator", "impact": "activation blocked", "action": "reduce mismatch to primitive revisions and rebuild the defective path"},
+    {"signal": "FRESHNESS_FAILED", "layer": "eligibility", "impact": "activation blocked", "action": "advance the source frontier and regenerate candidate evidence"},
+    {"signal": "STALE_POINTER", "layer": "activation CAS", "impact": "candidate not visible", "action": "rebase the decision on the current pointer; never edit the pointer"},
+    {"signal": "STALE", "layer": "serving", "impact": "typed ineligible read", "action": "inspect record frontier and latest active generation"},
+    {"signal": "EXPIRED", "layer": "serving", "impact": "typed ineligible read", "action": "materialize and activate a valid generation; do not wait for TTL deletion"},
+    {"signal": "CORRUPT_RECORD", "layer": "serving integrity", "impact": "typed failed read", "action": "isolate generation and rebuild from immutable offline evidence"},
+    {"signal": "STORAGE_FAILURE", "layer": "adapter", "impact": "typed unavailable read", "action": "contain dependency failure and retry under the existing bounded policy"}
+  ]
+}

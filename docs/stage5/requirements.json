@@ -1,0 +1,31 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage3-global-stage5",
+  "acceptance_criteria": [
+    {"id": "ST5-AC-01", "requirement": "The exact Stage 4 predecessor, clean base, completion receipt, and every predecessor gate are verified."},
+    {"id": "ST5-AC-02", "requirement": "Expected online state is reconstructed independently from pinned primitive source and definition inputs."},
+    {"id": "ST5-AC-03", "requirement": "Comparison is exhaustive whenever bounded size permits."},
+    {"id": "ST5-AC-04", "requirement": "Larger-workload sampling is deterministic, stratified, manifest-bound, and limitation-labeled."},
+    {"id": "ST5-AC-05", "requirement": "Missing, extra, wrong, stale, expired, corrupt, null/default-divergent, and definition-mismatched records are detected."},
+    {"id": "ST5-AC-06", "requirement": "Every activation-gate component has a negative test that blocks activation."},
+    {"id": "ST5-AC-07", "requirement": "The prior generation remains active and readable for every rejected candidate."},
+    {"id": "ST5-AC-08", "requirement": "Source, build, materialization, activation, online, TTL, and end-to-end lags remain distinct."},
+    {"id": "ST5-AC-09", "requirement": "Correctness decisions use controlled clocks rather than uncontrolled wall time."},
+    {"id": "ST5-AC-10", "requirement": "Metrics and log schemas cover the complete candidate and serving lifecycle."},
+    {"id": "ST5-AC-11", "requirement": "Labels and correlation fields are bounded, non-sensitive, and validator-enforced."},
+    {"id": "ST5-AC-12", "requirement": "An operator can diagnose every required stale or broken-generation scenario."},
+    {"id": "ST5-AC-13", "requirement": "Workloads, seeds, distributions, environment, warm-up, repetitions, operation order, and analysis rules are frozen before measurement."},
+    {"id": "ST5-AC-14", "requirement": "More than one scale and balanced, skewed, and high-cardinality profiles are measured."},
+    {"id": "ST5-AC-15", "requirement": "Cold and warm behavior, repetitions, raw results, failures, and variability are preserved."},
+    {"id": "ST5-AC-16", "requirement": "Incremental and full performance are compared only after canonical output equality passes."},
+    {"id": "ST5-AC-17", "requirement": "Bottlenecks and scale limits are supported by captured evidence."},
+    {"id": "ST5-AC-18", "requirement": "Claims use LOCAL_VERIFIED, MEASURED, EXTRAPOLATED, DESIGN_ONLY, or UNCLAIMED accurately."},
+    {"id": "ST5-AC-19", "requirement": "No AWS runtime, cost, SLO, availability, or production-scale claim is inferred from Part 2."},
+    {"id": "ST5-AC-20", "requirement": "Injected mismatches and stale or incomplete states fail closed and recover through legitimate APIs."},
+    {"id": "ST5-AC-21", "requirement": "The complete skeptical walkthrough succeeds from a fresh checkout."},
+    {"id": "ST5-AC-22", "requirement": "All Parts 1 and 2 quality, correctness, and evidence validators pass deterministically."},
+    {"id": "ST5-AC-23", "requirement": "Exact-head CI, review, protected merge, push CI, and tree equality pass."},
+    {"id": "ST5-AC-24", "requirement": "Fresh merged-main reproduction passes."},
+    {"id": "ST5-AC-25", "requirement": "The Part 2 receipt binds commits, trees, runs, inputs, outputs, measurements, limitations, and the completion token."}
+  ]
+}
