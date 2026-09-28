@@ -1,0 +1,14 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": 6,
+  "authorized_base_commit": "86b3cd27ae95a6142a1d6601d188d83b8e783d29",
+  "authorized_base_tree": "a9aeb81af407af5fb2108e9d2ef3a194770b9761",
+  "part2_completion_token": "FEATUREFORGE_PART2_PLATFORM_BEHAVIOR_VERIFIED",
+  "part2_receipt_sha256": "1bf3bc3eeefcb7370c583a6f3511845153611e7e8ebb8ec8eb0bd4b3f28da189",
+  "predecessor_test_count": 130,
+  "predecessor_coverage_percent": 90.44,
+  "predecessor_validators": [0, 1, 2, 3, 4, 5],
+  "predecessor_proofs_byte_identical": true,
+  "predecessor_status": "verified-complete",
+  "reverified_on": "2026-09-28"
+}

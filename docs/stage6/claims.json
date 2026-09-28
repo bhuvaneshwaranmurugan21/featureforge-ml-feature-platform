@@ -1,0 +1,10 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": 6,
+  "claims": [
+    {"class": "LOCAL_VERIFIED", "claim": "Managed-run authority, request construction, admission, deterministic packaging, and stale-input controls are locally executable and tested.", "evidence": ["evidence/stage6/local-proof.json", "evidence/stage6/failure-recovery-proof.json"]},
+    {"class": "STATICALLY_VALIDATED", "claim": "The Terraform graph defines a real bounded Glue/Lambda/Step Functions/DynamoDB/S3 path with security and cleanup controls.", "evidence": ["infra/terraform/", "tests/test_stage6_terraform.py"]},
+    {"class": "PENDING", "claim": "AWS identity, region, IAM, quota, inventory, budget, pricing, and saved-plan behavior are not yet qualified.", "evidence": ["evidence/stage6/baseline.json"]},
+    {"class": "UNCLAIMED", "claim": "No Terraform apply, AWS mutation, managed workload, live parity, availability, latency, scale, cost, recovery, rollback, or teardown is claimed.", "evidence": ["docs/claims.yaml", "evidence/stage6/baseline.json"]}
+  ]
+}

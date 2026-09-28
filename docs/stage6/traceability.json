@@ -1,0 +1,30 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": 6,
+  "mappings": [
+    {"acceptance": "ST6-AC-01", "evidence": ["docs/stage6/predecessor.json", "evidence/stage6/baseline.json"]},
+    {"acceptance": "ST6-AC-02", "evidence": ["contracts/stage6-*.json", "src/featureforge/managed.py", "tests/test_stage6_managed.py"]},
+    {"acceptance": "ST6-AC-03", "evidence": ["tests/stage6_oracle.py", "evidence/stage6/local-proof.json"]},
+    {"acceptance": "ST6-AC-04", "evidence": ["src/featureforge/managed.py", "src/featureforge/aws_runtime.py", "jobs/glue_point_in_time.py"]},
+    {"acceptance": "ST6-AC-05", "evidence": ["jobs/glue_point_in_time.py", "src/featureforge/spark_runtime.py", "tests/test_stage6_managed.py"]},
+    {"acceptance": "ST6-AC-06", "evidence": ["src/featureforge/control_worker.py", "src/featureforge/online.py", "tests/test_stage6_managed.py"]},
+    {"acceptance": "ST6-AC-07", "evidence": ["src/featureforge/aws_runtime.py", "src/featureforge/control_worker.py", "evidence/stage6/failure-recovery-proof.json"]},
+    {"acceptance": "ST6-AC-08", "evidence": ["infra/terraform/compute.tf", "tests/test_stage6_terraform.py"]},
+    {"acceptance": "ST6-AC-09", "evidence": ["tools/build_stage6_artifacts.py", "evidence/stage6/artifact-qualification.json"]},
+    {"acceptance": "ST6-AC-10", "evidence": ["infra/terraform/versions.tf", "infra/terraform/.terraform.lock.hcl", "evidence/stage6/toolchain-qualification.json", ".github/workflows/terraform.yml"]},
+    {"acceptance": "ST6-AC-11", "evidence": ["infra/terraform/", "docs/stage6/managed-architecture.md"]},
+    {"acceptance": "ST6-AC-12", "evidence": ["infra/terraform/", "tests/test_stage6_terraform.py"]},
+    {"acceptance": "ST6-AC-13", "evidence": ["infra/terraform/iam.tf", "docs/stage6/iam-matrix.md"]},
+    {"acceptance": "ST6-AC-14", "evidence": ["evidence/stage6/aws-read-only-receipt.json"]},
+    {"acceptance": "ST6-AC-15", "evidence": ["evidence/stage6/aws-read-only-receipt.json", "docs/stage6/lease-procedure.md"]},
+    {"acceptance": "ST6-AC-16", "evidence": ["docs/stage6/cost-model.md", "evidence/stage6/aws-read-only-receipt.json", "evidence/stage6/plan-receipt.json"]},
+    {"acceptance": "ST6-AC-17", "evidence": ["src/featureforge/managed.py", "evidence/stage6/plan-receipt.json"]},
+    {"acceptance": "ST6-AC-18", "evidence": ["evidence/stage6/plan-receipt.json", "docs/stage6/cleanup-matrix.md"]},
+    {"acceptance": "ST6-AC-19", "evidence": ["evidence/stage6/aws-read-only-receipt.json", "evidence/stage6/plan-receipt.json"]},
+    {"acceptance": "ST6-AC-20", "evidence": ["evidence/stage6/failure-recovery-proof.json", "tests/test_stage6_managed.py"]},
+    {"acceptance": "ST6-AC-21", "evidence": ["evidence/stage6/evidence-index.json", "tools/validate_stage6.py"]},
+    {"acceptance": "ST6-AC-22", "evidence": ["evidence/stage6/baseline.json", ".github/workflows/ci.yml"]},
+    {"acceptance": "ST6-AC-23", "evidence": ["exact-head GitHub checks and merged-main verification recorded externally"]},
+    {"acceptance": "ST6-AC-24", "evidence": ["external Stage 6 continuation receipt"]}
+  ]
+}
