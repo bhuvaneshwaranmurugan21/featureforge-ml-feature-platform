@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage5-parity-report:v1",
+  "title": "FeatureForge independent expected-state parity report",
+  "type": "object",
+  "required": ["contract", "passed", "sampled", "expected_count", "actual_count", "compared_count", "missing", "extra", "semantic_mismatches", "envelope_mismatch_count", "eligibility", "aggregate_mismatch", "reasons", "expected_digest", "actual_digest", "selected_keys_digest", "report_digest"],
+  "properties": {
+    "contract": {"const": "stage5-parity-report-v1"},
+    "passed": {"type": "boolean"},
+    "sampled": {"type": "boolean"},
+    "expected_count": {"type": "integer", "minimum": 0},
+    "actual_count": {"type": "integer", "minimum": 0},
+    "compared_count": {"type": "integer", "minimum": 0},
+    "missing": {"type": "array"},
+    "extra": {"type": "array"},
+    "semantic_mismatches": {"type": "array"},
+    "envelope_mismatch_count": {"type": "integer", "minimum": 0},
+    "eligibility": {"type": "array"},
+    "aggregate_mismatch": {"type": "boolean"},
+    "reasons": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "expected_digest": {"$ref": "#/$defs/digest"},
+    "actual_digest": {"$ref": "#/$defs/digest"},
+    "selected_keys_digest": {"$ref": "#/$defs/digest"},
+    "report_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {"digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}

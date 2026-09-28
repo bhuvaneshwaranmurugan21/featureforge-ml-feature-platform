@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:online-activation-receipt:v2",
+  "title": "FeatureForge policy-bound online activation receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "actor", "feature_set", "from_generation", "generation_id", "operation_id", "pointer_version", "reason", "validation_receipt_digest", "policy_decision_digest", "receipt_digest"],
+  "properties": {
+    "contract": {"const": "online-activation-receipt-v2"},
+    "actor": {"type": "string", "minLength": 1, "maxLength": 128},
+    "feature_set": {"type": "string", "minLength": 1},
+    "from_generation": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "generation_id": {"type": "string", "minLength": 1},
+    "operation_id": {"type": "string", "minLength": 1},
+    "pointer_version": {"type": "integer", "minimum": 1},
+    "reason": {"type": "string", "minLength": 1, "maxLength": 256},
+    "validation_receipt_digest": {"$ref": "#/$defs/digest"},
+    "policy_decision_digest": {"$ref": "#/$defs/digest"},
+    "receipt_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {"digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}

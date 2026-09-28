@@ -1,9 +1,9 @@
 {
   "base_sha": "85d2cf08ecfbd75d88192e55a8a6db9a6ad55397",
   "files_sha256": {
-    ".github/workflows/ci.yml": "8ea8a0b3c31a271869a6255cc4db2465260640eb32f5aca18bf2b1aec099be03",
-    "README.md": "5e32cc421caf56f124805b33f138e3340c373e5e45545dcd79d4d418f0cf8c04",
-    "docs/claims.yaml": "d046fe48e62222311e0a83bbca73c5c87bf8e67cfc682790c53bc80b4cd6c3c8",
+    ".github/workflows/ci.yml": "7148d2869fcc2630a9b465a5a337ef96978188a478a283e540dee3c481f9a52e",
+    "README.md": "ad4f4b52377bbe0c30b7c928108f7ea97599c001dfb82b009a703f0a9167cf07",
+    "docs/claims.yaml": "4e3256bbc98b015d45ca30760d0b8e00e459c5110ca72ade50731afaf5e5692c",
     "docs/stage0/README.md": "5a323093ba32b5a98ec22e0d346a281c2b0e6b25d1d6f0db84c290bf11cdfa9c",
     "docs/stage0/baseline.json": "ab187817163d7ab8223f095049b78884439083cc02861f73e5f48416987cbcb3",
     "docs/stage0/claims.json": "e9b194965c57d3d1045cc444954e50dc2ea7cbd35059ad6cc90e25423356b3ac",

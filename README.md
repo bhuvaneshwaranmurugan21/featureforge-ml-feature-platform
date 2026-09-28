@@ -17,6 +17,9 @@ Stage 4 adds an isolated online-generation materialization contract, exact pagin
 receipt-bound activation, request-scoped generation pinning, typed serving outcomes, and deterministic
 recovery. Its DynamoDB request dictionaries are statically validated against the pinned Botocore
 service model; no live AWS execution is claimed.
+Stage 5 adds a standard-library-only expected-state projector, exhaustive policy-gated parity,
+content-addressed activation decisions, controlled-clock freshness semantics, bounded telemetry,
+and a frozen 3-by-3 local benchmark with all 486 correctness-bound raw trials retained.
 
 Its central opinion is that a feature value needs more than an entity, value, and event time:
 
@@ -47,6 +50,9 @@ a historical training row merely because its business event happened earlier.
   and high-cardinality workloads provide bounded structural diagnostics.
   Stage 4's independent serializer oracle checks the canonical online envelopes; its file-backed
   adapter verifies isolation, reconciliation, concurrent CAS, pinned reads, and restart recovery.
+- **Locally measured under the frozen Stage 5 environment only:** nine bounded workload cases,
+  nine separately timed operations, one cold plus five warm trials, immutable raw measurements,
+  and reproducible summaries. These results are not cloud or production performance evidence.
 - **Implementation-present and statically validated:** DynamoDB low-level record, query,
   candidate-control, conditional-write, and transactional activation request shapes.
 - **Production-shaped but not yet verified on AWS:** S3/Glue offline storage, live DynamoDB online
@@ -59,7 +65,8 @@ and ordered-row identities. See the
 [Stage 1 temporal authority](docs/stage1/temporal-specification.md), and
 [Stage 2 lifecycle authority](docs/stage2/lifecycle-specification.md), and
 [Stage 3 Spark authority](docs/stage3/spark-incremental-specification.md), and
-[Stage 4 online authority](docs/stage4/online-materialization-specification.md) for exact evidence and
+[Stage 4 online authority](docs/stage4/online-materialization-specification.md), and
+[Stage 5 platform authority](docs/stage5/parity-activation-specification.md) for exact evidence and
 remaining proof gaps.
 
 ## Architecture
@@ -136,6 +143,9 @@ manifest digest.
 18. Online publication requires an expected-generation/version CAS and records immutable history.
 19. A logical online request pins one generation; pointer movement cannot mix its feature values.
 20. DynamoDB cleanup TTL is never used as the serving-eligibility authority.
+21. Stage 5 activation requires all nine receipt-backed gates and persists the decision before CAS.
+22. Bounded candidates use exhaustive independent parity; deterministic samples are diagnostic only.
+23. Correctness uses controlled logical time while durations use a monotonic clock.
 
 ## Run it
 
@@ -150,7 +160,9 @@ python -m featureforge.cli simulate --output /tmp/featureforge-evidence.json
 python -m tools.run_stage2_proof --output-dir /tmp/featureforge-stage2-evidence
 python -m tools.run_stage3_proof --output-dir /tmp/featureforge-stage3-evidence
 python -m tools.run_stage4_proof --output-dir /tmp/featureforge-stage4-evidence
-python tools/validate_stage4.py
+python -m tools.run_stage5_proof --output-dir /tmp/featureforge-stage5-evidence
+python -m tools.summarize_stage5_benchmark --raw evidence/stage5/benchmark-raw.json --output /tmp/featureforge-stage5-benchmark-summary.json
+python tools/validate_stage5.py
 ```
 
 The local failure lab checks 17 scenarios, including future-event and late-correction exclusion,
@@ -167,6 +179,9 @@ testing, three seeded workload profiles, and immutable-artifact restart/tamper/f
 Stage 4 adds canonical online-record/oracle agreement, valid low-level DynamoDB request shapes,
 four-page exact reconciliation, a real two-connection activation race, lost-ack restart replay,
 typed TTL/freshness results, durable retry attempts, and bounded service-limit calculations.
+Stage 5 adds exhaustive independent online parity, every nine-gate negative control, policy-bound
+activation receipts, stale-decision CAS proof, bounded telemetry validation, and a retained 486-trial
+local benchmark with deterministic summary regeneration.
 
 ## Repository map
 
@@ -196,9 +211,9 @@ for the exact evidence required before any managed-runtime claim.
 
 ## Interview walkthrough
 
-Use the [Stage 4 walkthrough](docs/stage4/walkthrough.md): explain the two clocks, Stage 3 immutable
-generation, independent online serializer oracle, candidate isolation, exact reconciliation,
-receipt-bound CAS activation, lost-ack recovery, pinned reads, and the explicit AWS non-claims.
+Use the [Stage 5 walkthrough](docs/stage5/walkthrough.md): connect immutable corrections, Spark
+full/incremental equality, independent expected state, exhaustive parity, composite activation,
+controlled freshness, operator diagnosis, raw measurements, variability, and explicit non-claims.
 
 ## License
 

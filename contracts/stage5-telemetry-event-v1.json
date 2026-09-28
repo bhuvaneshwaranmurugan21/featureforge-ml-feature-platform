@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage5-telemetry-event:v1",
+  "title": "FeatureForge bounded structured telemetry event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "event", "occurred_at", "labels", "trace", "measurements", "event_digest"],
+  "properties": {
+    "contract": {"const": "stage5-telemetry-event-v1"},
+    "event": {"type": "string", "minLength": 1},
+    "occurred_at": {"type": "integer", "minimum": 0},
+    "labels": {"type": "object", "propertyNames": {"enum": ["phase", "profile", "reason_code", "size_class", "status"]}, "additionalProperties": {"type": "string", "maxLength": 128}},
+    "trace": {"type": "object", "required": ["definition_set_digest", "generation_id", "operation_id", "source_frontier_digest"], "additionalProperties": {"type": "string", "minLength": 1, "maxLength": 128}},
+    "measurements": {"type": "object", "additionalProperties": {"type": "number"}},
+    "event_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {"digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}

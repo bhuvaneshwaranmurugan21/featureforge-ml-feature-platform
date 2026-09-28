@@ -1,0 +1,11 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": "part2-stage3-global-stage5",
+  "authorized_base_commit": "937e266f1f3777467d4abac5da861604c4ea9393",
+  "authorized_base_tree": "1c6a48fb96c2f5838a3bb46d410a36c03c85ae4f",
+  "stage4_reviewed_head": "ec0be67039fa0c8888ae0bf495424a3872365d0a",
+  "stage4_completion_token": "FEATUREFORGE_PART2_STAGE2_ONLINE_MATERIALIZATION_VERIFIED",
+  "stage4_online_proof_sha256": "a6d54df92b44afc0242611eedb4cfe09512f328fb8764e40101fe3bf1ce36b12",
+  "stage4_recovery_proof_sha256": "14c4a3df203dea66378c60924c67ebcbdb676cd77818be2bdf95593b5af385b2",
+  "predecessor_status": "verified-complete"
+}

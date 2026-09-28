@@ -69,6 +69,17 @@ The file-backed SQLite adapter proves the modeled outcomes, including separate-c
 restart persistence; it is not a DynamoDB emulator. See
 `docs/stage4/online-materialization-specification.md`.
 
+## Platform assurance semantics
+
+Stage 5 independently reconstructs expected online rows from primitive revisions and definitions.
+Bounded candidates require exhaustive record and aggregate parity. A versioned decision combines
+all nine source, manifest, offline, reconciliation, parity, freshness, candidate, uniqueness, and
+pointer gates; its digest is persisted and bound into a v2 activation receipt before the existing
+CAS authority can move the pointer. Logical clocks decide freshness and expiry; monotonic clocks
+measure durations. Telemetry labels are finite and exclude entity identities. Local benchmark raw
+measurements remain separate from byte-deterministic correctness evidence. See
+`docs/stage5/parity-activation-specification.md`.
+
 ## Primary references
 
 - [Feast point-in-time joins](https://docs.feast.dev/getting-started/concepts/point-in-time-joins)

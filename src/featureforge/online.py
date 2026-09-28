@@ -11,7 +11,7 @@ import json
 import math
 import random
 import sqlite3
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from decimal import Decimal
@@ -25,9 +25,10 @@ ONLINE_RECORD_CONTRACT = "online-feature-record-v1"
 MATERIALIZATION_PLAN_CONTRACT = "online-materialization-plan-v1"
 VALIDATION_RECEIPT_CONTRACT = "online-validation-receipt-v1"
 ACTIVATION_RECEIPT_CONTRACT = "online-activation-receipt-v1"
+POLICY_ACTIVATION_RECEIPT_CONTRACT = "online-activation-receipt-v2"
 SERVING_RESULT_CONTRACT = "online-serving-result-v1"
 MAX_DYNAMODB_ITEM_BYTES = 400_000
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 class OnlineContractError(ValueError):
@@ -728,6 +729,32 @@ CREATE TABLE pointer_history (
     receipt_digest TEXT NOT NULL,
     PRIMARY KEY(feature_set, pointer_version)
 );
+CREATE TABLE activation_decisions (
+    decision_digest TEXT PRIMARY KEY,
+    feature_set TEXT NOT NULL,
+    generation_id TEXT NOT NULL REFERENCES candidates(generation_id),
+    operation_id TEXT NOT NULL UNIQUE,
+    expected_generation TEXT,
+    expected_version INTEGER NOT NULL CHECK(expected_version >= 0),
+    validation_receipt_digest TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('ELIGIBLE','REJECTED')),
+    decision_json TEXT NOT NULL
+);
+PRAGMA user_version = {SCHEMA_VERSION};
+"""
+
+MIGRATE_V1_TO_V2 = f"""
+CREATE TABLE activation_decisions (
+    decision_digest TEXT PRIMARY KEY,
+    feature_set TEXT NOT NULL,
+    generation_id TEXT NOT NULL REFERENCES candidates(generation_id),
+    operation_id TEXT NOT NULL UNIQUE,
+    expected_generation TEXT,
+    expected_version INTEGER NOT NULL CHECK(expected_version >= 0),
+    validation_receipt_digest TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('ELIGIBLE','REJECTED')),
+    decision_json TEXT NOT NULL
+);
 PRAGMA user_version = {SCHEMA_VERSION};
 """
 
@@ -747,6 +774,8 @@ class LocalOnlineStore:
         version = int(self.connection.execute("PRAGMA user_version").fetchone()[0])
         if version == 0:
             self.connection.executescript(SCHEMA)
+        elif version == 1:
+            self.connection.executescript(MIGRATE_V1_TO_V2)
         elif version != SCHEMA_VERSION:
             self.connection.close()
             raise OnlineStateError(
@@ -1028,6 +1057,7 @@ class LocalOnlineStore:
         lose_acknowledgement: bool = False,
         actor: str = "stage4-local-proof",
         reason: str = "validated-candidate-promotion",
+        policy_decision_digest: str | None = None,
     ) -> dict[str, Any]:
         if not actor or not reason or len(actor) > 128 or len(reason) > 256:
             raise OnlineContractError("activation actor or reason is invalid")
@@ -1047,6 +1077,8 @@ class LocalOnlineStore:
             "reason": reason,
             "validation_receipt_digest": validation_receipt_digest,
         }
+        if policy_decision_digest is not None:
+            request["policy_decision_digest"] = policy_decision_digest
         request_digest = digest(request)
         with self._transaction():
             existing = self._operation(operation_id, "ACTIVATE", request_digest)
@@ -1106,7 +1138,11 @@ class LocalOnlineStore:
                 (generation_id,),
             )
             result: dict[str, Any] = {
-                "contract": ACTIVATION_RECEIPT_CONTRACT,
+                "contract": (
+                    POLICY_ACTIVATION_RECEIPT_CONTRACT
+                    if policy_decision_digest is not None
+                    else ACTIVATION_RECEIPT_CONTRACT
+                ),
                 "actor": actor,
                 "feature_set": feature_set,
                 "from_generation": current_generation,
@@ -1116,6 +1152,8 @@ class LocalOnlineStore:
                 "reason": reason,
                 "validation_receipt_digest": validation_receipt_digest,
             }
+            if policy_decision_digest is not None:
+                result["policy_decision_digest"] = policy_decision_digest
             result["receipt_digest"] = digest(result)
             rendered = canonical_json(result)
             if existing is None:
@@ -1141,6 +1179,103 @@ class LocalOnlineStore:
                 "activation committed but acknowledgement was deliberately lost"
             )
         return result
+
+    def record_activation_decision(self, decision: Mapping[str, Any]) -> dict[str, Any]:
+        """Persist an immutable Stage 5 policy decision before pointer mutation."""
+
+        rendered_decision = dict(decision)
+        recorded = rendered_decision.pop("decision_digest", None)
+        required = {
+            "contract",
+            "evaluated_at",
+            "evidence_digests",
+            "expected_generation",
+            "expected_version",
+            "feature_set",
+            "generation_id",
+            "input_digest",
+            "operation_id",
+            "reason_codes",
+            "status",
+            "validation_receipt_digest",
+        }
+        if (
+            set(rendered_decision) != required
+            or rendered_decision.get("contract") != "stage5-activation-decision-v1"
+            or recorded != digest(rendered_decision)
+            or rendered_decision.get("status") not in {"ELIGIBLE", "REJECTED"}
+        ):
+            raise OnlineContractError("activation decision is malformed or corrupt")
+        if not isinstance(recorded, str):
+            raise OnlineContractError("activation decision digest is missing")
+        operation_id = str(rendered_decision["operation_id"])
+        with self._transaction():
+            existing = self.connection.execute(
+                "SELECT decision_json FROM activation_decisions WHERE operation_id=?",
+                (operation_id,),
+            ).fetchone()
+            complete = dict(decision)
+            rendered = canonical_json(complete)
+            if existing is not None:
+                if existing["decision_json"] != rendered:
+                    raise OnlineConflict(
+                        "activation decision operation was reused with different content"
+                    )
+                return complete
+            candidate = self.connection.execute(
+                "SELECT feature_set, receipt_digest FROM candidates WHERE generation_id=?",
+                (str(rendered_decision["generation_id"]),),
+            ).fetchone()
+            if candidate is None or candidate["feature_set"] != rendered_decision["feature_set"]:
+                raise ActivationConflict("activation decision candidate does not exist")
+            self.connection.execute(
+                """INSERT INTO activation_decisions
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    recorded,
+                    rendered_decision["feature_set"],
+                    rendered_decision["generation_id"],
+                    operation_id,
+                    rendered_decision["expected_generation"],
+                    rendered_decision["expected_version"],
+                    rendered_decision["validation_receipt_digest"],
+                    rendered_decision["status"],
+                    rendered,
+                ),
+            )
+        return complete
+
+    def activation_decision(self, operation_id: str) -> dict[str, Any]:
+        row = self.connection.execute(
+            "SELECT decision_json FROM activation_decisions WHERE operation_id=?",
+            (operation_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(operation_id)
+        return cast(dict[str, Any], json.loads(row["decision_json"]))
+
+    def activate_with_decision(
+        self,
+        decision: Mapping[str, Any],
+        *,
+        actor: str,
+        reason: str,
+        lose_acknowledgement: bool = False,
+    ) -> dict[str, Any]:
+        persisted = self.record_activation_decision(decision)
+        if persisted["status"] != "ELIGIBLE" or persisted["reason_codes"]:
+            raise ActivationConflict("Stage 5 activation policy rejected candidate")
+        return self.activate(
+            str(persisted["generation_id"]),
+            validation_receipt_digest=str(persisted["validation_receipt_digest"]),
+            expected_generation=cast(str | None, persisted["expected_generation"]),
+            expected_version=int(persisted["expected_version"]),
+            operation_id=str(persisted["operation_id"]),
+            lose_acknowledgement=lose_acknowledgement,
+            actor=actor,
+            reason=reason,
+            policy_decision_digest=str(persisted["decision_digest"]),
+        )
 
     def pin_reader(self, feature_set: str) -> ReaderToken:
         generation_id, version = self.pointer(feature_set)

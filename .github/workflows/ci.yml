@@ -34,6 +34,7 @@ jobs:
       - run: python tools/validate_stage2.py
       - run: python tools/validate_stage3.py
       - run: python tools/validate_stage4.py
+      - run: python tools/validate_stage5.py
       - name: Regenerate current deterministic simulation evidence
         run: |
           python -m featureforge.cli simulate --output /tmp/featureforge-evidence.json
@@ -66,3 +67,12 @@ jobs:
           python -m tools.run_stage4_proof --output-dir /tmp/featureforge-stage4-proof
           cmp /tmp/featureforge-stage4-proof/online-proof.json evidence/stage4/online-proof.json
           cmp /tmp/featureforge-stage4-proof/failure-recovery-proof.json evidence/stage4/failure-recovery-proof.json
+      - name: Regenerate deterministic Stage 5 platform proofs
+        run: |
+          python -m tools.run_stage5_proof --output-dir /tmp/featureforge-stage5-proof
+          cmp /tmp/featureforge-stage5-proof/platform-proof.json evidence/stage5/platform-proof.json
+          cmp /tmp/featureforge-stage5-proof/failure-recovery-proof.json evidence/stage5/failure-recovery-proof.json
+      - name: Reproduce Stage 5 benchmark summary from immutable raw trials
+        run: |
+          python -m tools.summarize_stage5_benchmark --raw evidence/stage5/benchmark-raw.json --output /tmp/featureforge-stage5-benchmark-summary.json
+          cmp /tmp/featureforge-stage5-benchmark-summary.json evidence/stage5/benchmark-summary.json

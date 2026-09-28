@@ -40,6 +40,15 @@ replace managed-runtime evidence.
 - Capacity, hot-key distribution, and DynamoDB quotas are reviewed.
 - Previous online generation remains retained and readable.
 
+## Local Stage 5 qualification
+
+Run the full suite and Stage 0–5 validators. Regenerate both Stage 5 correctness proofs twice and
+require byte equality. Recompute the benchmark summary from the immutable raw trial file and require
+byte equality; do not require newly observed durations to match. Inspect all nine gate decisions,
+pointer preservation, stale CAS, freshness/expiry boundaries, bounded labels, the complete 3-by-3
+matrix, retained variability, and claim classifications. No Stage 5 local evidence authorizes an
+AWS or DynamoDB request.
+
 ## Execute
 
 1. Create run and generation IDs; record commit, definition-set digest, region, and operator.
