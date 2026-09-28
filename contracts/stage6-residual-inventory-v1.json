@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage6-residual-inventory:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "namespace", "observed_at_epoch", "items"],
+  "properties": {
+    "contract": {"const": "stage6-residual-inventory-v1"},
+    "namespace": {"type": "string"},
+    "observed_at_epoch": {"type": "integer", "minimum": 0},
+    "items": {"type": "array"}
+  }
+}

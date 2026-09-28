@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage6-completion-receipt:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "run_id", "manifest_digest", "admission_digest", "task_receipts_digest", "output_objects", "receipt_digest"],
+  "properties": {
+    "contract": {"const": "stage6-completion-receipt-v1"},
+    "run_id": {"type": "string"},
+    "manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "admission_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "task_receipts_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "output_objects": {"type": "array"},
+    "receipt_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

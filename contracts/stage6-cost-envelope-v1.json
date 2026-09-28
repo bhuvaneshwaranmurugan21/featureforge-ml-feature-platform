@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage6-cost-envelope:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "currency", "pricing_observed_at_epoch", "lines", "subtotal_microusd", "safety_margin_bps", "worst_case_microusd", "maximum_microusd", "admitted"],
+  "properties": {
+    "contract": {"const": "stage6-cost-envelope-v1"},
+    "currency": {"const": "USD"},
+    "pricing_observed_at_epoch": {"type": "integer", "minimum": 0},
+    "lines": {"type": "array", "minItems": 1},
+    "subtotal_microusd": {"type": "integer", "minimum": 0},
+    "safety_margin_bps": {"type": "integer", "minimum": 0, "maximum": 5000},
+    "worst_case_microusd": {"type": "integer", "minimum": 0},
+    "maximum_microusd": {"type": "integer", "minimum": 1},
+    "admitted": {"type": "boolean"}
+  }
+}

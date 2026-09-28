@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage6-lease-snapshot:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "lease_id", "owner", "source_commit", "acquired_at_epoch", "heartbeat_at_epoch", "expires_at_epoch"],
+  "properties": {
+    "contract": {"const": "stage6-lease-snapshot-v1"},
+    "lease_id": {"type": "string"},
+    "owner": {"type": "string"},
+    "source_commit": {"type": "string"},
+    "acquired_at_epoch": {"type": "integer", "minimum": 0},
+    "heartbeat_at_epoch": {"type": "integer", "minimum": 0},
+    "expires_at_epoch": {"type": "integer", "minimum": 1}
+  }
+}
