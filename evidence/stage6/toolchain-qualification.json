@@ -1,0 +1,27 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": 6,
+  "terraform": {
+    "version": "1.9.8",
+    "source": "https://releases.hashicorp.com/terraform/1.9.8/",
+    "archive": "terraform_1.9.8_linux_amd64.zip",
+    "sha256": "186e0145f5e5f2eb97cbd785bc78f21bae4ef15119349f6ad4fa535b83b10df8",
+    "official_checksum_match": true,
+    "license": "MPL-2.0"
+  },
+  "aws_provider": {
+    "version": "5.100.0",
+    "source": "https://releases.hashicorp.com/terraform-provider-aws/5.100.0/",
+    "archive": "terraform-provider-aws_5.100.0_linux_amd64.zip",
+    "sha256": "1589a2266af699cbd5d80737a0fe02e54ec9cf2ca54e7e00ac51c7359056f274",
+    "official_checksum_match": true,
+    "license": "MPL-2.0",
+    "license_sha256": "4e2bb185ebd706f76329206869ccb348b92b6236100cfb07775fe31530dab0d5"
+  },
+  "provider_lock_committed": true,
+  "terraform_fmt_passed": true,
+  "terraform_init_backend_false_passed": true,
+  "local_provider_schema_validation": "BLOCKED_BY_EXECUTION_SANDBOX_UNIX_SOCKET_POLICY",
+  "required_resolution": "immutable-head GitHub Infrastructure workflow must pass terraform validate before Stage 6 can close",
+  "gate_weakened": false
+}
