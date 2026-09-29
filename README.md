@@ -20,6 +20,9 @@ service model; no live AWS execution is claimed.
 Stage 5 adds a standard-library-only expected-state projector, exhaustive policy-gated parity,
 content-addressed activation decisions, controlled-clock freshness semantics, bounded telemetry,
 and a frozen 3-by-3 local benchmark with all 486 correctness-bound raw trials retained.
+Stage 6 adds fail-closed managed-run, object, lease, cost, inventory, and saved-plan authority;
+deterministic runtime packages; and a bounded, encrypted AWS Terraform graph. The graph is
+plan-only and disabled by default. No AWS mutation or managed execution is claimed.
 
 Its central opinion is that a feature value needs more than an entity, value, and event time:
 
@@ -55,8 +58,11 @@ a historical training row merely because its business event happened earlier.
   and reproducible summaries. These results are not cloud or production performance evidence.
 - **Implementation-present and statically validated:** DynamoDB low-level record, query,
   candidate-control, conditional-write, and transactional activation request shapes.
-- **Production-shaped but not yet verified on AWS:** S3/Glue offline storage, live DynamoDB online
-  behavior, Step Functions, EventBridge, KMS, and CloudWatch.
+- **Production-shaped and locally/static validated, but not yet qualified in AWS:** a real
+  Glue/Lambda/Step Functions path, encrypted versioned S3, KMS-encrypted DynamoDB, disabled
+  EventBridge dispatch, CloudWatch controls, least-privilege runtime roles, and an OIDC-bound
+  read-only planning role. Identity, quota, inventory, pricing, lease, and saved-plan evidence
+  remain pending until the explicit AWS region and approved session mechanism are supplied.
 
 No online latency, training scale, availability, or AWS cost claim is made without a captured run.
 The Stage 2 dataset manifest binds immutable source, label, definition-set, code, cutoff, count,
@@ -66,8 +72,9 @@ and ordered-row identities. See the
 [Stage 2 lifecycle authority](docs/stage2/lifecycle-specification.md), and
 [Stage 3 Spark authority](docs/stage3/spark-incremental-specification.md), and
 [Stage 4 online authority](docs/stage4/online-materialization-specification.md), and
-[Stage 5 platform authority](docs/stage5/parity-activation-specification.md) for exact evidence and
-remaining proof gaps.
+[Stage 5 platform authority](docs/stage5/parity-activation-specification.md), and
+[Stage 6 managed authority](docs/stage6/managed-architecture.md) for exact evidence and remaining
+proof gaps.
 
 ## Architecture
 
@@ -161,8 +168,10 @@ python -m tools.run_stage2_proof --output-dir /tmp/featureforge-stage2-evidence
 python -m tools.run_stage3_proof --output-dir /tmp/featureforge-stage3-evidence
 python -m tools.run_stage4_proof --output-dir /tmp/featureforge-stage4-evidence
 python -m tools.run_stage5_proof --output-dir /tmp/featureforge-stage5-evidence
+python -m tools.run_stage6_proof --output-dir /tmp/featureforge-stage6-evidence
+python -m tools.build_stage6_artifacts --output-dir /tmp/featureforge-stage6-artifacts
 python -m tools.summarize_stage5_benchmark --raw evidence/stage5/benchmark-raw.json --output /tmp/featureforge-stage5-benchmark-summary.json
-python tools/validate_stage5.py
+python tools/validate_stage6.py
 ```
 
 The local failure lab checks 17 scenarios, including future-event and late-correction exclusion,
@@ -182,6 +191,9 @@ typed TTL/freshness results, durable retry attempts, and bounded service-limit c
 Stage 5 adds exhaustive independent online parity, every nine-gate negative control, policy-bound
 activation receipts, stale-decision CAS proof, bounded telemetry validation, and a retained 486-trial
 local benchmark with deterministic summary regeneration.
+Stage 6 adds canonical run authority, exact version/checksum object reads, idempotent task receipts,
+lease/inventory/quota/cost admission, twelve stale-plan controls, deterministic allowlisted runtime
+archives, real orchestration integrations, and plan-only infrastructure controls.
 
 ## Repository map
 
@@ -211,9 +223,9 @@ for the exact evidence required before any managed-runtime claim.
 
 ## Interview walkthrough
 
-Use the [Stage 5 walkthrough](docs/stage5/walkthrough.md): connect immutable corrections, Spark
-full/incremental equality, independent expected state, exhaustive parity, composite activation,
-controlled freshness, operator diagnosis, raw measurements, variability, and explicit non-claims.
+Use the [Stage 6 walkthrough](docs/stage6/walkthrough.md): connect immutable corrections, Spark
+full/incremental equality, exhaustive parity, managed-run admission, deterministic packaging, real
+orchestration, saved-plan staleness, budget authority, and explicit non-claims.
 
 ## License
 

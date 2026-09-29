@@ -63,7 +63,7 @@ resource "aws_glue_job" "offline" {
 resource "aws_lambda_function" "control_worker" {
   function_name                  = "${local.name}-control-worker"
   role                           = aws_iam_role.control_worker.arn
-  handler                        = "lambda_entry.lambda_handler"
+  handler                        = "featureforge.control_worker.lambda_handler"
   runtime                        = "python3.12"
   architectures                  = ["x86_64"]
   memory_size                    = 512

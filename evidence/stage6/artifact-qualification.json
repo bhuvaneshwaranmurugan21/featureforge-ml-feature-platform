@@ -4,10 +4,10 @@
   "builder": "tools/build_stage6_artifacts.py",
   "build_count": 2,
   "byte_identical_rebuild": true,
-  "artifact_manifest_sha256": "2321bfd58779fb9054c0c0cd55d65cb2695a0dda605aba73ddd65e79d5cbf460",
+  "artifact_manifest_sha256": "d25374f4943ca210d1331e02ad640821cca33d4346a8792d42c3cd3c3c9952ef",
   "artifacts": [
-    {"name": "featureforge-control-worker.zip", "sha256": "f154c7d655b64c3fc6e6b136aa11193b8443d64a52b6a9b6905635a71cb59c60", "size_bytes": 58089, "maximum_bytes": 10485760},
-    {"name": "featureforge-glue-library.zip", "sha256": "e1fae16bac70d96cc3749465124835b3ce02c82babbaca6518922b446e23b047", "size_bytes": 57911, "maximum_bytes": 10485760}
+    {"name": "featureforge-control-worker.zip", "sha256": "cdd2cd398e8b3fddf86d3b751b1aebc4d40556b7bd6549f06ef720109547784c", "size_bytes": 11800, "maximum_bytes": 10485760},
+    {"name": "featureforge-glue-library.zip", "sha256": "ae8a87179fd7e67935004035fb3af185eab17b35b737a0395f53789d560520f1", "size_bytes": 15271, "maximum_bytes": 10485760}
   ],
   "allowlist_only": true,
   "tests_included": false,

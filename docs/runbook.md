@@ -49,6 +49,38 @@ pointer preservation, stale CAS, freshness/expiry boundaries, bounded labels, th
 matrix, retained variability, and claim classifications. No Stage 5 local evidence authorizes an
 AWS or DynamoDB request.
 
+## Local Stage 6 qualification
+
+Install the pinned Python dependency sets with Python 3.12 and Java 17. Run the full suite and Stage
+0–6 validators; regenerate both Stage 6 proofs and both runtime archives twice and require byte
+equality. Verify Terraform 1.9.8 and AWS provider 5.100.0 provenance and lock data. The local graph
+must retain disabled dispatch, runtime concurrency one, two Glue `G.1X` workers, a fifteen-minute
+timeout, encryption, PITR, bounded logs, and no placeholder state. Local qualification makes no AWS
+request and does not authorize a plan or apply.
+
+## Stage 6 read-only AWS and saved-plan procedure
+
+1. Resolve the exact authorized region and approved OIDC role or AWS session mechanism; record only
+   sanitized account and role fingerprints publicly.
+2. Reverify the immutable Git head/tree, provider lock, artifact digests, backend identity, and the
+   current project-neutral FeatureForge lease.
+3. Execute only the APIs in `docs/stage6/aws-read-api-manifest.json`, restrict resource queries to
+   the exact FeatureForge namespace, and produce a sanitized read-only receipt.
+4. Fail closed on wrong account/region/role, conflicting or expired lease, residual inventory,
+   missing service, quota shortfall, unknown price, insufficient budget headroom, or stale input.
+5. Build deterministic artifacts, create private variables/backend inputs, run refresh-aware
+   Terraform planning, and retain the binary plan only in private temporary storage.
+6. Normalize and review the plan. Reject deletion, replacement, non-FeatureForge addresses,
+   enabled scheduling/runtime, unencrypted storage, concurrency above one, or any action outside the
+   allowlist.
+7. Bind the binary and normalized plan digests to commit/tree, variables, provider lock, state
+   lineage/serial, account, region, artifacts, inventory, lease, cost, creation, and expiry.
+8. Commit only sanitized receipts. Never commit state, plan binaries, backend configuration,
+   account IDs, ARNs containing account IDs, signed URLs, credentials, or session material.
+
+Stage 6 ends at a verified saved plan. Apply, workload execution, and teardown require later,
+separate authorization.
+
 ## Execute
 
 1. Create run and generation IDs; record commit, definition-set digest, region, and operator.

@@ -1,19 +1,58 @@
+data "aws_partition" "current" {}
+
 data "aws_caller_identity" "current" {}
 
-resource "random_id" "suffix" {
-  byte_length = 4
+locals {
+  name          = "featureforge-${var.environment}-${var.run_id}"
+  bucket_prefix = "${local.name}-${data.aws_caller_identity.current.account_id}"
+  alarm_actions = var.alarm_topic_arn == "" ? [] : [var.alarm_topic_arn]
+  common_environment = {
+    CONTROL_TABLE               = aws_dynamodb_table.control.name
+    EVIDENCE_BUCKET             = aws_s3_bucket.evidence.bucket
+    FEATUREFORGE_STAGE6_ENABLED = tostring(var.runtime_execution_enabled)
+    KMS_KEY_ARN                 = aws_kms_key.platform.arn
+    OFFLINE_BUCKET              = aws_s3_bucket.offline.bucket
+    ONLINE_TABLE                = aws_dynamodb_table.online.name
+    RUN_ID                      = var.run_id
+  }
 }
 
-locals {
-  name          = "featureforge-${var.environment}"
-  bucket_prefix = "${local.name}-${data.aws_caller_identity.current.account_id}-${random_id.suffix.hex}"
-  alarm_actions = var.alarm_topic_arn == "" ? [] : [var.alarm_topic_arn]
+data "aws_iam_policy_document" "kms" {
+  statement {
+    sid       = "AccountAdministration"
+    actions   = ["kms:*"]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  statement {
+    sid = "CloudWatchLogsEncryption"
+    actions = [
+      "kms:Decrypt",
+      "kms:Encrypt",
+      "kms:GenerateDataKey*"
+    ]
+    resources = ["*"]
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${var.aws_region}.amazonaws.com"]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "kms:EncryptionContext:aws:logs:arn"
+      values   = ["arn:${data.aws_partition.current.partition}:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/*"]
+    }
+  }
 }
 
 resource "aws_kms_key" "platform" {
-  description             = "FeatureForge offline, online, registry, and evidence encryption"
+  description             = "FeatureForge Stage 6 managed-runtime encryption"
   deletion_window_in_days = 7
   enable_key_rotation     = true
+  policy                  = data.aws_iam_policy_document.kms.json
 }
 
 resource "aws_kms_alias" "platform" {
@@ -21,28 +60,38 @@ resource "aws_kms_alias" "platform" {
   target_key_id = aws_kms_key.platform.key_id
 }
 
+resource "aws_s3_bucket" "artifacts" {
+  bucket        = "${local.bucket_prefix}-artifacts"
+  force_destroy = false
+}
+
 resource "aws_s3_bucket" "offline" {
   bucket        = "${local.bucket_prefix}-offline"
-  force_destroy = var.environment != "prod"
+  force_destroy = false
 }
 
 resource "aws_s3_bucket" "evidence" {
   bucket        = "${local.bucket_prefix}-evidence"
-  force_destroy = var.environment != "prod"
+  force_destroy = false
 }
 
-resource "aws_s3_bucket_versioning" "offline" {
-  bucket = aws_s3_bucket.offline.id
+locals {
+  managed_buckets = {
+    artifacts = aws_s3_bucket.artifacts.id
+    evidence  = aws_s3_bucket.evidence.id
+    offline   = aws_s3_bucket.offline.id
+  }
+}
+
+resource "aws_s3_bucket_versioning" "managed" {
+  for_each = local.managed_buckets
+  bucket   = each.value
   versioning_configuration { status = "Enabled" }
 }
 
-resource "aws_s3_bucket_versioning" "evidence" {
-  bucket = aws_s3_bucket.evidence.id
-  versioning_configuration { status = "Enabled" }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "offline" {
-  bucket = aws_s3_bucket.offline.id
+resource "aws_s3_bucket_server_side_encryption_configuration" "managed" {
+  for_each = local.managed_buckets
+  bucket   = each.value
   rule {
     apply_server_side_encryption_by_default {
       kms_master_key_id = aws_kms_key.platform.arn
@@ -52,61 +101,61 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "offline" {
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "evidence" {
-  bucket = aws_s3_bucket.evidence.id
-  rule {
-    apply_server_side_encryption_by_default {
-      kms_master_key_id = aws_kms_key.platform.arn
-      sse_algorithm     = "aws:kms"
-    }
-    bucket_key_enabled = true
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "offline" {
-  bucket                  = aws_s3_bucket.offline.id
+resource "aws_s3_bucket_public_access_block" "managed" {
+  for_each                = local.managed_buckets
+  bucket                  = each.value
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_public_access_block" "evidence" {
-  bucket                  = aws_s3_bucket.evidence.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+resource "aws_s3_object" "control_worker" {
+  bucket                 = aws_s3_bucket.artifacts.id
+  key                    = "${var.run_id}/${filebase64sha256(var.control_worker_zip_path)}/featureforge-control-worker.zip"
+  source                 = var.control_worker_zip_path
+  source_hash            = filebase64sha256(var.control_worker_zip_path)
+  server_side_encryption = "aws:kms"
+  kms_key_id             = aws_kms_key.platform.arn
+  depends_on             = [aws_s3_bucket_versioning.managed]
+}
+
+resource "aws_s3_object" "glue_library" {
+  bucket                 = aws_s3_bucket.artifacts.id
+  key                    = "${var.run_id}/${filebase64sha256(var.glue_library_zip_path)}/featureforge-glue-library.zip"
+  source                 = var.glue_library_zip_path
+  source_hash            = filebase64sha256(var.glue_library_zip_path)
+  server_side_encryption = "aws:kms"
+  kms_key_id             = aws_kms_key.platform.arn
+  depends_on             = [aws_s3_bucket_versioning.managed]
+}
+
+resource "aws_s3_object" "glue_script" {
+  bucket                 = aws_s3_bucket.artifacts.id
+  key                    = "${var.run_id}/${filesha256(var.glue_script_path)}/glue_point_in_time.py"
+  source                 = var.glue_script_path
+  source_hash            = filesha256(var.glue_script_path)
+  server_side_encryption = "aws:kms"
+  kms_key_id             = aws_kms_key.platform.arn
+  depends_on             = [aws_s3_bucket_versioning.managed]
 }
 
 resource "aws_glue_catalog_database" "features" {
   name = replace("${local.name}-offline", "-", "_")
 }
 
-resource "aws_dynamodb_table" "registry" {
-  name         = "${local.name}-registry"
+resource "aws_dynamodb_table" "control" {
+  name         = "${local.name}-control"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "definition_id"
+  hash_key     = "PK"
+  range_key    = "SK"
 
   attribute {
-    name = "definition_id"
+    name = "PK"
     type = "S"
   }
-
-  point_in_time_recovery { enabled = true }
-  server_side_encryption {
-    enabled     = true
-    kms_key_arn = aws_kms_key.platform.arn
-  }
-}
-
-resource "aws_dynamodb_table" "generations" {
-  name         = "${local.name}-generations"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "generation_id"
-
   attribute {
-    name = "generation_id"
+    name = "SK"
     type = "S"
   }
 
@@ -141,144 +190,4 @@ resource "aws_dynamodb_table" "online" {
     enabled     = true
     kms_key_arn = aws_kms_key.platform.arn
   }
-}
-
-resource "aws_dynamodb_table" "active_pointer" {
-  name         = "${local.name}-active-pointer"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "product_id"
-
-  attribute {
-    name = "product_id"
-    type = "S"
-  }
-
-  point_in_time_recovery { enabled = true }
-  server_side_encryption {
-    enabled     = true
-    kms_key_arn = aws_kms_key.platform.arn
-  }
-}
-
-resource "aws_cloudwatch_log_group" "orchestration" {
-  name              = "/aws/vendedlogs/states/${local.name}"
-  retention_in_days = 30
-  kms_key_id        = aws_kms_key.platform.arn
-}
-
-data "aws_iam_policy_document" "states_assume" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["states.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "states" {
-  name               = "${local.name}-states"
-  assume_role_policy = data.aws_iam_policy_document.states_assume.json
-}
-
-data "aws_iam_policy_document" "states" {
-  statement {
-    actions = [
-      "logs:CreateLogDelivery",
-      "logs:GetLogDelivery",
-      "logs:UpdateLogDelivery",
-      "logs:DeleteLogDelivery",
-      "logs:ListLogDeliveries",
-      "logs:PutResourcePolicy",
-      "logs:DescribeResourcePolicies",
-      "logs:DescribeLogGroups"
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_role_policy" "states" {
-  role   = aws_iam_role.states.id
-  policy = data.aws_iam_policy_document.states.json
-}
-
-resource "aws_sfn_state_machine" "materialization" {
-  name     = "${local.name}-materialization-contract"
-  role_arn = aws_iam_role.states.arn
-
-  logging_configuration {
-    include_execution_data = true
-    level                  = "ALL"
-    log_destination        = "${aws_cloudwatch_log_group.orchestration.arn}:*"
-  }
-
-  definition = jsonencode({
-    Comment = "Control-flow contract; replace Pass adapters only after managed verification"
-    StartAt = "ValidateManifest"
-    States = {
-      ValidateManifest      = { Type = "Pass", Next = "MaterializeGeneration" }
-      MaterializeGeneration = { Type = "Pass", Next = "ParityGate" }
-      ParityGate = {
-        Type    = "Choice"
-        Choices = [{ Variable = "$.parity_matched", BooleanEquals = true, Next = "Ready" }]
-        Default = "Quarantined"
-      }
-      Ready       = { Type = "Succeed" }
-      Quarantined = { Type = "Fail", Error = "ParityFailed" }
-    }
-  })
-}
-
-data "aws_iam_policy_document" "events_assume" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["events.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "events" {
-  name               = "${local.name}-events"
-  assume_role_policy = data.aws_iam_policy_document.events_assume.json
-}
-
-resource "aws_iam_role_policy" "events" {
-  role = aws_iam_role.events.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = "states:StartExecution"
-      Resource = aws_sfn_state_machine.materialization.arn
-    }]
-  })
-}
-
-resource "aws_cloudwatch_event_rule" "materialization" {
-  name                = "${local.name}-materialization"
-  description         = "Start an isolated feature generation"
-  schedule_expression = var.materialization_schedule
-  state               = var.enable_schedule ? "ENABLED" : "DISABLED"
-}
-
-resource "aws_cloudwatch_event_target" "materialization" {
-  rule     = aws_cloudwatch_event_rule.materialization.name
-  arn      = aws_sfn_state_machine.materialization.arn
-  role_arn = aws_iam_role.events.arn
-  input    = jsonencode({ parity_matched = false, adapter_configured = false })
-}
-
-resource "aws_cloudwatch_metric_alarm" "parity_mismatch" {
-  alarm_name          = "${local.name}-parity-mismatch"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "ParityMismatchCount"
-  namespace           = "FeatureForge"
-  period              = 60
-  statistic           = "Sum"
-  threshold           = 0
-  treat_missing_data  = "notBreaching"
-  alarm_actions       = local.alarm_actions
 }

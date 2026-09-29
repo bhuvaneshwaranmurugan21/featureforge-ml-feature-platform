@@ -18,9 +18,12 @@ evidence:
 	python -m tools.run_stage4_proof --output-dir evidence/stage4
 	python -m tools.run_stage5_proof --output-dir evidence/stage5
 	python -m tools.summarize_stage5_benchmark --raw evidence/stage5/benchmark-raw.json --output evidence/stage5/benchmark-summary.json
+	python -m tools.run_stage6_proof --output-dir evidence/stage6
+	python -m tools.build_stage6_artifacts --output-dir build/stage6
 	python tools/validate_stage0.py
 	python tools/validate_stage1.py
 	python tools/validate_stage2.py
 	python tools/validate_stage3.py
 	python tools/validate_stage4.py
 	python tools/validate_stage5.py
+	python tools/validate_stage6.py
