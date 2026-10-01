@@ -102,6 +102,28 @@ variable "github_repository" {
   }
 }
 
+variable "github_repository_owner_id" {
+  type        = string
+  description = "Immutable GitHub owner identifier used in the OIDC subject."
+  default     = "276895096"
+
+  validation {
+    condition     = var.github_repository_owner_id == "276895096"
+    error_message = "Stage 6 is restricted to the immutable FeatureForge owner identifier"
+  }
+}
+
+variable "github_repository_id" {
+  type        = string
+  description = "Immutable GitHub repository identifier used in the OIDC subject."
+  default     = "1332971230"
+
+  validation {
+    condition     = var.github_repository_id == "1332971230"
+    error_message = "Stage 6 is restricted to the immutable FeatureForge repository identifier"
+  }
+}
+
 variable "github_environment" {
   type        = string
   description = "Protected GitHub environment permitted to assume the plan-only role."

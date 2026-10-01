@@ -26,6 +26,8 @@ BASE_TREE = "a9aeb81af407af5fb2108e9d2ef3a194770b9761"
 ACCEPTANCE = {f"ST6-AC-{number:02d}" for number in range(1, 25)}
 INDEXED = (
     ".github/workflows/ci.yml",
+    ".github/workflows/aws-oidc-identity.yml",
+    ".github/workflows/stage6-aws-qualification.yml",
     ".github/workflows/terraform.yml",
     ".gitignore",
     "Makefile",
@@ -55,6 +57,7 @@ INDEXED = (
     "docs/stage6/walkthrough.md",
     "evidence/stage6/artifact-qualification.json",
     "evidence/stage6/baseline.json",
+    "evidence/stage6/bootstrap-receipt.json",
     "evidence/stage6/failure-recovery-proof.json",
     "evidence/stage6/local-proof.json",
     "evidence/stage6/toolchain-qualification.json",
@@ -72,12 +75,15 @@ INDEXED = (
     "src/featureforge/aws_runtime.py",
     "src/featureforge/control_worker.py",
     "src/featureforge/managed.py",
+    "src/featureforge/stage6_live.py",
     "tests/stage6_oracle.py",
     "tests/test_stage6_contract.py",
     "tests/test_stage6_managed.py",
+    "tests/test_stage6_live.py",
     "tests/test_stage6_terraform.py",
     "tools/build_stage6_artifacts.py",
     "tools/run_stage6_proof.py",
+    "tools/qualify_stage6_aws.py",
     "tools/validate_stage6.py",
 )
 
@@ -195,8 +201,7 @@ def _validate_artifacts(root: Path) -> None:
 
 def _validate_terraform(root: Path) -> None:
     terraform = "\n".join(
-        path.read_text(encoding="utf-8")
-        for path in sorted((root / "infra/terraform").glob("*.tf"))
+        path.read_text(encoding="utf-8") for path in sorted((root / "infra/terraform").glob("*.tf"))
     )
     compute = (root / "infra/terraform/compute.tf").read_text(encoding="utf-8")
     versions = (root / "infra/terraform/versions.tf").read_text(encoding="utf-8")
@@ -222,9 +227,16 @@ def _validate_terraform(root: Path) -> None:
         "checkout action is not pinned",
     )
     _check(
-        "hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd"
-        in workflow,
+        "hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd" in workflow,
         "Terraform action is not pinned",
+    )
+    qualification = (root / ".github/workflows/stage6-aws-qualification.yml").read_text(
+        encoding="utf-8"
+    )
+    _check(
+        "aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c"
+        in qualification,
+        "AWS credentials action is not pinned",
     )
 
 
@@ -235,6 +247,65 @@ def _validate_read_manifest(root: Path) -> None:
     _check("sts:GetCallerIdentity" in actions, "identity qualification missing")
     mutation = re.compile(r":(?:Put|Create|Delete|Update|Start|Invoke|Stop|Tag|Untag)")
     _check(not any(mutation.search(str(action)) for action in actions), "mutating AWS API allowed")
+
+
+def _validate_bootstrap_receipt(root: Path) -> None:
+    receipt = _load(root, "evidence/stage6/bootstrap-receipt.json")
+    _check(receipt.get("project") == PROJECT, "bootstrap project mismatch")
+    _check(receipt.get("stage") == 6, "bootstrap stage mismatch")
+    _check(receipt.get("region") == "ap-southeast-2", "bootstrap region mismatch")
+    for field in (
+        "account_fingerprint",
+        "role_arn_fingerprint",
+        "oidc_provider_fingerprint",
+        "backend_bucket_fingerprint",
+        "backend_key_fingerprint",
+        "state_lineage_fingerprint",
+        "state_sha256",
+        "state_version_fingerprint",
+    ):
+        value = receipt.get(field)
+        _check(
+            isinstance(value, str)
+            and len(value) == 64
+            and all(character in "0123456789abcdef" for character in value),
+            f"invalid bootstrap fingerprint: {field}",
+        )
+    _check(receipt.get("immutable_owner_id") == "276895096", "owner ID drift")
+    _check(receipt.get("immutable_repository_id") == "1332971230", "repository ID drift")
+    _check(receipt.get("oidc_audience") == "sts.amazonaws.com", "OIDC audience drift")
+    for field in (
+        "oidc_identity_verified",
+        "backend_region_verified",
+        "backend_versioning_enabled",
+        "backend_public_access_blocked",
+        "backend_owner_enforced",
+        "backend_tls_only",
+        "state_conditional_create",
+        "state_retrieval_byte_identical",
+    ):
+        _check(receipt.get(field) is True, f"bootstrap control failed: {field}")
+    _check(receipt.get("backend_public") is False, "backend is public")
+    _check(receipt.get("backend_default_encryption") == "AES256", "backend encryption drift")
+    _check(receipt.get("state_contract_version") == 4, "state version drift")
+    _check(receipt.get("state_terraform_version") == "1.9.8", "state tool version drift")
+    _check(receipt.get("state_serial") == 0, "initial state serial drift")
+    _check(receipt.get("state_resources") == 0, "initial state is not empty")
+    _check(receipt.get("terraform_apply_executed") is False, "Terraform apply was executed")
+    _check(
+        receipt.get("runtime_resource_mutation_executed") is False,
+        "runtime resource mutation was executed",
+    )
+    _check(receipt.get("managed_workload_executed") is False, "managed workload was executed")
+    _check(
+        receipt.get("authorized_bootstrap_writes")
+        == [
+            "OIDC_ROLE_CREATE_AND_TRUST_UPDATE",
+            "BACKEND_BUCKET_SECURITY_CONFIGURATION",
+            "INITIAL_EMPTY_STATE_CONDITIONAL_CREATE",
+        ],
+        "bootstrap write inventory drift",
+    )
 
 
 def validate(root: Path, expect_head: str | None = None) -> None:
@@ -274,6 +345,7 @@ def validate(root: Path, expect_head: str | None = None) -> None:
     _validate_artifacts(root)
     _validate_terraform(root)
     _validate_read_manifest(root)
+    _validate_bootstrap_receipt(root)
     claims = _load(root, "docs/stage6/claims.json")
     _check(
         {row.get("class") for row in claims.get("claims", [])}
@@ -291,8 +363,7 @@ def validate(root: Path, expect_head: str | None = None) -> None:
         "src/featureforge/managed.py",
     )
     rendered = "\n".join(
-        (root / name).read_text(encoding="utf-8").lower()
-        for name in contamination_files
+        (root / name).read_text(encoding="utf-8").lower() for name in contamination_files
     )
     _check(
         not any(

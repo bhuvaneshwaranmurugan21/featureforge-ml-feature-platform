@@ -22,17 +22,21 @@
   "stage6_pytest_passed": 185,
   "stage6_coverage_percent": 88.99,
   "stage6_local_validator_passed": true,
+  "aws_identity_read_executed": true,
   "aws_read_only_executed": false,
+  "aws_bootstrap_mutation_executed": true,
+  "terraform_backend_initialized": true,
   "aws_runtime_executed": false,
   "terraform_plan_executed": false,
   "terraform_applied": false,
   "terraform_destroyed": false,
   "managed_workload_executed": false,
-  "status": "LOCAL_IMPLEMENTATION_VERIFIED_AWAITING_AWS_INPUTS",
+  "status": "AWS_BOOTSTRAP_VERIFIED_AWAITING_QUALIFICATION_AND_PLAN",
   "open_blockers": [
-    "authorized AWS region placeholder is unresolved",
-    "authorized OIDC or AWS session mechanism placeholder is unresolved",
-    "read-only API qualification has not executed",
+    "backend object-version inventory has not yet been independently captured",
+    "complete read-only API qualification has not executed",
+    "commit-bound exclusive lease has not been acquired",
+    "current pricing and quota evidence has not been captured",
     "refresh-aware saved Terraform plan has not executed"
   ]
 }

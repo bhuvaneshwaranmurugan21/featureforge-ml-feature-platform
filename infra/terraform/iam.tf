@@ -231,7 +231,9 @@ data "aws_iam_policy_document" "github_plan_assume" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:environment:${var.github_environment}"]
+      values = [
+        "repo:bhuvaneshwaranmurugan21@${var.github_repository_owner_id}/featureforge-ml-feature-platform@${var.github_repository_id}:environment:${var.github_environment}"
+      ]
     }
   }
 }
@@ -246,6 +248,7 @@ data "aws_iam_policy_document" "github_plan_readonly" {
     sid = "FeatureForgeQualificationReads"
     actions = [
       "cloudwatch:DescribeAlarms",
+      "cloudwatch:GetDashboard",
       "dynamodb:DescribeContinuousBackups",
       "dynamodb:DescribeTable",
       "dynamodb:DescribeTimeToLive",
@@ -254,8 +257,10 @@ data "aws_iam_policy_document" "github_plan_readonly" {
       "events:ListTargetsByRule",
       "glue:GetDatabase",
       "glue:GetJob",
+      "glue:GetSecurityConfiguration",
       "glue:GetTags",
       "iam:GetRole",
+      "iam:GetOpenIDConnectProvider",
       "iam:GetRolePolicy",
       "iam:ListAttachedRolePolicies",
       "iam:ListRolePolicies",
@@ -271,10 +276,14 @@ data "aws_iam_policy_document" "github_plan_readonly" {
       "pricing:GetProducts",
       "s3:GetBucketEncryption",
       "s3:GetBucketLocation",
+      "s3:GetBucketOwnershipControls",
       "s3:GetBucketPolicyStatus",
       "s3:GetBucketPublicAccessBlock",
       "s3:GetBucketTagging",
       "s3:GetBucketVersioning",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:ListBucket",
       "s3:ListBucketVersions",
       "servicequotas:GetServiceQuota",
       "servicequotas:ListServiceQuotas",

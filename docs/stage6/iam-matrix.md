@@ -12,8 +12,10 @@
 | EventBridge | Start exact state machine | Exact state machine | Disabled schedule definition only |
 | GitHub plan role | Get/list/describe/simulate | Read-only qualification APIs | Terraform refresh and qualification, never apply |
 
-The plan role trust requires audience `sts.amazonaws.com` and subject
-`repo:bhuvaneshwaranmurugan21/featureforge-ml-feature-platform:environment:featureforge-stage6-plan`.
+The plan role trust requires audience `sts.amazonaws.com` and the immutable GitHub subject
+`repo:bhuvaneshwaranmurugan21@276895096/featureforge-ml-feature-platform@1332971230:environment:featureforge-stage6-plan`.
+The immutable owner and repository identifiers prevent a renamed or recreated repository from
+inheriting this trust boundary.
 It has no create, update, delete, pass-role, object-write, table-write, workload-start, or deployment
 permission.
 

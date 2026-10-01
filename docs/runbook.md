@@ -75,8 +75,13 @@ request and does not authorize a plan or apply.
    allowlist.
 7. Bind the binary and normalized plan digests to commit/tree, variables, provider lock, state
    lineage/serial, account, region, artifacts, inventory, lease, cost, creation, and expiry.
-8. Commit only sanitized receipts. Never commit state, plan binaries, backend configuration,
+8. Commit only sanitized receipts. Never commit state, plan binaries, private backend configuration,
    account IDs, ARNs containing account IDs, signed URLs, credentials, or session material.
+
+The OIDC role, hardened backend bucket, initial empty state lineage, and conditional exclusive lease
+are separately authorized bootstrap writes. They must be enumerated in the bootstrap receipt and do
+not authorize any Terraform apply or runtime-resource mutation. After lease acquisition, the
+qualification and saved-plan command window is read-only.
 
 Stage 6 ends at a verified saved plan. Apply, workload execution, and teardown require later,
 separate authorization.

@@ -20,7 +20,7 @@
     {"id": "ST6-AC-16", "requirement": "The exact planned configuration has a current price basis, budget headroom, USD 25 ceiling, and mandatory twenty-percent safety margin."},
     {"id": "ST6-AC-17", "requirement": "A refresh-aware saved Terraform plan is bound to source, variables, providers, state lineage and serial, account, region, artifacts, inventory, lease, and expiry."},
     {"id": "ST6-AC-18", "requirement": "The normalized plan contains only allowlisted create/update/read actions, no unexplained replacement or deletion, and an independently reviewed cleanup inverse."},
-    {"id": "ST6-AC-19", "requirement": "Command and API receipts prove that Stage 6 performed no Terraform apply, destroy, import, state mutation, AWS write, or managed workload."},
+    {"id": "ST6-AC-19", "requirement": "Command and API receipts enumerate the separately authorized OIDC trust, encrypted backend, initial empty-state, and exclusive-lease bootstrap writes and prove that Stage 6 performed no Terraform apply, destroy, import, runtime-resource mutation, or managed workload."},
     {"id": "ST6-AC-20", "requirement": "Wrong account, region, source, artifact, variables, provider lock, state, lease, inventory, quota, cost, and expired-plan controls all reject before mutation."},
     {"id": "ST6-AC-21", "requirement": "Public evidence is deterministic, digest-indexed, sanitized, and contains no secrets, account IDs, sensitive ARNs or URLs, local paths, binary state, or other-project content."},
     {"id": "ST6-AC-22", "requirement": "All Stage 0-5 quality, proof, claim, and evidence gates remain unchanged and green."},

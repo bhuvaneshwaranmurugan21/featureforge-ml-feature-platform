@@ -15,9 +15,22 @@ open locally; no alternate provider, mock validation, or skipped requirement was
 GitHub Infrastructure workflow must perform `terraform validate` on the immutable branch head before
 Stage 6 can close.
 
-## Unresolved AWS authorization placeholders
+## Resolved AWS authorization and immutable OIDC subject
 
-The execution authorization retained literal `[REGION]` and `[OIDC ROLE / AWS SESSION MECHANISM]`
-placeholders. No AWS credential discovery, identity call, inventory read, Terraform refresh, or saved
-plan was attempted. Local phases continue, but read-only qualification and plan authority remain
-blocked until concrete values are supplied.
+The authorized destination is `ap-southeast-2`. The exact FeatureForge bootstrap role is recorded
+publicly only by name and fingerprint. Its initial mutable-name GitHub subject was rejected by AWS.
+The root cause was GitHub's immutable OIDC subject format for newer repositories. The trust was
+corrected to bind owner ID `276895096`, repository ID `1332971230`, the exact FeatureForge branch,
+and audience `sts.amazonaws.com`; the subsequent exact workflow attempt passed identity
+verification. The Terraform-managed plan-role trust uses the same immutable owner/repository
+identity and a protected environment.
+
+## Explicitly authorized backend bootstrap
+
+The operator created one FeatureForge-only S3 backend, enabled versioning, AES-256 default
+encryption, bucket-owner enforcement, complete public-access blocking, and a TLS-only deny policy.
+One version-4, serial-zero, empty Terraform state lineage was conditionally created and retrieved
+byte-for-byte. These writes were explicitly authorized prerequisites, not Terraform apply or
+runtime-resource mutations. Public evidence stores only fingerprints and security properties.
+Namespace inventory, quota/pricing qualification, lease acquisition, and refresh-aware planning
+remain open.

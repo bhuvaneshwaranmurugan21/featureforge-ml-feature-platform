@@ -20,5 +20,7 @@ private backend configuration, deterministic archives, read-only AWS qualificati
 and a current cost envelope. The binary saved plan, state, backend inputs, account identifiers,
 credentials, and session material are private and must never be committed.
 
-Stage 6 permits refresh-aware planning only. It does not authorize `apply`, `destroy`, `import`,
-state mutation, resource mutation, Lambda invocation, Glue execution, or Step Functions execution.
+Stage 6 permits refresh-aware planning only. The separately authorized OIDC/backend/initial-state/
+lease bootstrap is externally managed and audit-enumerated. Terraform does not authorize `apply`,
+`destroy`, `import`, state mutation, runtime-resource mutation, Lambda invocation, Glue execution,
+or Step Functions execution.

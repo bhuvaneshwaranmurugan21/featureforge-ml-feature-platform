@@ -39,8 +39,15 @@ def test_managed_graph_enforces_security_and_bounded_capacity() -> None:
 
 def test_plan_role_is_oidc_bound_and_read_only() -> None:
     text = (TF / "iam.tf").read_text()
-    assert "repo:${var.github_repository}:environment:${var.github_environment}" in text
+    assert (
+        "repo:bhuvaneshwaranmurugan21@${var.github_repository_owner_id}/"
+        "featureforge-ml-feature-platform@${var.github_repository_id}:"
+        "environment:${var.github_environment}"
+    ) in text
     assert "token.actions.githubusercontent.com:aud" in text
+    variables = (TF / "variables.tf").read_text()
+    assert 'default     = "276895096"' in variables
+    assert 'default     = "1332971230"' in variables
     policy = text.split('data "aws_iam_policy_document" "github_plan_readonly"', 1)[1]
     prohibited = re.compile(
         r'"(?:s3:Put|dynamodb:Put|glue:Start|lambda:Invoke|states:Start|iam:PassRole)'
