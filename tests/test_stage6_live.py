@@ -126,7 +126,7 @@ def _plan(actions: list[str] | None = None) -> dict[str, object]:
             "aws_glue_job",
             {
                 "name": "featureforge-stage6-s6-plan-20260930-offline",
-                "max_concurrent_runs": 1,
+                "execution_property": [{"max_concurrent_runs": 1}],
                 "number_of_workers": 2,
                 "timeout": 15,
                 "worker_type": "G.1X",
@@ -173,6 +173,26 @@ def test_plan_normalization_is_sanitized_and_fail_closed() -> None:
     assert len(normalized["normalized_plan_sha256"]) == 64
     with pytest.raises(LiveEvidenceError, match="not allowlisted"):
         normalize_terraform_plan(_plan(["delete", "create"]), run_id="s6-plan-20260930")
+
+
+@pytest.mark.parametrize(
+    "execution_property",
+    [
+        [],
+        [{"max_concurrent_runs": 2}],
+        [{"max_concurrent_runs": 1}, {"max_concurrent_runs": 1}],
+    ],
+)
+def test_plan_normalization_rejects_unbounded_glue_execution_property(
+    execution_property: list[dict[str, int]],
+) -> None:
+    plan = _plan()
+    resource_changes = plan["resource_changes"]
+    assert isinstance(resource_changes, list)
+    glue = next(row for row in resource_changes if row["address"] == "aws_glue_job.offline")
+    glue["change"]["after"]["execution_property"] = execution_property
+    with pytest.raises(LiveEvidenceError, match="glue_concurrency_one"):
+        normalize_terraform_plan(plan, run_id="s6-plan-20260930")
 
 
 def test_identity_is_fingerprinted_and_role_bound() -> None:

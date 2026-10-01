@@ -56,3 +56,13 @@ Price List catalog returned no products for the invalid `AWSStepFunctions` servi
 official offer index identifies Step Functions as `AmazonStates`, whose Sydney regional catalog is
 populated. The qualifier now uses that exact offer code and a regression assertion rejects the
 invalid identifier; Step Functions pricing qualification remains mandatory.
+
+## Terraform Glue execution-property shape
+
+The pre-acquisition plan rehearsal found that the saved-plan normalizer read Glue concurrency from
+a nonexistent top-level `max_concurrent_runs` field. AWS provider `5.100.0` serializes the configured
+`execution_property` block as a single-element collection containing `max_concurrent_runs`. The
+normalizer now reads that exact provider shape and requires exactly one block whose value is one.
+Provider-shaped regression coverage rejects a missing block, a value above one, and ambiguous
+multiple blocks. The exclusive lease was not acquired while this deterministic validation defect
+was present, so the one-time conditional lease object was not stranded or overwritten.

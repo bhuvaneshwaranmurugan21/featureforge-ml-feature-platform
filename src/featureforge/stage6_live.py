@@ -186,7 +186,9 @@ def normalize_terraform_plan(plan: Mapping[str, Any], *, run_id: str) -> dict[st
     checks = {
         "all_actions_allowlisted": True,
         "event_schedule_disabled": event.get("state") == "DISABLED",
-        "glue_concurrency_one": glue.get("max_concurrent_runs") == 1,
+        "glue_concurrency_one": _nested_equals(
+            glue.get("execution_property"), "max_concurrent_runs", 1
+        ),
         "glue_timeout_fifteen_minutes": glue.get("timeout") == 15,
         "glue_two_g1x_workers": glue.get("number_of_workers") == 2
         and glue.get("worker_type") == "G.1X",
@@ -217,10 +219,16 @@ def normalize_terraform_plan(plan: Mapping[str, Any], *, run_id: str) -> dict[st
 
 
 def _nested_enabled(value: Any) -> bool:
+    return _nested_equals(value, "enabled", True)
+
+
+def _nested_equals(value: Any, key: str, expected: Any) -> bool:
     if not isinstance(value, Sequence) or isinstance(value, (str, bytes)) or not value:
         return False
+    if len(value) != 1:
+        return False
     first = value[0]
-    return isinstance(first, Mapping) and first.get("enabled") is True
+    return isinstance(first, Mapping) and first.get(key) == expected
 
 
 def _name_in_namespace(value: str, prefix: str) -> bool:
