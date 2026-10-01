@@ -43,7 +43,7 @@ ABSENT_CODES = frozenset(
 PRICE_SERVICES = (
     "AWSGlue",
     "AWSLambda",
-    "AWSStepFunctions",
+    "AmazonStates",
     "AmazonDynamoDB",
     "AmazonS3",
     "awskms",

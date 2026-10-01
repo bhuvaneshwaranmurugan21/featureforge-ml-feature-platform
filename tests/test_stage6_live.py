@@ -14,7 +14,7 @@ from featureforge.stage6_live import (
     validate_initial_state,
     validate_lease,
 )
-from tools.qualify_stage6_aws import _absent_or_present
+from tools.qualify_stage6_aws import PRICE_SERVICES, _absent_or_present
 
 COMMIT = "a" * 40
 
@@ -46,6 +46,11 @@ def test_inventory_read_does_not_hide_non_absence_errors() -> None:
 
     with pytest.raises(LiveEvidenceError, match="AccessDeniedException"):
         _absent_or_present(denied_read, "glue:database")
+
+
+def test_step_functions_uses_the_live_aws_price_list_service_code() -> None:
+    assert "AmazonStates" in PRICE_SERVICES
+    assert "AWSStepFunctions" not in PRICE_SERVICES
 
 
 def test_initial_state_binds_bytes_and_lineage() -> None:

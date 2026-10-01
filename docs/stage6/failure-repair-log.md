@@ -48,3 +48,11 @@ removed, and no failure condition was weakened.
 The next exact-head attempt advanced past Glue and exposed Step Functions' equivalent
 `StateMachineDoesNotExist` absence code. It is covered by the same allowlisted classification and
 parameterized regression boundary; unrelated client errors continue to fail closed.
+
+## Step Functions pricing offer code
+
+The following exact-head attempt completed residual-inventory reads and reached live pricing. The AWS
+Price List catalog returned no products for the invalid `AWSStepFunctions` service code. The current
+official offer index identifies Step Functions as `AmazonStates`, whose Sydney regional catalog is
+populated. The qualifier now uses that exact offer code and a regression assertion rejects the
+invalid identifier; Step Functions pricing qualification remains mandatory.
