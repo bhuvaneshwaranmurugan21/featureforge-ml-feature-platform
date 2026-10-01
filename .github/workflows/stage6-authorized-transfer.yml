@@ -23,8 +23,8 @@ jobs:
           fetch-depth: 2
       - name: Apply exact verified Stage 6 tree and remove transfer workflow
         env:
-          EXPECTED_PARENT: e35ede1831bba80f7fe8c32bfa5b80d45555df54
-          EXPECTED_TREE: 2d9fac95ac3636e368225af9b55bf218c73f901d
+          EXPECTED_PARENT: d7e87389cccc5b267278d4d8d98b594e14e88d22
+          EXPECTED_TREE: c81ab5496d8e8cdcff87b78372d7a5268c53659b
         shell: bash
         run: |
           set -euo pipefail
@@ -39,8 +39,11 @@ jobs:
           Path('/tmp/featureforge-stage6.patch').write_bytes(lzma.decompress(base64.b85decode(encoded)))
           PY
           git apply --index /tmp/featureforge-stage6.patch
-          git rm .github/workflows/stage6-authorized-transfer.yml
+          git restore --source=HEAD --staged --worktree .github/workflows/aws-oidc-identity.yml
+          git rm --cached .github/workflows/stage6-aws-qualification.yml
+          git rm --cached .github/workflows/stage6-authorized-transfer.yml
           [[ "$(git write-tree)" == "$EXPECTED_TREE" ]]
+          git add .github/workflows/stage6-authorized-transfer.yml
           git config user.name "Bhuvaneshwaran Murugan"
           git config user.email "bhuvaneshwaranmurugan21@users.noreply.github.com"
           git commit -m "feat: add Stage 6 AWS qualification gate"
