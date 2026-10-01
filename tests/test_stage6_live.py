@@ -4,6 +4,7 @@ import hashlib
 import json
 
 import pytest
+from botocore.exceptions import ClientError
 
 from featureforge.stage6_live import (
     LiveEvidenceError,
@@ -13,8 +14,37 @@ from featureforge.stage6_live import (
     validate_initial_state,
     validate_lease,
 )
+from tools.qualify_stage6_aws import _absent_or_present
 
 COMMIT = "a" * 40
+
+
+def _client_error(code: str, status: int = 400) -> ClientError:
+    return ClientError(
+        {
+            "Error": {"Code": code, "Message": "controlled test error"},
+            "ResponseMetadata": {"HTTPStatusCode": status},
+        },
+        "ControlledRead",
+    )
+
+
+def test_glue_entity_not_found_is_classified_as_absent() -> None:
+    def missing_glue_database() -> None:
+        raise _client_error("EntityNotFoundException")
+
+    assert _absent_or_present(missing_glue_database, "glue:database") == {
+        "resource": "glue:database",
+        "status": "ABSENT",
+    }
+
+
+def test_inventory_read_does_not_hide_non_absence_errors() -> None:
+    def denied_read() -> None:
+        raise _client_error("AccessDeniedException", 403)
+
+    with pytest.raises(LiveEvidenceError, match="AccessDeniedException"):
+        _absent_or_present(denied_read, "glue:database")
 
 
 def test_initial_state_binds_bytes_and_lineage() -> None:

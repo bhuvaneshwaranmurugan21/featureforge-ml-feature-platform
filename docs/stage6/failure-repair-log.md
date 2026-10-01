@@ -34,3 +34,13 @@ byte-for-byte. These writes were explicitly authorized prerequisites, not Terraf
 runtime-resource mutations. Public evidence stores only fingerprints and security properties.
 Namespace inventory, quota/pricing qualification, lease acquisition, and refresh-aware planning
 remain open.
+
+## Glue absence-code classification
+
+The fourth exact-head AWS qualification reached the enumerated residual-inventory reads after IAM
+admission succeeded. AWS Glue represented a missing database with `EntityNotFoundException`, while
+the shared absence classifier recognized only generic resource-not-found variants. The qualifier
+therefore failed closed instead of recording the expected `ABSENT` inventory state. The repair adds
+only Glue's documented absence code and regression coverage proving that it maps to `ABSENT` while
+an `AccessDeniedException` still raises `LiveEvidenceError`. No resource was created, no read was
+removed, and no failure condition was weakened.

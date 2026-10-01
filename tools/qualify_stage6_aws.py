@@ -32,6 +32,7 @@ RUN_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{2,15}$")
 ABSENT_CODES = frozenset(
     {
         "404",
+        "EntityNotFoundException",
         "NoSuchBucket",
         "NoSuchEntity",
         "ResourceNotFoundException",
