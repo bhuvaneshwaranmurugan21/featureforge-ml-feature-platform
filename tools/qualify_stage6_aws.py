@@ -37,6 +37,7 @@ ABSENT_CODES = frozenset(
         "NoSuchEntity",
         "ResourceNotFoundException",
         "ResourceNotFound",
+        "StateMachineDoesNotExist",
     }
 )
 PRICE_SERVICES = (

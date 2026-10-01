@@ -29,12 +29,13 @@ def _client_error(code: str, status: int = 400) -> ClientError:
     )
 
 
-def test_glue_entity_not_found_is_classified_as_absent() -> None:
-    def missing_glue_database() -> None:
-        raise _client_error("EntityNotFoundException")
+@pytest.mark.parametrize("code", ["EntityNotFoundException", "StateMachineDoesNotExist"])
+def test_service_specific_missing_resource_codes_are_absent(code: str) -> None:
+    def missing_resource() -> None:
+        raise _client_error(code)
 
-    assert _absent_or_present(missing_glue_database, "glue:database") == {
-        "resource": "glue:database",
+    assert _absent_or_present(missing_resource, "service:resource") == {
+        "resource": "service:resource",
         "status": "ABSENT",
     }
 

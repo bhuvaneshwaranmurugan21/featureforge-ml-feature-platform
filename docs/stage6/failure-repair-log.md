@@ -44,3 +44,7 @@ therefore failed closed instead of recording the expected `ABSENT` inventory sta
 only Glue's documented absence code and regression coverage proving that it maps to `ABSENT` while
 an `AccessDeniedException` still raises `LiveEvidenceError`. No resource was created, no read was
 removed, and no failure condition was weakened.
+
+The next exact-head attempt advanced past Glue and exposed Step Functions' equivalent
+`StateMachineDoesNotExist` absence code. It is covered by the same allowlisted classification and
+parameterized regression boundary; unrelated client errors continue to fail closed.
