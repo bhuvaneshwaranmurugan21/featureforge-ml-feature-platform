@@ -13,7 +13,7 @@
     "iam:SimulatePrincipalPolicy",
     "servicequotas:GetServiceQuota",
     "servicequotas:ListServiceQuotas",
-    "s3:GetBucketEncryption",
+    "s3:GetEncryptionConfiguration",
     "s3:GetBucketLocation",
     "s3:GetBucketOwnershipControls",
     "s3:GetBucketPolicyStatus",
