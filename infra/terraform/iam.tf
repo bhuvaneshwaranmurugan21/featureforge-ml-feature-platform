@@ -274,7 +274,7 @@ data "aws_iam_policy_document" "github_plan_readonly" {
       "budgets:ViewBudget",
       "ce:GetCostAndUsage",
       "pricing:GetProducts",
-      "s3:GetBucketEncryption",
+      "s3:GetEncryptionConfiguration",
       "s3:GetBucketLocation",
       "s3:GetBucketOwnershipControls",
       "s3:GetBucketPolicyStatus",
