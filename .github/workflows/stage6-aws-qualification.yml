@@ -2,6 +2,11 @@ name: Stage 6 AWS Qualification
 
 on:
   workflow_dispatch:
+  push:
+    branches: [part3-stage6-aws-plan-qualification]
+    paths:
+      - .github/workflows/stage6-aws-qualification.yml
+      - evidence/stage6/evidence-index.json
 
 permissions:
   contents: read
