@@ -245,6 +245,14 @@ def _validate_read_manifest(root: Path) -> None:
     actions = manifest.get("actions", [])
     _check(manifest.get("mutating_actions") == [], "AWS manifest records mutations")
     _check("sts:GetCallerIdentity" in actions, "identity qualification missing")
+    _check(
+        "s3:GetEncryptionConfiguration" in actions,
+        "S3 bucket-encryption IAM action missing",
+    )
+    _check(
+        "s3:GetBucketEncryption" not in actions,
+        "S3 API operation name incorrectly used as an IAM action",
+    )
     mutation = re.compile(r":(?:Put|Create|Delete|Update|Start|Invoke|Stop|Tag|Untag)")
     _check(not any(mutation.search(str(action)) for action in actions), "mutating AWS API allowed")
 
