@@ -43,6 +43,7 @@ INDEXED = (
     "docs/claims.yaml",
     "docs/runbook.md",
     "docs/stage6/aws-read-api-manifest.json",
+    "docs/stage6/autonomous-recovery.md",
     "docs/stage6/claims.json",
     "docs/stage6/cleanup-matrix.md",
     "docs/stage6/cost-model.md",
@@ -80,10 +81,12 @@ INDEXED = (
     "tests/test_stage6_contract.py",
     "tests/test_stage6_managed.py",
     "tests/test_stage6_live.py",
+    "tests/test_stage6_recovery.py",
     "tests/test_stage6_terraform.py",
     "tools/build_stage6_artifacts.py",
     "tools/run_stage6_proof.py",
     "tools/qualify_stage6_aws.py",
+    "tools/recover_stage6_readonly.py",
     "tools/validate_stage6.py",
 )
 
