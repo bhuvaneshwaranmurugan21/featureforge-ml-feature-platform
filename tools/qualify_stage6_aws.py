@@ -347,8 +347,16 @@ def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[st
                 )
             ]
             if not matches:
+                catalog_shapes = sorted(
+                    {
+                        (str(row["unit"]), str(row["attributes"].get("usagetype", "")))
+                        for row in dimensions
+                    }
+                )
                 raise LiveEvidenceError(
-                    f"no current exact-region OnDemand USD rate for {line['component']}"
+                    f"no current exact-region OnDemand USD rate for {line['component']}; "
+                    f"observed unit/usage shapes (first 12 of {len(catalog_shapes)}): "
+                    f"{catalog_shapes[:12]}"
                 )
             # Charge all units at the maximum applicable tier, with no free-tier deduction.
             selected = max(matches, key=lambda row: (row["unit_cost_microusd"], row["rate_id"]))

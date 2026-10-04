@@ -23,13 +23,18 @@ def test_glue5_custom_security_log_names_match_the_job_configuration() -> None:
     main = _text("main.tf")
     compute = _text("compute.tf")
     iam = _text("iam.tf")
-    assert 'glue_security_name = "${local.name}-security"' in main
-    assert 'glue_role_name = "${local.name}-glue"' in main
-    assert 'glue_log_group_prefix = "/aws-glue/jobs/${local.name}"' in main
-    assert (
-        'glue_log_group_base = "${local.glue_log_group_prefix}/'
-        '${local.glue_security_name}-role/${local.glue_role_name}"'
-    ) in main
+    expected_locals = {
+        "glue_security_name": '"${local.name}-security"',
+        "glue_role_name": '"${local.name}-glue"',
+        "glue_log_group_prefix": '"/aws-glue/jobs/${local.name}"',
+        "glue_log_group_base": (
+            '"${local.glue_log_group_prefix}/'
+            '${local.glue_security_name}-role/${local.glue_role_name}"'
+        ),
+    }
+    for name, expected in expected_locals.items():
+        # Terraform fmt changes alignment, never the exact authority expression.
+        assert re.findall(rf"^\s*{name}\s*=\s*(.+)$", main, re.MULTILINE) == [expected]
     for channel in ("error", "output"):
         assert re.search(
             rf'glue_{channel}\s*=\s*"\$\{{local\.glue_log_group_base\}}/{channel}"', main

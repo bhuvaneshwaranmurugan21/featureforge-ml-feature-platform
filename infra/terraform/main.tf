@@ -3,13 +3,13 @@ data "aws_partition" "current" {}
 data "aws_caller_identity" "current" {}
 
 locals {
-  name                   = "featureforge-${var.environment}-${var.run_id}"
-  bucket_prefix          = "${local.name}-${data.aws_caller_identity.current.account_id}"
-  alarm_actions          = var.alarm_topic_arn == "" ? [] : [var.alarm_topic_arn]
-  glue_security_name     = "${local.name}-security"
-  glue_role_name         = "${local.name}-glue"
-  glue_log_group_prefix  = "/aws-glue/jobs/${local.name}"
-  glue_log_group_base    = "${local.glue_log_group_prefix}/${local.glue_security_name}-role/${local.glue_role_name}"
+  name                  = "featureforge-${var.environment}-${var.run_id}"
+  bucket_prefix         = "${local.name}-${data.aws_caller_identity.current.account_id}"
+  alarm_actions         = var.alarm_topic_arn == "" ? [] : [var.alarm_topic_arn]
+  glue_security_name    = "${local.name}-security"
+  glue_role_name        = "${local.name}-glue"
+  glue_log_group_prefix = "/aws-glue/jobs/${local.name}"
+  glue_log_group_base   = "${local.glue_log_group_prefix}/${local.glue_security_name}-role/${local.glue_role_name}"
   managed_log_group_names = {
     control_worker = "/aws/lambda/${local.name}-control-worker"
     orchestration  = "/aws/vendedlogs/states/${local.name}"
