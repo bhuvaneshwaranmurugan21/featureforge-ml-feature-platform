@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
@@ -11,7 +12,12 @@ import pytest
 
 from featureforge.canonical import canonical_json
 from featureforge.managed import AdmissionDenied, ManagedContractError, S3ObjectAuthority
-from featureforge.managed_admission import AWSManagedAdmission
+from featureforge.managed_admission import (
+    MAX_APPROVAL_BYTES,
+    AWSManagedAdmission,
+    _read_json,
+    object_authority,
+)
 from featureforge.stage6_live import LiveEvidenceError
 from tests.test_stage6_managed import costs, inventory, lease, manifest
 
@@ -169,3 +175,47 @@ def test_recheck_requires_original_durable_authority() -> None:
     receipt["cost_bound_evidence_digest"] = "e" * 64
     with pytest.raises(AdmissionDenied, match="durable admission authority changed"):
         admission.verify_current(run, receipt)
+
+
+def test_noncanonical_and_oversized_authority_rejected() -> None:
+    boundary = ReadBoundary()
+    for body in (b'{"x":1,"x":1}', b" " * (MAX_APPROVAL_BYTES + 1)):
+        boundary.objects["admission/run.json"] = body
+        pin = S3ObjectAuthority(
+            "artifact-bucket", "admission/run.json", "v1", hashlib.sha256(body).hexdigest()
+        )
+        with pytest.raises(ManagedContractError):
+            _read_json(boundary, pin)
+
+
+def test_stream_read_is_bounded_and_checksum_verified() -> None:
+    class StreamBoundary(ReadBoundary):
+        def get_object(self, **kwargs: Any) -> dict[str, Any]:
+            return {"VersionId": "v1", "Body": io.BytesIO(b'{"x":1}')}
+
+    pin = S3ObjectAuthority("artifact-bucket", "admission/run.json", "v1", "0" * 64)
+    with pytest.raises(ManagedContractError):
+        _read_json(StreamBoundary(), pin)
+
+
+def test_object_authority_is_closed_and_not_coerced() -> None:
+    with pytest.raises(ManagedContractError):
+        object_authority({"bucket": "artifact-bucket", "key": "admission/run.json"})
+    with pytest.raises(ManagedContractError):
+        object_authority({"bucket": 123, "key": "x", "version_id": "v1", "sha256": "a" * 64})
+
+
+def test_missing_deployment_pin_cannot_create_clients(monkeypatch: pytest.MonkeyPatch) -> None:
+    from featureforge import control_worker
+
+    class NoClients:
+        def client(self, *args: Any, **kwargs: Any) -> None:
+            pytest.fail("client constructed without deployment authority")
+
+    monkeypatch.setenv("CONTROL_TABLE", "control")
+    monkeypatch.setenv("ONLINE_TABLE", "online")
+    monkeypatch.setenv("AWS_REGION", "ap-south-1")
+    monkeypatch.delenv("ADMISSION_AUTHORITY_JSON", raising=False)
+    monkeypatch.setattr(control_worker.importlib, "import_module", lambda _: NoClients())
+    with pytest.raises(AdmissionDenied, match="deployment-pinned"):
+        control_worker._lambda_worker()

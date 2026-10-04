@@ -95,8 +95,15 @@ do not rerun completed initialization or overwrite historical authorities.
 
 Added a deployment-pinned, read-only AWS admission adapter and an eighth versioned contract.
 The control worker now wires this adapter with bounded SDK retry/timeouts and fails closed when
-no approval pin is configured. Fifteen local boundary tests cover expiration, strict numeric
+no approval pin is configured. Nineteen local boundary tests cover expiration, strict numeric
 types, source/account mismatch, lease version drift, quotas, cost arithmetic, gross budget
 eligibility and durable authority identity. These tests do not constitute production approval
 or live managed-runtime evidence. Aggregate cost enforcement and finite cleanup remain unresolved;
 the cost workload profile remains unverified. No lease, AWS resource or Terraform state was written.
+
+The integrated suite passed 411 tests with 88.00% coverage before four additional focused admission
+tests were added; all nineteen admission tests then passed. Ruff, strict mypy across twenty-three
+source files, dependency integrity, all seven stage validators and two byte-identical artifact
+builds passed. The first Infrastructure run identified a single spacing correction, now applied
+from the pinned formatter's actual diff. GitHub exact-head checks must be verified independently;
+no local result substitutes for the remaining acceptance, plan or governance gates.
