@@ -190,18 +190,18 @@
       "component": "xray-recording",
       "service_code": "AWSXRay",
       "units": [
-        "Traces"
+        "traces"
       ],
-      "usage_pattern": "(?:Recorded|Recording)",
+      "usage_pattern": "XRay-TracesStored",
       "quantity_millionths": 250000000
     },
     {
       "component": "xray-retrieval",
       "service_code": "AWSXRay",
       "units": [
-        "Traces"
+        "traces"
       ],
-      "usage_pattern": "(?:Retrieved|Scanned)",
+      "usage_pattern": "XRay-TracesAccessed",
       "quantity_millionths": 250000000
     },
     {

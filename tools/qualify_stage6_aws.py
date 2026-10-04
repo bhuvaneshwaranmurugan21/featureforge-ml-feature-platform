@@ -354,10 +354,20 @@ def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[st
                         for row in dimensions
                     }
                 )
+                diagnostic_shapes = sorted(
+                    catalog_shapes,
+                    key=lambda shape: (
+                        not bool(re.search(line["usage_pattern"], shape[1], re.IGNORECASE)),
+                        shape[0].casefold().rstrip("s")
+                        not in {unit.casefold().rstrip("s") for unit in line["units"]},
+                        shape,
+                    ),
+                )
                 missing_rates.append(
                     f"no current exact-region OnDemand USD rate for {line['component']}; "
+                    f"observed units: {sorted({shape[0] for shape in catalog_shapes})}; "
                     f"observed unit/usage shapes (first 32 of {len(catalog_shapes)}): "
-                    f"{catalog_shapes[:32]}"
+                    f"{diagnostic_shapes[:32]}"
                 )
                 continue
             # Charge all units at the maximum applicable tier, with no free-tier deduction.
