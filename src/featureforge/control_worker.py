@@ -27,6 +27,7 @@ from featureforge.expected import (
     project_feature_rows,
     project_online_records,
 )
+from featureforge.glue_launch import DurableGlueLauncher
 from featureforge.managed import (
     AdmissionDenied,
     ManagedContractError,
@@ -66,11 +67,13 @@ class ControlWorker:
         ledger: TaskLedgerBoundary,
         online: DynamoOnlineRuntime | None = None,
         admission: ManagedAdmissionBoundary | None = None,
+        glue_launcher: DurableGlueLauncher | None = None,
     ) -> None:
         self._s3 = s3
         self._ledger = ledger
         self._online = online
         self._admission = admission
+        self._glue_launcher = glue_launcher
 
     def _prior(self, manifest: ManagedRunManifest, task: str) -> Mapping[str, Any]:
         receipt = self._ledger.get(manifest.run_id, task)
@@ -159,7 +162,9 @@ class ControlWorker:
         )
         return plan, expected
 
-    def dispatch(self, event: Mapping[str, Any]) -> dict[str, Any]:
+    def dispatch(
+        self, event: Mapping[str, Any], *, invocation_id: str | None = None
+    ) -> dict[str, Any]:
         action = str(event.get("action", ""))
         manifest = ManagedRunManifest.from_dict(_mapping(event.get("manifest"), "manifest"))
         authority = _authority(_mapping(event.get("manifest_authority"), "manifest_authority"))
@@ -185,13 +190,18 @@ class ControlWorker:
         result = (
             admitted_result
             if admitted_result is not None
-            else self._execute(action, manifest, payload)
+            else self._execute(action, manifest, payload, invocation_id=invocation_id)
         )
         receipt = self._ledger.complete(manifest.run_id, action, result)
         return receipt | {"result": result}
 
     def _execute(
-        self, action: str, manifest: ManagedRunManifest, payload: Mapping[str, Any]
+        self,
+        action: str,
+        manifest: ManagedRunManifest,
+        payload: Mapping[str, Any],
+        *,
+        invocation_id: str | None = None,
     ) -> dict[str, Any]:
         if action == "VALIDATE":
             if self._admission is None:
@@ -259,7 +269,22 @@ class ControlWorker:
                         "admission contains conflicting frozen expected authority"
                     )
             return verified | expected_authority
+        if action == "START_GLUE":
+            admitted = self._prior(manifest, "VALIDATE")
+            execution_id = payload.get("execution_id")
+            if not isinstance(execution_id, str) or execution_id != admitted.get("execution_id"):
+                raise AdmissionDenied("Glue launch differs from durable execution owner")
+            if self._glue_launcher is None or invocation_id is None:
+                raise AdmissionDenied("durable Glue launcher and invocation identity are required")
+            return self._glue_launcher.start(
+                manifest, execution_id=execution_id, invocation_id=invocation_id
+            )
         if action == "RECORD_GLUE":
+            launched = self._prior(manifest, "START_GLUE")
+            if payload.get("glue_job_run_id") != launched.get("JobRunId") or payload.get(
+                "job_name"
+            ) != launched.get("JobName"):
+                raise AdmissionDenied("Glue completion differs from durable launch identity")
             if payload.get("state") != "SUCCEEDED":
                 raise AdmissionDenied("Glue completion is not successful")
             job_run_id = str(payload.get("glue_job_run_id", ""))
@@ -296,11 +321,14 @@ class ControlWorker:
             )
             observed_digest = content.pop("authority_digest", None)
             if (
-                content.get("contract") != "stage6-glue-output-authority-v1"
+                content.get("contract") != "stage6-glue-output-authority-v2"
                 or observed_digest != digest(content)
                 or content.get("input_authority") != manifest.inputs[0].as_dict()
+                or content.get("launch_authority_digest") != launched.get("launch_authority_digest")
             ):
-                raise ManagedContractError("Glue output authority does not bind the source")
+                raise ManagedContractError(
+                    "Glue output authority does not bind the source and launch"
+                )
             rows_authority = _authority(
                 _mapping(content.get("rows_authority"), "Glue rows authority")
             )
@@ -403,9 +431,16 @@ class ControlWorker:
             admission_value = self._prior(manifest, "VALIDATE")
             task_receipts = [
                 self._ledger.get(manifest.run_id, name)
-                for name in ("VALIDATE", "RECORD_GLUE", "MATERIALIZE_ONLINE", "PARITY", "ACTIVATE")
+                for name in (
+                    "VALIDATE",
+                    "START_GLUE",
+                    "RECORD_GLUE",
+                    "MATERIALIZE_ONLINE",
+                    "PARITY",
+                    "ACTIVATE",
+                )
             ]
-            for name in ("RECORD_GLUE", "MATERIALIZE_ONLINE", "PARITY", "ACTIVATE"):
+            for name in ("START_GLUE", "RECORD_GLUE", "MATERIALIZE_ONLINE", "PARITY", "ACTIVATE"):
                 self._prior(manifest, name)
             glue = self._prior(manifest, "RECORD_GLUE")
             outputs = payload.get("output_objects")
@@ -460,6 +495,16 @@ def _lambda_worker() -> ControlWorker:
     s3: S3Client = boto3.client("s3", region_name=region, config=config)
     dynamodb = boto3.client("dynamodb", region_name=region, config=config)
     ledger = DynamoTaskLedger(dynamodb, table_name)
+    glue_config = config_type(
+        retries={"mode": "standard", "total_max_attempts": 1},
+        connect_timeout=5,
+        read_timeout=10,
+    )
+    account = os.environ.get("EXPECTED_ACCOUNT", "")
+    job_name = os.environ.get("GLUE_JOB_NAME", "")
+    kms_key = os.environ.get("KMS_KEY_ARN", "")
+    if not account or not job_name or not kms_key:
+        raise AdmissionDenied("deployment Glue job, account and KMS identities are required")
     return ControlWorker(
         s3=s3,
         ledger=ledger,
@@ -472,13 +517,21 @@ def _lambda_worker() -> ControlWorker:
             authority=authority,
             region=region,
         ),
+        glue_launcher=DurableGlueLauncher(
+            dynamodb,
+            boto3.client("glue", region_name=region, config=glue_config),
+            table=table_name,
+            job_name=job_name,
+            kms_key=kms_key,
+            account=account,
+        ),
     )
 
 
 def lambda_handler(event: Mapping[str, Any], _context: Any) -> dict[str, Any]:
     if os.environ.get("FEATUREFORGE_STAGE6_ENABLED") != "true":
         raise RuntimeError("Stage 6 control worker is disabled by default")
-    return _lambda_worker().dispatch(event)
+    return _lambda_worker().dispatch(event, invocation_id=getattr(_context, "aws_request_id", None))
 
 
 __all__ = ["ControlWorker", "lambda_handler", "completion_receipt"]

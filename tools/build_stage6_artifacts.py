@@ -19,6 +19,7 @@ WORKER_FILES = (
     "src/featureforge/canonical.py",
     "src/featureforge/control_worker.py",
     "src/featureforge/expected.py",
+    "src/featureforge/glue_launch.py",
     "src/featureforge/managed.py",
     "src/featureforge/managed_admission.py",
     "src/featureforge/model.py",

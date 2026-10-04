@@ -5,8 +5,10 @@ from __future__ import annotations
 import copy
 import hashlib
 import io
+import json
 import threading
 from dataclasses import asdict, replace
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -18,7 +20,8 @@ from featureforge.expected import project_feature_rows
 from featureforge.managed import ManagedRunManifest, S3ObjectAuthority, admit_managed_run
 from featureforge.model import FeatureDefinition, FeatureValue, PaymentEvent
 from featureforge.online import build_materialization_plan, validate_dynamodb_request
-from tests.test_stage6_managed import FakeS3, costs, inventory, lease, manifest
+from tests.test_stage6_glue_launch import GlueBoundary, PersistentBoundary, launcher, manifest
+from tests.test_stage6_managed import FakeS3, costs, inventory, lease
 
 
 class DatabaseBoundary:
@@ -123,7 +126,7 @@ class DatabaseBoundary:
         return {}
 
 
-def fixture() -> tuple[ControlWorker, dict[str, Any], DatabaseBoundary]:
+def fixture(tmp_path: Path) -> tuple[ControlWorker, dict[str, Any], DatabaseBoundary]:
     definition = FeatureDefinition(
         "count", 1, "integer", 1000, "transaction_count", 100, "count", 0
     )
@@ -176,7 +179,7 @@ def fixture() -> tuple[ControlWorker, dict[str, Any], DatabaseBoundary]:
         hashlib.sha256(generation_bytes).hexdigest(),
     )
     output_content = {
-        "contract": "stage6-glue-output-authority-v1",
+        "contract": "stage6-glue-output-authority-v2",
         "generation_id": "g1",
         "input_authority": source_auth.as_dict(),
         "rows_authority": row_auth.as_dict(),
@@ -231,6 +234,7 @@ def fixture() -> tuple[ControlWorker, dict[str, Any], DatabaseBoundary]:
         ledger=TaskLedger(),
         online=DynamoOnlineRuntime(database, "online", "control"),
         admission=LocalAdmission(),
+        glue_launcher=launcher(PersistentBoundary(tmp_path / "launch.sqlite"), GlueBoundary()),
     )
     request = {
         "action": "MATERIALIZE_ONLINE",
@@ -245,15 +249,34 @@ def fixture() -> tuple[ControlWorker, dict[str, Any], DatabaseBoundary]:
         },
     }
     worker.dispatch(request | {"action": "VALIDATE", "payload": {"execution_id": "execution-1"}})
+    launched = worker.dispatch(
+        request | {"action": "START_GLUE", "payload": {"execution_id": "execution-1"}},
+        invocation_id="launch-1",
+    )
+    published = output_content | {
+        "launch_authority_digest": launched["result"]["launch_authority_digest"]
+    }
+    objects[(output_auth.bucket, output_auth.key, output_auth.version_id)] = canonical_json(
+        published | {"authority_digest": digest(published)}
+    ).encode()
     worker.dispatch(
         request
-        | {"action": "RECORD_GLUE", "payload": {"glue_job_run_id": "jr-1", "state": "SUCCEEDED"}}
+        | {
+            "action": "RECORD_GLUE",
+            "payload": {
+                "glue_job_run_id": "jr-1",
+                "job_name": "featureforge-stage6-run-001-offline",
+                "state": "SUCCEEDED",
+            },
+        }
     )
     return worker, request, database
 
 
-def test_validation_replay_preserves_execution_owner_and_rejects_second_execution() -> None:
-    worker, request, database = fixture()
+def test_validation_replay_preserves_execution_owner_and_rejects_second_execution(
+    tmp_path: Path,
+) -> None:
+    worker, request, database = fixture(tmp_path)
     first = request | {"action": "VALIDATE", "payload": {"execution_id": "execution-1"}}
     receipt = worker.dispatch(first)
     assert receipt["result"]["execution_id"] == "execution-1"
@@ -265,16 +288,18 @@ def test_validation_replay_preserves_execution_owner_and_rejects_second_executio
 
 
 @pytest.mark.parametrize("execution_id", [None, True, 1, "", " padded ", "x" * 257])
-def test_validation_rejects_missing_or_coerced_execution_owner(execution_id: Any) -> None:
-    worker, request, database = fixture()
+def test_validation_rejects_missing_or_coerced_execution_owner(
+    execution_id: Any, tmp_path: Path
+) -> None:
+    worker, request, database = fixture(tmp_path)
     calls = list(database.calls)
     with pytest.raises(ValueError, match="execution identity"):
         worker.dispatch(request | {"action": "VALIDATE", "payload": {"execution_id": execution_id}})
     assert database.calls == calls
 
 
-def test_real_requests_materialize_parity_and_lost_ack_activation() -> None:
-    worker, request, database = fixture()
+def test_real_requests_materialize_parity_and_lost_ack_activation(tmp_path: Path) -> None:
+    worker, request, database = fixture(tmp_path)
     result = worker.dispatch(request)
     assert result["result"]["candidate_count"] == 1
     assert worker.dispatch(request) == result
@@ -297,8 +322,8 @@ def test_real_requests_materialize_parity_and_lost_ack_activation() -> None:
     assert sum(name == "PutItem" for name, _ in database.calls) == 1
 
 
-def test_corrupted_managed_records_fail_before_activation() -> None:
-    worker, request, database = fixture()
+def test_corrupted_managed_records_fail_before_activation(tmp_path: Path) -> None:
+    worker, request, database = fixture(tmp_path)
     worker.dispatch(request)
     item = next(item for (table, _, _), item in database.items.items() if table == "online")
     item["value"] = {"N": "999"}
@@ -310,16 +335,16 @@ def test_corrupted_managed_records_fail_before_activation() -> None:
     )
 
 
-def test_repeated_scan_cursor_and_extra_record_fail_closed() -> None:
-    worker, request, database = fixture()
+def test_repeated_scan_cursor_and_extra_record_fail_closed(tmp_path: Path) -> None:
+    worker, request, database = fixture(tmp_path)
     worker.dispatch(request)
     database.repeat_cursor = True
     with pytest.raises(RuntimeConflict, match="cursor repeated"):
         worker.dispatch(request | {"action": "PARITY"})
 
 
-def test_parity_uses_source_not_caller_digests_and_freshness() -> None:
-    worker, request, database = fixture()
+def test_parity_uses_source_not_caller_digests_and_freshness(tmp_path: Path) -> None:
+    worker, request, database = fixture(tmp_path)
     request["payload"]["request_time"] = 1011
     worker.dispatch(request)
     result = worker.dispatch(request | {"action": "PARITY"})["result"]
@@ -327,7 +352,7 @@ def test_parity_uses_source_not_caller_digests_and_freshness() -> None:
     assert "INELIGIBLE_RECORD" in result["parity_report"]["reasons"]
 
 
-def test_runtime_rejects_conflicting_immutable_record() -> None:
+def test_runtime_rejects_conflicting_immutable_record(tmp_path: Path) -> None:
     definition = FeatureDefinition(
         "count", 1, "integer", 1000, "transaction_count", 100, "count", 0
     )
@@ -346,3 +371,25 @@ def test_runtime_rejects_conflicting_immutable_record() -> None:
     row["record_digest"] = {"S": "f" * 64}
     with pytest.raises(RuntimeConflict, match="envelope"):
         runtime.materialize(plan)
+
+
+def test_completion_rejects_output_from_another_counted_launch(tmp_path: Path) -> None:
+    worker, request, _ = fixture(tmp_path)
+    run = ManagedRunManifest.from_dict(request["manifest"])
+    key = (run.output_bucket, run.output_prefix + "output-authority.json", "v1")
+    content = json.loads(worker._s3.objects[key])
+    content.pop("authority_digest")
+    content["launch_authority_digest"] = "f" * 64
+    worker._s3.objects[key] = canonical_json(
+        content | {"authority_digest": digest(content)}
+    ).encode()
+    with pytest.raises(ValueError, match="source and launch"):
+        worker._execute(
+            "RECORD_GLUE",
+            run,
+            {
+                "glue_job_run_id": "jr-1",
+                "job_name": "featureforge-stage6-run-001-offline",
+                "state": "SUCCEEDED",
+            },
+        )

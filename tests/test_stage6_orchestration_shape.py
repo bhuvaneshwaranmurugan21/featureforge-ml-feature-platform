@@ -76,7 +76,7 @@ def _glue_response(state: str = "SUCCEEDED", run_id: str = "jr-1") -> dict[str, 
 
 
 def _glue_choice_accepts(document: dict[str, Any]) -> bool:
-    block = _state("GlueCompletionDecision")
+    block = _state("GlueCompletionDecision").split('Next = "RecordGlueCompletion"')[0]
     predicates = re.findall(
         r'Variable\s*=\s*"([^"\n]+)"\s*'
         r'(StringEqualsPath|StringEquals)\s*=\s*"([^"\n]+)"',
@@ -100,7 +100,8 @@ def test_glue_start_and_get_job_run_use_declared_api_shapes() -> None:
 
     state = _state("VerifyGlueCompletion")
     assert "states:::aws-sdk:glue:getJobRun" in state
-    assert _expression(_state("BuildOfflineGeneration"), "Next") == "VerifyGlueCompletion"
+    assert _expression(_state("BuildOfflineGeneration"), "Next") == "WaitForGlueCompletion"
+    assert _expression(_state("WaitForGlueCompletion"), "Next") == "VerifyGlueCompletion"
     get = glue.operation_model("GetJobRun")
     assert get.input_shape is not None and get.output_shape is not None
     request = {
@@ -166,20 +167,28 @@ def test_online_and_parity_take_identical_glue_provenance_and_context() -> None:
 
 
 def test_glue_arguments_cannot_override_manifest_or_managed_runtime() -> None:
+    from featureforge.glue_launch import launch_request
+    from tests.test_stage6_glue_launch import manifest
+
     build = _state("BuildOfflineGeneration")
     assert "$.glue_arguments" not in build
-    assert _expression(build, "--input-version.$") == "$.manifest.inputs[0].version_id"
-    assert _expression(build, "--input-sha256.$") == "$.manifest.inputs[0].sha256"
-    assert _expression(build, "--output-prefix.$") == "$.manifest.output_prefix"
-    assert _expression(build, "--max-input-rows.$") == (
-        "States.Format('{}', $.manifest.max_input_rows)"
-    )
-    assert _expression(build, "--max-output-rows.$") == (
-        "States.Format('{}', $.manifest.max_output_rows)"
-    )
-    assert '"--kms-key-arn"           = aws_kms_key.platform.arn' in build
-    assert '"--expected-bucket-owner" = data.aws_caller_identity.current.account_id' in build
-    assert "--additional-python-modules" not in build
+    assert _expression(build, "action") == "START_GLUE"
+    assert _expression(build, "manifest.$") == "$.manifest"
+    assert _expression(build, "execution_id.$") == "$$.Execution.Id"
+    args = launch_request(
+        manifest(),
+        job_name="featureforge-stage6-run-001-offline",
+        kms_key="key",
+        account="123456789012",
+    )["Arguments"]
+    assert args["--input-version"] == manifest().inputs[0].version_id
+    assert args["--input-sha256"] == manifest().inputs[0].sha256
+    assert args["--output-prefix"] == manifest().output_prefix
+    assert args["--max-input-rows"] == str(manifest().max_input_rows)
+    assert args["--max-output-rows"] == str(manifest().max_output_rows)
+    assert args["--kms-key-arn"] == "key"
+    assert args["--expected-bucket-owner"] == "123456789012"
+    assert "--additional-python-modules" not in args
 
 
 def test_completion_binds_actual_receipts_and_versioned_glue_outputs() -> None:
@@ -189,7 +198,7 @@ def test_completion_binds_actual_receipts_and_versioned_glue_outputs() -> None:
         "$.glue_receipt.Payload.result.output_objects"
     )
     assert _expression(complete, "task_receipts.$") == (
-        "States.Array($.validation_result.Payload, $.glue_receipt.Payload, "
+        "States.Array($.validation_result.Payload, $.glue_result.receipt, $.glue_receipt.Payload, "
         "$.online_result.Payload, $.parity_result.Payload, $.activation_result.Payload)"
     )
     assert "$.completion_payload" not in complete

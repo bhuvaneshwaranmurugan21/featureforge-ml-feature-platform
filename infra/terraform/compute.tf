@@ -124,8 +124,9 @@ resource "aws_sfn_state_machine" "materialization" {
   tracing_configuration { enabled = true }
 
   definition = jsonencode({
-    Comment = "FeatureForge bounded, parity-gated managed materialization"
-    StartAt = "ValidateManifest"
+    Comment        = "FeatureForge bounded, parity-gated managed materialization"
+    StartAt        = "ValidateManifest"
+    TimeoutSeconds = 3600
     States = {
       ValidateManifest = {
         Type     = "Task"
@@ -148,31 +149,34 @@ resource "aws_sfn_state_machine" "materialization" {
       }
       BuildOfflineGeneration = {
         Type     = "Task"
-        Resource = "arn:${data.aws_partition.current.partition}:states:::glue:startJobRun.sync"
+        Resource = "arn:${data.aws_partition.current.partition}:states:::lambda:invoke"
         Parameters = {
-          JobName = aws_glue_job.offline.name
-          Arguments = {
-            "--input-bucket.$"        = "$.manifest.inputs[0].bucket"
-            "--input-key.$"           = "$.manifest.inputs[0].key"
-            "--input-version.$"       = "$.manifest.inputs[0].version_id"
-            "--input-sha256.$"        = "$.manifest.inputs[0].sha256"
-            "--output-bucket.$"       = "$.manifest.output_bucket"
-            "--output-prefix.$"       = "$.manifest.output_prefix"
-            "--kms-key-arn"           = aws_kms_key.platform.arn
-            "--expected-bucket-owner" = data.aws_caller_identity.current.account_id
-            "--max-input-rows.$"      = "States.Format('{}', $.manifest.max_input_rows)"
-            "--max-output-rows.$"     = "States.Format('{}', $.manifest.max_output_rows)"
+          FunctionName = aws_lambda_function.control_worker.arn
+          Payload = {
+            action                 = "START_GLUE"
+            "manifest.$"           = "$.manifest"
+            "manifest_authority.$" = "$.manifest_authority"
+            payload = {
+              "execution_id.$" = "$$.Execution.Id"
+            }
           }
         }
+        ResultSelector = {
+          "JobName.$"  = "$.Payload.result.JobName"
+          "JobRunId.$" = "$.Payload.result.JobRunId"
+          "receipt.$"  = "$.Payload"
+        }
         ResultPath = "$.glue_result"
-        Retry = [{
-          ErrorEquals     = ["Glue.ConcurrentRunsExceededException", "Glue.OperationTimeoutException", "Glue.ThrottlingException"]
-          IntervalSeconds = 10
-          MaxAttempts     = 2
-          BackoffRate     = 2
-        }]
+        Retry = [merge(local.lambda_retry[0], {
+          ErrorEquals = concat(local.lambda_retry[0].ErrorEquals, ["GlueLaunchRetryable"])
+        })]
         Catch = local.catch_quarantine
-        Next  = "VerifyGlueCompletion"
+        Next  = "WaitForGlueCompletion"
+      }
+      WaitForGlueCompletion = {
+        Type    = "Wait"
+        Seconds = 10
+        Next    = "VerifyGlueCompletion"
       }
       VerifyGlueCompletion = {
         Type     = "Task"
@@ -210,6 +214,26 @@ resource "aws_sfn_state_machine" "materialization" {
             }
           ]
           Next = "RecordGlueCompletion"
+        }, {
+          And = [
+            {
+              Variable         = "$.glue_completion.JobRun.Id"
+              StringEqualsPath = "$.glue_result.JobRunId"
+            },
+            {
+              Variable         = "$.glue_completion.JobRun.JobName"
+              StringEqualsPath = "$.glue_result.JobName"
+            },
+            {
+              Or = [
+                { Variable = "$.glue_completion.JobRun.JobRunState", StringEquals = "STARTING" },
+                { Variable = "$.glue_completion.JobRun.JobRunState", StringEquals = "RUNNING" },
+                { Variable = "$.glue_completion.JobRun.JobRunState", StringEquals = "WAITING" },
+                { Variable = "$.glue_completion.JobRun.JobRunState", StringEquals = "STOPPING" }
+              ]
+            }
+          ]
+          Next = "WaitForGlueCompletion"
         }]
         Default = "Quarantined"
       }
@@ -322,7 +346,7 @@ resource "aws_sfn_state_machine" "materialization" {
             payload = {
               "admission.$"      = "$.validation_result.Payload.result"
               "output_objects.$" = "$.glue_receipt.Payload.result.output_objects"
-              "task_receipts.$"  = "States.Array($.validation_result.Payload, $.glue_receipt.Payload, $.online_result.Payload, $.parity_result.Payload, $.activation_result.Payload)"
+              "task_receipts.$"  = "States.Array($.validation_result.Payload, $.glue_result.receipt, $.glue_receipt.Payload, $.online_result.Payload, $.parity_result.Payload, $.activation_result.Payload)"
             }
           }
         }

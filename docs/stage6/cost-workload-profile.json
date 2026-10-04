@@ -6,7 +6,7 @@
   "bound_enforcement_verified": false,
   "bound_requirements": [
     "One workflow execution only",
-    "Lambda: six tasks, initial plus three retries, 512 MiB and 300 seconds each",
+    "Lambda: seven tasks, initial plus three retries, 512 MiB and 300 seconds each; repeated redrives remain a separate aggregate-effects gate",
     "Glue: two G.1X DPUs, fifteen minutes, initial plus two orchestration retries",
     "At most two GiB across all DynamoDB storage and PITR versions",
     "At most two GiB across all S3 object versions including artifacts, input, output and Spark spill",
@@ -40,7 +40,7 @@
         "GB-Seconds"
       ],
       "usage_pattern": "Lambda-GB-Second",
-      "quantity_millionths": 3600000000
+      "quantity_millionths": 4200000000
     },
     {
       "component": "lambda-requests",
@@ -49,7 +49,7 @@
         "Request"
       ],
       "usage_pattern": "^APS2-Request(?: |$)",
-      "quantity_millionths": 24000000
+      "quantity_millionths": 28000000
     },
     {
       "component": "states-transitions",
@@ -58,7 +58,7 @@
         "StateTransitions"
       ],
       "usage_pattern": "StateTransition",
-      "quantity_millionths": 250000000
+      "quantity_millionths": 2000000000
     },
     {
       "component": "dynamodb-write-units",

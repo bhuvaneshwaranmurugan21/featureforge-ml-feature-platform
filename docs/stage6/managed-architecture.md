@@ -50,7 +50,8 @@ The planned job is a small managed qualification, not a scale benchmark. It uses
 a fifteen-minute timeout, a bounded JSON source object, and explicit input/output row limits. Stage 7
 must measure the managed behavior; Stage 8 owns failure injection and teardown. Stage 6 cannot promote
 `AWS_MANAGED_RUNTIME` beyond `NOT_YET_VERIFIED`.
-# Deployment-pinned admission adapter
+
+## Deployment-pinned admission adapter
 
 The control worker now requires `ADMISSION_AUTHORITY_JSON` to identify an immutable approval
 object by bucket, key, version and SHA-256. A missing pin fails closed. The worker cannot issue
@@ -70,3 +71,25 @@ No production approval has been issued. The cost-bound evidence digest identifie
 proof; it does not manufacture one. `bound_enforcement_verified` remains false until aggregate
 internal effects, redrive limits and finite teardown are mechanically proved. Runtime enablement
 and admission authority therefore remain absent by default.
+
+## Durable Glue launch admission
+
+`START_GLUE` is a real control-worker task. The state machine cannot call `StartJobRun` directly;
+only the worker role can launch the exact job. Before launching, it checks the deployed job's
+retry and concurrency settings. Three fixed DynamoDB attempt keys bind the manifest, execution,
+deployment job, compute limits and request. Conditional transactions reserve a slot before a
+single-attempt SDK request. Unknown reservations and unknown launch outcomes consume slots.
+Completed launch results replay after process restart. No runtime role may delete these records.
+
+The launcher passes a per-slot authority digest into Glue. The version-2 output authority carries
+that digest, and the worker rejects outputs associated with another physical launch. Job/run IDs
+also match the durable launch receipt. This preserves provenance when a lost acknowledgement
+causes another counted attempt. The state machine waits ten seconds between exact-job status
+reads, accepts only matching successful completion, quarantines terminal failures, and has a
+one-hour execution timeout. A quarantined asynchronous job remains subject to its fifteen-minute
+job timeout; quarantine does not claim that AWS cancellation or resource cleanup occurred.
+
+Local SQLite tests exercise independent concurrent database connections and persistence across
+launcher reconstruction. They validate request shapes against the pinned SDK and inject lost
+acknowledgements at reservation, launch and completion boundaries. This is local contract evidence,
+not a live DynamoDB/Glue test or aggregate cost proof. The workload cost profile remains unverified.

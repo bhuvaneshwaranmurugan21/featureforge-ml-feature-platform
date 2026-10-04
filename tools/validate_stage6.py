@@ -25,6 +25,10 @@ BASE = "86b3cd27ae95a6142a1d6601d188d83b8e783d29"
 BASE_TREE = "a9aeb81af407af5fb2108e9d2ef3a194770b9761"
 ACCEPTANCE = {f"ST6-AC-{number:02d}" for number in range(1, 25)}
 INDEXED = (
+    "contracts/stage6-glue-launch-v1.json",
+    "contracts/stage6-glue-output-authority-v2.json",
+    "src/featureforge/glue_launch.py",
+    "tests/test_stage6_glue_launch.py",
     "contracts/stage6-admission-authority-v1.json",
     "src/featureforge/managed_admission.py",
     "tests/test_stage6_managed_admission.py",
@@ -158,7 +162,7 @@ def _validate_oracle(root: Path) -> None:
 
 def _validate_contracts(root: Path) -> None:
     paths = sorted((root / "contracts").glob("stage6-*.json"))
-    _check(len(paths) == 8, "exactly eight Stage 6 contracts are required")
+    _check(len(paths) == 10, "exactly ten Stage 6 contracts are required")
     for path in paths:
         value = json.loads(path.read_text(encoding="utf-8"))
         _check(str(value.get("$id", "")).startswith("urn:featureforge:stage6-"), path.name)
@@ -229,7 +233,13 @@ def _validate_terraform(root: Path) -> None:
     versions = (root / "infra/terraform/versions.tf").read_text(encoding="utf-8")
     lock = (root / "infra/terraform/.terraform.lock.hcl").read_text(encoding="utf-8")
     workflow = (root / ".github/workflows/terraform.yml").read_text(encoding="utf-8")
-    _check("states:::glue:startJobRun.sync" in compute, "Glue integration missing")
+    _check("states:::aws-sdk:glue:getJobRun" in compute, "Glue completion integration missing")
+    _check('action                 = "START_GLUE"' in compute, "budgeted Glue launch missing")
+    _check(
+        "self.glue.start_job_run(**counted_request)"
+        in (root / "src/featureforge/glue_launch.py").read_text(),
+        "physical Glue launch missing",
+    )
     _check(compute.count("states:::lambda:invoke") >= 5, "Lambda integrations incomplete")
     _check('Type = "Pass"' not in compute and 'Type  = "Pass"' not in compute, "Pass state")
     _check('state               = "DISABLED"' in compute, "schedule is not disabled")

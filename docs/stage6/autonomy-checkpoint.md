@@ -115,3 +115,21 @@ those reads rejects. The corrected Infrastructure run `37225557658` passed on re
 checks. Read-only qualification still rejects unproved workload/retention bounds. Broad optional
 Ruff formatting inspection also reported pre-existing formatting differences; required Ruff lint
 passes, and unrelated predecessor files were not rewritten.
+# Durable launch budget repair
+
+Continued from published head `06c58de87c6438bd1c364df5993bec6e2b45cc6a`, without restarting.
+Added a fixed-slot persistent launcher, a `START_GLUE` task, conditional reservations and
+single-attempt SDK enforcement. Deployed Glue retry and concurrency metadata is checked before
+reservation; unknown write/launch acknowledgements consume slots and completed launch identities
+replay. Local SQLite tests cover separate concurrent connections and reconstructed launcher objects.
+The state machine launches through this worker, polls the exact run with a ten-second wait, and
+has a one-hour timeout. Its role no longer has direct launch permission. A per-slot digest binds
+the version-2 output authority to the recorded physical launch; another launch's outputs reject.
+
+The two new schemas bring Stage 6 to ten contracts. Proposed single-execution cost quantities are
+updated to twenty-eight Lambda invocations, 4,200 GB-seconds, and 2,000 state transitions. These
+are not an aggregate redrive or resource-lifetime proof. The workload profile deliberately remains
+unverified; no approval, lease, state, AWS resource, or managed workload was written or executed.
+The previous saved plan is superseded and cannot qualify these changed artifacts and IAM definitions.
+
+Final local validation of the durable launch repair: 426 tests passed, 87.69% coverage, Ruff and strict MyPy passed, all seven local validators passed, and two clean runtime artifact rebuilds matched byte for byte. These are local results; aggregate cost-bound qualification and refreshed AWS/plan/governance closure remain open.

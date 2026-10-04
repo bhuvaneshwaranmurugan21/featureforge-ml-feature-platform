@@ -8,7 +8,7 @@
 | Control worker | KMS encrypt/decrypt/data key | One project key | Required by encrypted buckets/tables |
 | Glue job | Read artifacts and exact inputs; write isolated output | Artifact, offline, and evidence buckets | Execute bounded feature computation |
 | Glue job | KMS encrypt/decrypt/data key | One project key | Encrypted input/output and logs |
-| State machine | Invoke exact Lambda; start/get/stop exact Glue job | Exact function/job | Managed control graph |
+| State machine | Invoke exact Lambda; read exact Glue job-run status | Exact function/job | Managed control graph; launching requires durable worker admission |
 | EventBridge | Start exact state machine | Exact state machine | Disabled schedule definition only |
 | GitHub plan role | Get/list/describe/simulate | Read-only qualification APIs | Terraform refresh and qualification, never apply |
 
@@ -30,3 +30,7 @@ FeatureForge Stage 6 bootstrap lease object, service quota observations in the a
 and gross account budget observations. Budget reads use the account's budget ARN namespace;
 service quota reads require `*` because the API has no resource-level scope, with an explicit
 requested-region condition. These are future Terraform policy definitions, not applied IAM changes.
+The control worker now additionally has `GetJob` and `StartJobRun` only for the exact deployed
+Glue job. The Step Functions role has only `GetJobRun` for that job; it cannot bypass the durable
+launch budget. Glue's own role cannot launch jobs, and runtime roles cannot delete launch records.
+All changes remain Terraform definitions; none have been applied.

@@ -18,7 +18,15 @@ from featureforge.canonical import digest
 HEX40 = frozenset("0123456789abcdef")
 HEX64 = frozenset("0123456789abcdef")
 TASKS = frozenset(
-    {"VALIDATE", "RECORD_GLUE", "MATERIALIZE_ONLINE", "PARITY", "ACTIVATE", "COMPLETE"}
+    {
+        "VALIDATE",
+        "START_GLUE",
+        "RECORD_GLUE",
+        "MATERIALIZE_ONLINE",
+        "PARITY",
+        "ACTIVATE",
+        "COMPLETE",
+    }
 )
 MAX_AUTHORITY_AGE_SECONDS = 3_600
 STAGE6_MAX_COST_MICROUSD = 25_000_000

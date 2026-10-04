@@ -15,6 +15,11 @@ resource "aws_iam_role" "control_worker" {
 
 data "aws_iam_policy_document" "control_worker" {
   statement {
+    sid       = "BudgetedExactGlueLaunch"
+    actions   = ["glue:GetJob", "glue:StartJobRun"]
+    resources = [aws_glue_job.offline.arn]
+  }
+  statement {
     sid       = "ReadImmutableAdmissionAuthority"
     actions   = ["s3:GetObjectVersion"]
     resources = ["${aws_s3_bucket.artifacts.arn}/admission/*"]
@@ -217,7 +222,7 @@ data "aws_iam_policy_document" "states" {
 
   statement {
     sid       = "RunExactGlueJob"
-    actions   = ["glue:BatchStopJobRun", "glue:GetJobRun", "glue:GetJobRuns", "glue:StartJobRun"]
+    actions   = ["glue:GetJobRun"]
     resources = [aws_glue_job.offline.arn]
   }
 

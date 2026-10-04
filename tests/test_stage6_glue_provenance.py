@@ -211,6 +211,7 @@ def test_commit_receipt_binds_input_and_both_exact_output_versions() -> None:
         "prefix": "generations/g1/",
         "owner": OWNER,
         "kms_key": KMS,
+        "launch_authority_digest": "b" * 64,
     }
     result = publish_outputs(**kwargs)
     receipt = result["receipt"]
@@ -245,6 +246,7 @@ def test_partial_publication_never_advertises_committed_output_authority() -> No
             prefix="generations/g1/",
             owner=OWNER,
             kms_key=KMS,
+            launch_authority_digest="b" * 64,
         )
     assert set(client.objects) == {"generations/g1/rows.json"}
 
@@ -262,6 +264,7 @@ def test_unbound_manifest_is_rejected_before_any_output_write() -> None:
             prefix="generations/g1/",
             owner=OWNER,
             kms_key=KMS,
+            launch_authority_digest="b" * 64,
         )
     assert not client.puts
 

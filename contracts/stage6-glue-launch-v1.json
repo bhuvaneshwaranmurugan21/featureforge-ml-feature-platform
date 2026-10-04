@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage6-glue-launch:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "PK",
+    "SK",
+    "contract",
+    "binding"
+  ],
+  "properties": {
+    "PK": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "S"
+      ],
+      "properties": {
+        "S": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "SK": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "S"
+      ],
+      "properties": {
+        "S": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "S"
+      ],
+      "properties": {
+        "S": {
+          "const": "stage6-glue-launch-v1"
+        }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "S"
+      ],
+      "properties": {
+        "S": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "S"
+      ],
+      "properties": {
+        "S": {
+          "enum": [
+            "RESERVED",
+            "COMPLETED"
+          ]
+        }
+      }
+    },
+    "invocation_id": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "S"
+      ],
+      "properties": {
+        "S": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "result_json": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "S"
+      ],
+      "properties": {
+        "S": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "result_digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "S"
+      ],
+      "properties": {
+        "S": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "SK": {
+          "properties": {
+            "S": {
+              "const": "GLUE#AUTHORITY"
+            }
+          }
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "state"
+            ]
+          },
+          {
+            "required": [
+              "invocation_id"
+            ]
+          },
+          {
+            "required": [
+              "result_json"
+            ]
+          },
+          {
+            "required": [
+              "result_digest"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "required": [
+        "state",
+        "invocation_id"
+      ],
+      "properties": {
+        "SK": {
+          "properties": {
+            "S": {
+              "pattern": "^GLUE#ATTEMPT#[1-3]$"
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "state": {
+            "properties": {
+              "S": {
+                "const": "COMPLETED"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "result_json",
+          "result_digest"
+        ]
+      },
+      "else": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "result_json"
+              ]
+            },
+            {
+              "required": [
+                "result_digest"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

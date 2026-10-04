@@ -14,7 +14,8 @@ def terraform_text() -> str:
 
 def test_state_machine_has_real_integrations_and_fail_closed_quarantine() -> None:
     text = (TF / "compute.tf").read_text()
-    assert 'states:::glue:startJobRun.sync' in text
+    assert "states:::aws-sdk:glue:getJobRun" in text
+    assert 'action                 = "START_GLUE"' in text
     assert text.count("states:::lambda:invoke") >= 5
     assert 'Type  = "Pass"' not in text and 'Type = "Pass"' not in text
     assert 'Default = "Quarantined"' in text

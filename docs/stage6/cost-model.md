@@ -28,7 +28,7 @@ Unknown products, absent components, pagination cycles and a twenty-percent-incl
 USD 25 reject admission.
 
 `cost-workload-profile.json` freezes proposed quantities, including three possible Glue launches
-(initial plus two retries), twenty-four possible Lambda invocations (six tasks, initial plus three
+(three durable slots), twenty-eight possible Lambda invocations (seven tasks, initial plus three
 retries), PITR, object versions, logs, custom metrics, alarms, dashboard and X-Ray. Each line is an
 explicit billed-unit quantity; it is not a currency allowance. Thirty-day storage quantities are
 full-month conservative bounds, not a claim that resources automatically expire. The profile's
@@ -50,18 +50,20 @@ the expired historical plan is not renewed by this code change.
 
 ## Source review of the remaining quantity authority
 
-The reviewed graph supplies finite *per-execution* compute limits: six Lambda task states, each with
+The reviewed graph supplies finite *per-execution* compute limits: seven Lambda task states, each with
 an initial invocation plus at most three retries, use 512 MiB and a 300-second timeout. That gives
-at most `6 × 4 × 0.5 × 300 = 3,600 GB-seconds` and twenty-four invocations **if there is exactly one
-admitted Step Functions execution**. The Glue state permits an initial run plus two retries, each
+at most `7 × 4 × 0.5 × 300 = 4,200 GB-seconds` and twenty-eight invocations **if there is exactly one
+admitted Step Functions execution without redrive**. The durable Glue launcher admits three slots, each
 using two `G.1X` workers for at most fifteen minutes: `3 × 2 × 15/60 = 1.5 DPU-hours` under the same
-single-execution condition. After adding GetJobRun and its completion choice, the conservative
-successful/failure path has thirty-three state entries, counting the largest retry path and
-quarantine. These arithmetic bounds do not establish the missing execution-count authority.
+single-execution condition. A ten-second polling wait and one-hour workflow timeout allow at most
+360 poll cycles per uninterrupted execution. Counting three GetJobRun attempts, one choice and one
+wait per cycle gives at most 1,800 monitoring transitions; the profile rounds up to 2,000 for task,
+retry and terminal paths. Redrive can reset workflow timing and retry bookkeeping, so these are
+not an aggregate proof across redrives. The durable slots independently bound physical Glue starts.
 
 | Quantity | Mechanism present | Missing mechanical proof |
 | --- | --- | --- |
-| Workflow executions | VALIDATE requires an execution identity; its immutable task request digest binds `$$.Execution.Id`. A second execution conflicts before Glue, including after a new ledger instance. | Step Functions redrive of the same execution can revisit Glue; a separate finite launch-attempt authority is still required. Glue concurrency one prevents simultaneous launches, not repeated serial launches. |
+| Workflow executions | VALIDATE binds the execution identity. A fixed-slot durable launcher admits at most three physical Glue starts across retries and redrives, disables SDK retry, and verifies service job retries are zero. Completed launches replay their exact identity; unknown outcomes consume a slot. | Redrive can still repeat Lambda invocations and monitoring transitions. The launch proof does not bound all workflow effects. |
 | Explicit Glue outputs | Three stable output keys, conditional `If-None-Match: *`, at most 32 MiB per object, bounded publication attempts | Bind every Glue argument/output prefix to the admitted manifest; prove an output retry cannot select another prefix. Inputs, Terraform artifacts and Spark temporary objects need a separate complete object inventory. |
 | S3 temporary storage | Run-scoped TempDir | No aggregate byte/key/version ceiling for Spark or Glue internal writes; a per-object output guard does not cover TempDir. |
 | DynamoDB charged units | Candidate row plan, conditional writes, bounded reconciliation pages | Bind the manifest row limit and scan evaluated-byte limit to the priced quantities, count transaction read/write multipliers and SDK attempts, and reject repeated workflow executions before they incur these effects. |

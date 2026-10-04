@@ -162,8 +162,15 @@ def publish_outputs(
     prefix: str,
     owner: str,
     kms_key: str,
+    launch_authority_digest: str,
 ) -> dict[str, Any]:
     """Publish the commit receipt only after both exact output authorities exist."""
+    if (
+        not isinstance(launch_authority_digest, str)
+        or len(launch_authority_digest) != 64
+        or any(value not in "0123456789abcdef" for value in launch_authority_digest)
+    ):
+        raise ManagedContractError("Glue output requires exact launch authority")
     if not prefix.endswith("/"):
         raise ManagedContractError("Glue output prefix must end with a slash")
     if len(rows_bytes) > MAX_OBJECT_BYTES or len(manifest_bytes) > MAX_OBJECT_BYTES:
@@ -183,7 +190,8 @@ def publish_outputs(
     rows = put_immutable_output(**kwargs, key=f"{prefix}rows.json", body=rows_bytes)
     manifest = put_immutable_output(**kwargs, key=f"{prefix}manifest.json", body=manifest_bytes)
     receipt_body = {
-        "contract": "stage6-glue-output-authority-v1",
+        "contract": "stage6-glue-output-authority-v2",
+        "launch_authority_digest": launch_authority_digest,
         "generation_id": generation_id,
         "input_authority": input_authority.as_dict(),
         "manifest_authority": manifest.as_dict(),
@@ -248,6 +256,7 @@ def _arguments(argv: list[str]) -> dict[str, str]:
         "expected-bucket-owner",
         "max-input-rows",
         "max-output-rows",
+        "launch-authority-digest",
     )
     result: dict[str, str] = {}
     iterator = iter(argv)
@@ -304,6 +313,7 @@ def main() -> None:  # pragma: no cover - managed runtime boundary
         prefix=args["output-prefix"],
         owner=args["expected-bucket-owner"],
         kms_key=args["kms-key-arn"],
+        launch_authority_digest=args["launch-authority-digest"],
     )
     print("FEATUREFORGE_GLUE_OUTPUT_AUTHORITY=" + canonical_json(published))
 

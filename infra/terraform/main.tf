@@ -20,7 +20,9 @@ locals {
     ADMISSION_AUTHORITY_JSON    = var.admission_authority == null ? "" : jsonencode(var.admission_authority)
     CONTROL_TABLE               = aws_dynamodb_table.control.name
     EVIDENCE_BUCKET             = aws_s3_bucket.evidence.bucket
+    EXPECTED_ACCOUNT            = data.aws_caller_identity.current.account_id
     FEATUREFORGE_STAGE6_ENABLED = tostring(var.runtime_execution_enabled)
+    GLUE_JOB_NAME               = aws_glue_job.offline.name
     KMS_KEY_ARN                 = aws_kms_key.platform.arn
     OFFLINE_BUCKET              = aws_s3_bucket.offline.bucket
     ONLINE_TABLE                = aws_dynamodb_table.online.name
