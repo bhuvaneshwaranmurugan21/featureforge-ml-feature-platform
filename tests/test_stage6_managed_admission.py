@@ -219,3 +219,26 @@ def test_missing_deployment_pin_cannot_create_clients(monkeypatch: pytest.Monkey
     monkeypatch.setattr(control_worker.importlib, "import_module", lambda _: NoClients())
     with pytest.raises(AdmissionDenied, match="deployment-pinned"):
         control_worker._lambda_worker()
+
+
+def test_authority_cannot_expire_during_remote_reads() -> None:
+    run, boundary, approval = setup_admission()
+    admission = adapter(boundary, approval)
+    times = iter((1200, 1600))
+    admission.clock = lambda: next(times)
+    with pytest.raises(AdmissionDenied, match="expired during admission reads"):
+        admission.verify(run)
+
+
+def test_lease_replacement_during_budget_reads_is_rejected() -> None:
+    run, boundary, approval = setup_admission()
+
+    class ReplacedDuringBudget(ReadBoundary):
+        def describe_budgets(self, **kwargs: Any) -> dict[str, Any]:
+            self.version = "v2"
+            return super().describe_budgets(**kwargs)
+
+    changing = ReplacedDuringBudget()
+    changing.objects = boundary.objects
+    with pytest.raises(AdmissionDenied, match="version changed"):
+        adapter(changing, approval).verify(run)

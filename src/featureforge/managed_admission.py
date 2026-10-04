@@ -289,6 +289,23 @@ class AWSManagedAdmission:
             tokens.add(token)
         else:
             raise AdmissionDenied("budget observation exceeds bounded page count")
+        # Remote reads can outlive the admission window. Re-read the latest lease
+        # and validate time after those reads, never authorize using the start time.
+        _read_json(self.s3, lease_authority, latest=True)
+        observed = _integer(self.clock(), "final observation time")
+        if not approved <= observed < expires:
+            raise AdmissionDenied("approval expired during admission reads")
+        decision = admit_managed_run(
+            manifest,
+            observed_account_fingerprint=account_fingerprint,
+            observed_region=self.region,
+            lease=lease,
+            inventory=inventory,
+            available_quotas=available,
+            required_quotas=required,
+            cost=cost,
+            observed_at_epoch=observed,
+        )
         headroom = budget_headroom(
             budget_rows,
             observed_at_epoch=observed,

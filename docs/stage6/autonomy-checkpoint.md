@@ -95,7 +95,7 @@ do not rerun completed initialization or overwrite historical authorities.
 
 Added a deployment-pinned, read-only AWS admission adapter and an eighth versioned contract.
 The control worker now wires this adapter with bounded SDK retry/timeouts and fails closed when
-no approval pin is configured. Nineteen local boundary tests cover expiration, strict numeric
+no approval pin is configured. Twenty-one local boundary tests cover expiration, strict numeric
 types, source/account mismatch, lease version drift, quotas, cost arithmetic, gross budget
 eligibility and durable authority identity. These tests do not constitute production approval
 or live managed-runtime evidence. Aggregate cost enforcement and finite cleanup remain unresolved;
@@ -107,3 +107,11 @@ source files, dependency integrity, all seven stage validators and two byte-iden
 builds passed. The first Infrastructure run identified a single spacing correction, now applied
 from the pinned formatter's actual diff. GitHub exact-head checks must be verified independently;
 no local result substitutes for the remaining acceptance, plan or governance gates.
+
+Added an end-of-read authority check: the latest lease is reread and the current clock is checked
+after quota and budget pagination, before returning admission. Expiry or lease replacement during
+those reads rejects. The corrected Infrastructure run `37225557658` passed on remote commit
+`4b786ed96457cfc871c0c99dcb6f54ae0e76cefa`; the following timing repair requires new exact-head
+checks. Read-only qualification still rejects unproved workload/retention bounds. Broad optional
+Ruff formatting inspection also reported pre-existing formatting differences; required Ruff lint
+passes, and unrelated predecessor files were not rewritten.
