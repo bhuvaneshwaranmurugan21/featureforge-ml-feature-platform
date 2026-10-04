@@ -35,6 +35,7 @@ from featureforge.managed import (
     completion_receipt,
     task_request,
 )
+from featureforge.managed_admission import AWSManagedAdmission, object_authority
 from featureforge.model import FeatureDefinition, FeatureValue
 from featureforge.online import MaterializationPlan, build_materialization_plan
 
@@ -46,12 +47,7 @@ def _mapping(value: Any, name: str) -> Mapping[str, Any]:
 
 
 def _authority(value: Mapping[str, Any]) -> S3ObjectAuthority:
-    return S3ObjectAuthority(
-        bucket=str(value["bucket"]),
-        key=str(value["key"]),
-        version_id=str(value["version_id"]),
-        sha256=str(value["sha256"]),
-    )
+    return object_authority(value)
 
 
 class ManagedAdmissionBoundary(Protocol):
@@ -447,11 +443,35 @@ def _lambda_worker() -> ControlWorker:
     online_table = os.environ.get("ONLINE_TABLE", "")
     if not table_name or not online_table:
         raise RuntimeError("Stage 6 control and online tables are not configured")
-    s3: S3Client = boto3.client("s3")
-    dynamodb = boto3.client("dynamodb")
+    region = os.environ.get("AWS_REGION", "")
+    raw_authority = os.environ.get("ADMISSION_AUTHORITY_JSON", "")
+    if not region or not raw_authority:
+        raise AdmissionDenied("deployment-pinned admission authority and region are required")
+    try:
+        authority = object_authority(json.loads(raw_authority))
+    except ValueError as error:
+        raise AdmissionDenied("deployment admission authority is invalid") from error
+    config_type: Any = importlib.import_module("botocore.config").Config
+    config = config_type(
+        retries={"mode": "standard", "total_max_attempts": 2},
+        connect_timeout=5,
+        read_timeout=10,
+    )
+    s3: S3Client = boto3.client("s3", region_name=region, config=config)
+    dynamodb = boto3.client("dynamodb", region_name=region, config=config)
     ledger = DynamoTaskLedger(dynamodb, table_name)
     return ControlWorker(
-        s3=s3, ledger=ledger, online=DynamoOnlineRuntime(dynamodb, online_table, table_name)
+        s3=s3,
+        ledger=ledger,
+        online=DynamoOnlineRuntime(dynamodb, online_table, table_name),
+        admission=AWSManagedAdmission(
+            s3=s3,
+            identity=boto3.client("sts", region_name=region, config=config),
+            quotas=boto3.client("service-quotas", region_name=region, config=config),
+            budgets=boto3.client("budgets", region_name="us-east-1", config=config),
+            authority=authority,
+            region=region,
+        ),
     )
 
 

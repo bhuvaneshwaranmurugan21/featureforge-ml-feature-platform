@@ -91,3 +91,12 @@ headroom. Concrete managed admission, a fresh separately authorized lease/plan t
 governance closure remain open. No Stage 6 PR, merge, new lease, state change, Terraform runtime
 execution or managed workload occurred. Resume from the current branch head and this checkpoint;
 do not rerun completed initialization or overwrite historical authorities.
+# Resumed admission adapter work
+
+Added a deployment-pinned, read-only AWS admission adapter and an eighth versioned contract.
+The control worker now wires this adapter with bounded SDK retry/timeouts and fails closed when
+no approval pin is configured. Fifteen local boundary tests cover expiration, strict numeric
+types, source/account mismatch, lease version drift, quotas, cost arithmetic, gross budget
+eligibility and durable authority identity. These tests do not constitute production approval
+or live managed-runtime evidence. Aggregate cost enforcement and finite cleanup remain unresolved;
+the cost workload profile remains unverified. No lease, AWS resource or Terraform state was written.

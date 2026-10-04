@@ -15,6 +15,35 @@ resource "aws_iam_role" "control_worker" {
 
 data "aws_iam_policy_document" "control_worker" {
   statement {
+    sid       = "ReadImmutableAdmissionAuthority"
+    actions   = ["s3:GetObjectVersion"]
+    resources = ["${aws_s3_bucket.artifacts.arn}/admission/*"]
+  }
+
+  statement {
+    sid       = "ReadExactExclusiveLease"
+    actions   = ["s3:GetObject"]
+    resources = ["arn:${data.aws_partition.current.partition}:s3:::featureforge-stage6-tfstate-${data.aws_caller_identity.current.account_id}-${var.aws_region}/leases/featureforge/stage6.json"]
+  }
+
+  statement {
+    sid       = "ReadCurrentManagedQuotas"
+    actions   = ["servicequotas:GetServiceQuota"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestedRegion"
+      values   = [var.aws_region]
+    }
+  }
+
+  statement {
+    sid       = "ReadGrossAccountBudgetHeadroom"
+    actions   = ["budgets:ViewBudget"]
+    resources = ["arn:${data.aws_partition.current.partition}:budgets::${data.aws_caller_identity.current.account_id}:budget/*"]
+  }
+
+  statement {
     sid = "ExactManagedBuckets"
     actions = [
       "s3:GetObject",

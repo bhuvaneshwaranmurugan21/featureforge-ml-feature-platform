@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage6-admission-authority:v1",
+  "title": "FeatureForge deployment-pinned admission authority",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "manifest",
+    "lease_authority",
+    "inventory",
+    "cost",
+    "quota_requirements",
+    "approved_at_epoch",
+    "expires_at_epoch",
+    "cost_bound_evidence_digest"
+  ],
+  "properties": {
+    "contract": {
+      "const": "stage6-admission-authority-v1"
+    },
+    "manifest": {
+      "$ref": "urn:featureforge:stage6-managed-run:v1"
+    },
+    "lease_authority": {
+      "$ref": "urn:featureforge:stage6-managed-run:v1#/$defs/s3Object"
+    },
+    "inventory": {
+      "$ref": "urn:featureforge:stage6-residual-inventory:v1"
+    },
+    "cost": {
+      "$ref": "urn:featureforge:stage6-cost-envelope:v1"
+    },
+    "quota_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "glue",
+        "lambda"
+      ],
+      "properties": {
+        "glue": {
+          "$ref": "#/$defs/quota"
+        },
+        "lambda": {
+          "$ref": "#/$defs/quota"
+        }
+      }
+    },
+    "approved_at_epoch": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "expires_at_epoch": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cost_bound_evidence_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "$defs": {
+    "quota": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "quota_code",
+        "minimum"
+      ],
+      "properties": {
+        "quota_code": {
+          "type": "string",
+          "pattern": "^L-[A-Za-z0-9-]+$",
+          "maxLength": 32
+        },
+        "minimum": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

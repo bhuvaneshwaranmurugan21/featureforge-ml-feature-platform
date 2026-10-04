@@ -8,6 +8,25 @@ variable "aws_region" {
   }
 }
 
+variable "admission_authority" {
+  description = "Future separately approved, immutable admission object. Null keeps execution ineligible."
+  type = object({
+    bucket     = string
+    key        = string
+    version_id = string
+    sha256     = string
+  })
+  default = null
+  validation {
+    condition = var.admission_authority == null ? true : (
+      startswith(var.admission_authority.key, "admission/") &&
+      length(var.admission_authority.version_id) > 0 &&
+      can(regex("^[a-f0-9]{64}$", var.admission_authority.sha256))
+    )
+    error_message = "Admission requires an admission/ key, exact version, and SHA-256."
+  }
+}
+
 variable "environment" {
   type        = string
   description = "Bounded environment namespace."

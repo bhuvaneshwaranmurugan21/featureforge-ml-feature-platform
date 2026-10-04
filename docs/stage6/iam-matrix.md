@@ -23,3 +23,10 @@ Wildcard resources exist only where AWS read/list APIs or Step Functions log-del
 support meaningful resource scoping. They are read-only or service-required log-control calls; the
 action allowlist, account-bound provider, exact OIDC subject, and no-apply workflow remain the
 compensating boundaries. Any added wildcard action is a blocking change requiring a new review.
+# Admission read authority
+
+The control worker additionally reads only versioned artifacts at `admission/*`, the exact
+FeatureForge Stage 6 bootstrap lease object, service quota observations in the authorized region,
+and gross account budget observations. Budget reads use the account's budget ARN namespace;
+service quota reads require `*` because the API has no resource-level scope, with an explicit
+requested-region condition. These are future Terraform policy definitions, not applied IAM changes.

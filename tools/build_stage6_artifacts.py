@@ -20,9 +20,11 @@ WORKER_FILES = (
     "src/featureforge/control_worker.py",
     "src/featureforge/expected.py",
     "src/featureforge/managed.py",
+    "src/featureforge/managed_admission.py",
     "src/featureforge/model.py",
     "src/featureforge/online.py",
     "src/featureforge/store.py",
+    "src/featureforge/stage6_live.py",
 )
 GLUE_FILES = (
     "src/featureforge/__init__.py",

@@ -17,6 +17,7 @@ locals {
     glue_output    = "${local.glue_log_group_base}/output"
   }
   common_environment = {
+    ADMISSION_AUTHORITY_JSON     = var.admission_authority == null ? "" : jsonencode(var.admission_authority)
     CONTROL_TABLE               = aws_dynamodb_table.control.name
     EVIDENCE_BUCKET             = aws_s3_bucket.evidence.bucket
     FEATUREFORGE_STAGE6_ENABLED = tostring(var.runtime_execution_enabled)

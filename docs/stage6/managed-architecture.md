@@ -50,3 +50,23 @@ The planned job is a small managed qualification, not a scale benchmark. It uses
 a fifteen-minute timeout, a bounded JSON source object, and explicit input/output row limits. Stage 7
 must measure the managed behavior; Stage 8 owns failure injection and teardown. Stage 6 cannot promote
 `AWS_MANAGED_RUNTIME` beyond `NOT_YET_VERIFIED`.
+# Deployment-pinned admission adapter
+
+The control worker now requires `ADMISSION_AUTHORITY_JSON` to identify an immutable approval
+object by bucket, key, version and SHA-256. A missing pin fails closed. The worker cannot issue
+or write this authority. Its role can read versioned objects under the artifacts bucket's
+`admission/` prefix and the exact bootstrap lease key, but cannot change either authority.
+
+`AWSManagedAdmission` checks canonical bounded approval bytes, the complete manifest, a maximum
+one-hour validity interval, live STS account and region, the latest lease version and checksum,
+current Glue/Lambda quota observations, and current gross USD monthly budget headroom. Inventory
+and pricing remain trusted pipeline snapshots with the existing freshness limits; they are not
+claimed to be continuously enumerated live inventory. Each later task rechecks the authority
+against its durable admission receipt before performing effects.
+
+The new eighth contract is `stage6-admission-authority-v1`. Local boundary tests prove rejection
+behavior and read request construction, not real AWS execution or a complete cost bound.
+No production approval has been issued. The cost-bound evidence digest identifies an issuer's
+proof; it does not manufacture one. `bound_enforcement_verified` remains false until aggregate
+internal effects, redrive limits and finite teardown are mechanically proved. Runtime enablement
+and admission authority therefore remain absent by default.
