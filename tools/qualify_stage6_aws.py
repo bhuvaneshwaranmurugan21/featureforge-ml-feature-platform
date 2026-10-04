@@ -348,6 +348,33 @@ def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[st
                 )
             ]
             if not matches:
+                global_dashboard_shapes: list[dict[str, Any]] = []
+                if line["component"] == "dashboard":
+                    # Diagnose account-global catalog entries explicitly. They are
+                    # not admitted as regional prices by this observation.
+                    global_response = pricing.get_products(
+                        ServiceCode="AmazonCloudWatch",
+                        Filters=[{"Type": "TERM_MATCH", "Field": "location", "Value": "Any"}],
+                        FormatVersion="aws_v1",
+                        MaxResults=100,
+                    )
+                    for encoded in global_response.get("PriceList", []):
+                        product = json.loads(encoded)
+                        attributes = product.get("product", {}).get("attributes", {})
+                        if "dashboard" not in str(attributes.get("usagetype", "")).casefold():
+                            continue
+                        for term in product.get("terms", {}).get("OnDemand", {}).values():
+                            for dimension in term.get("priceDimensions", {}).values():
+                                global_dashboard_shapes.append(
+                                    {
+                                        "location": attributes.get("location"),
+                                        "region_code": attributes.get("regionCode"),
+                                        "usage": attributes.get("usagetype"),
+                                        "unit": dimension.get("unit"),
+                                        "usd": dimension.get("pricePerUnit", {}).get("USD"),
+                                        "description": dimension.get("description"),
+                                    }
+                                )
                 catalog_shapes = sorted(
                     {
                         (str(row["unit"]), str(row["attributes"].get("usagetype", "")))
@@ -368,6 +395,7 @@ def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[st
                     f"observed units: {sorted({shape[0] for shape in catalog_shapes})}; "
                     f"observed unit/usage shapes (first 32 of {len(catalog_shapes)}): "
                     f"{diagnostic_shapes[:32]}"
+                    f"; unadmitted global dashboard observations: {global_dashboard_shapes[:8]}"
                 )
                 continue
             # Charge all units at the maximum applicable tier, with no free-tier deduction.
