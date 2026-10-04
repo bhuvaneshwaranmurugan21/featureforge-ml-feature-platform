@@ -46,9 +46,9 @@
       "component": "lambda-requests",
       "service_code": "AWSLambda",
       "units": [
-        "Requests"
+        "Request"
       ],
-      "usage_pattern": "Lambda-Requests",
+      "usage_pattern": "^APS2-Request(?: |$)",
       "quantity_millionths": 24000000
     },
     {
