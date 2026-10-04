@@ -214,7 +214,7 @@ resource "aws_sfn_state_machine" "materialization" {
             }
           ]
           Next = "RecordGlueCompletion"
-        }, {
+          }, {
           And = [
             {
               Variable         = "$.glue_completion.JobRun.Id"
