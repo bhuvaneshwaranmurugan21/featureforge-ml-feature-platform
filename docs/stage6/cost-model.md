@@ -82,3 +82,16 @@ authority/controller or another mechanically enforced end-of-billing boundary. T
 retain the existing correctness, observability, security and cleanup acceptance requirements. The
 cost profile must remain unverified until those controls are independently reproduced. No new AWS
 permission, runtime resource, workload, budget mutation or lease write was exercised by this review.
+
+## Observed catalog applicability repair
+
+Read-only catalog qualification identified the actual billing dimensions: Glue catalog uses
+`Obj-Month` and `Request`; standard x86 Lambda requests use `Request` with `APS2-Request`;
+X-Ray uses lowercase `traces` with `APS2-XRay-TracesStored` and `APS2-XRay-TracesAccessed`.
+Quantities were preserved. CloudWatch dashboard products are account-global: the observed catalog
+declares `location=Any`, an empty region code, `DashboardsUsageHour` or its Basic variant, and
+`Dashboards` units at USD 3 per dashboard per month. The collector queries those exact global
+products, explicitly retains their global applicability, rejects pagination incompleteness and
+selects the maximum current OnDemand USD tier. It never relabels another region's rate as Sydney's
+and excludes the separate `Global-` free-tier entries. Other components retain strict region checks.
+This fixes price applicability only; it does not establish quantity enforcement or budget headroom.

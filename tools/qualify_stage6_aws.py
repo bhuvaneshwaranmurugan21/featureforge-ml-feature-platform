@@ -347,6 +347,33 @@ def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[st
                     re.IGNORECASE,
                 )
             ]
+            if not matches and line["component"] == "dashboard":
+                for usage in ("DashboardsUsageHour", "DashboardsUsageHour-Basic"):
+                    global_response = pricing.get_products(
+                        ServiceCode="AmazonCloudWatch",
+                        Filters=[
+                            {"Type": "TERM_MATCH", "Field": "location", "Value": "Any"},
+                            {"Type": "TERM_MATCH", "Field": "usagetype", "Value": usage},
+                        ],
+                        FormatVersion="aws_v1",
+                        MaxResults=100,
+                    )
+                    if global_response.get("NextToken"):
+                        raise LiveEvidenceError("exact global dashboard catalog is incomplete")
+                    for encoded in global_response.get("PriceList", []):
+                        rows = ondemand_dimensions(
+                            json.loads(encoded),
+                            region=REGION,
+                            observed_at_epoch=observed_at_epoch,
+                            allow_global_dashboard=True,
+                        )
+                        matches.extend(
+                            row
+                            for row in rows
+                            if row["pricing_scope"] == "ACCOUNT_GLOBAL_DASHBOARD"
+                            and row["unit"] == "Dashboards"
+                            and row["unit"] in line["units"]
+                        )
             if not matches:
                 global_dashboard_shapes: list[dict[str, Any]] = []
                 if line["component"] == "dashboard":

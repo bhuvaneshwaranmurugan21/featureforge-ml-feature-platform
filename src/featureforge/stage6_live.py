@@ -55,12 +55,23 @@ def usd_microusd(value: Any) -> int:
 
 
 def ondemand_dimensions(
-    product: Mapping[str, Any], *, region: str, observed_at_epoch: int
+    product: Mapping[str, Any],
+    *,
+    region: str,
+    observed_at_epoch: int,
+    allow_global_dashboard: bool = False,
 ) -> list[dict[str, Any]]:
     """Extract real OnDemand USD dimensions, never a catalog-sample surrogate."""
     identity = product.get("product", {})
     attributes = identity.get("attributes", {})
-    if attributes.get("regionCode") != region:
+    global_dashboard = (
+        allow_global_dashboard
+        and attributes.get("servicecode") == "AmazonCloudWatch"
+        and attributes.get("location") == "Any"
+        and attributes.get("regionCode") == ""
+        and attributes.get("usagetype") in {"DashboardsUsageHour", "DashboardsUsageHour-Basic"}
+    )
+    if attributes.get("regionCode") != region and not global_dashboard:
         raise LiveEvidenceError("pricing product is not in the authorized region")
     sku = identity.get("sku")
     publication = product.get("publicationDate")
@@ -94,6 +105,7 @@ def ondemand_dimensions(
                     "attributes": dict(attributes),
                     "description": str(dimension.get("description", "")),
                     "catalog_sha256": sha256_bytes(canonical_json(product).encode()),
+                    "pricing_scope": "ACCOUNT_GLOBAL_DASHBOARD" if global_dashboard else "REGIONAL",
                 }
             )
     return rows

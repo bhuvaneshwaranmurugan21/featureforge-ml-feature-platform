@@ -65,3 +65,29 @@ and finite end-of-billing authority remain unproven in the cost model. The cost 
 remains unverified. Fresh exact-source AWS qualification, an independently authorized new lease
 transaction, saved plan, required remote checks, review, merge and continuation evidence remain
 open. No AWS write, Terraform execution, workload or merge was performed in this resumed window.
+
+### Published repair and live price qualification
+
+The repair tree was published to the existing Stage 6 branch without a force push. Remote CI
+passed at heads `1dbe63694fb2c0ff1313ab2beebd671eb8b10167`,
+`cf4985156a6dc7a16a971a2162f490aada576d51` and
+`1ad03b799bb9ea7c031c2b1f12663f9462e80af0`. Infrastructure run `37222677650`
+passed Terraform formatting, clean backend-disabled initialization with the existing locked
+providers, and validation. Read-only AWS qualification and historical recovery run automatically
+through the existing OIDC role; no CloudShell intervention is necessary for these reads.
+
+Live catalog failures identified incorrect Glue, Lambda and X-Ray unit/usage selectors. They were
+repaired from observed dimensions without reducing quantities. The remaining dashboard price was
+found in the account-global catalog (`location=Any`, empty region code, USD 3/Dashboard/month).
+An explicit narrowly scoped global-dashboard applicability check retains the original region
+metadata and rejects other services, other regions and the separate `Global-` free-tier entries.
+The final local suite passes 396 tests at 87.72% coverage. All predecessor validators, Ruff,
+source mypy, dependency integrity and deterministic Stage 6 proofs pass. Final remote checks
+must still be read against the published exact head; earlier green heads never close that gate.
+
+The enforced-bound gate remains false. Price applicability repairs do not prove aggregate managed
+internal spill/log/metric/request limits, same-execution redrive limits, finite cleanup, or budget
+headroom. Concrete managed admission, a fresh separately authorized lease/plan transaction and
+governance closure remain open. No Stage 6 PR, merge, new lease, state change, Terraform runtime
+execution or managed workload occurred. Resume from the current branch head and this checkpoint;
+do not rerun completed initialization or overwrite historical authorities.

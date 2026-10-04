@@ -147,6 +147,44 @@ def test_live_prices_paginate_and_choose_maximum_tier(monkeypatch: pytest.Monkey
     assert result[0]["selected_dimension"]["rate_id"] == "dimension"
 
 
+def test_global_dashboard_price_has_explicit_narrow_applicability() -> None:
+    observed = product("3", region="")
+    observed["product"]["attributes"] |= {
+        "servicecode": "AmazonCloudWatch",
+        "location": "Any",
+        "usagetype": "DashboardsUsageHour",
+    }
+    dimension = observed["terms"]["OnDemand"]["term"]["priceDimensions"]["dimension"]
+    dimension["unit"] = "Dashboards"
+    with pytest.raises(LiveEvidenceError, match="region"):
+        ondemand_dimensions(observed, region="ap-southeast-2", observed_at_epoch=1_800_000_000)
+    rows = ondemand_dimensions(
+        observed,
+        region="ap-southeast-2",
+        observed_at_epoch=1_800_000_000,
+        allow_global_dashboard=True,
+    )
+    assert rows[0]["pricing_scope"] == "ACCOUNT_GLOBAL_DASHBOARD"
+    assert rows[0]["unit"] == "Dashboards"
+    assert rows[0]["unit_cost_microusd"] == 3_000_000
+    assert rows[0]["attributes"]["regionCode"] == ""
+    for field, value in (
+        ("location", "US East (N. Virginia)"),
+        ("regionCode", "us-east-1"),
+        ("servicecode", "AWSLambda"),
+        ("usagetype", "Global-DashboardsUsageHour-Basic"),
+    ):
+        wrong = json.loads(json.dumps(observed))
+        wrong["product"]["attributes"][field] = value
+        with pytest.raises(LiveEvidenceError, match="region"):
+            ondemand_dimensions(
+                wrong,
+                region="ap-southeast-2",
+                observed_at_epoch=1_800_000_000,
+                allow_global_dashboard=True,
+            )
+
+
 def test_cost_arithmetic_conforms_to_closed_contract_and_does_not_hide_missing_lines() -> None:
     profile = {"lines": [{"component": "requests", "quantity_millionths": 3}]}
     rates = [{"component": "requests", "unit_cost_microusd": 1}]
