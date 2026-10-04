@@ -18,7 +18,11 @@ WORKER_FILES = (
     "src/featureforge/aws_runtime.py",
     "src/featureforge/canonical.py",
     "src/featureforge/control_worker.py",
+    "src/featureforge/expected.py",
     "src/featureforge/managed.py",
+    "src/featureforge/model.py",
+    "src/featureforge/online.py",
+    "src/featureforge/store.py",
 )
 GLUE_FILES = (
     "src/featureforge/__init__.py",
@@ -26,6 +30,7 @@ GLUE_FILES = (
     "src/featureforge/managed.py",
     "src/featureforge/model.py",
     "src/featureforge/spark_runtime.py",
+    "src/featureforge/store.py",
     "src/featureforge/temporal.py",
 )
 

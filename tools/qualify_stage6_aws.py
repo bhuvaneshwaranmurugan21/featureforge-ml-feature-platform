@@ -10,7 +10,6 @@ import re
 import time
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +19,10 @@ from botocore.exceptions import ClientError
 from featureforge.canonical import canonical_json
 from featureforge.stage6_live import (
     LiveEvidenceError,
+    budget_headroom,
     fingerprint,
+    ondemand_dimensions,
+    priced_cost_envelope,
     sanitized_identity,
     validate_initial_state,
 )
@@ -48,6 +50,7 @@ PRICE_SERVICES = (
     "AmazonS3",
     "awskms",
     "AmazonCloudWatch",
+    "AWSXRay",
 )
 QUOTA_RULES = {
     "glue": ("concurrent job runs per account", 1.0),
@@ -301,70 +304,106 @@ def _quotas() -> list[dict[str, Any]]:
     return selected
 
 
-def _pricing() -> list[dict[str, Any]]:
+def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[str, Any]]:
     pricing = _client("pricing", "us-east-1")
     observations: list[dict[str, Any]] = []
     for service_code in PRICE_SERVICES:
-        response = pricing.get_products(
-            ServiceCode=service_code,
-            Filters=[{"Type": "TERM_MATCH", "Field": "regionCode", "Value": REGION}],
-            FormatVersion="aws_v1",
-            MaxResults=1,
-        )
-        products = response.get("PriceList", [])
-        if not products:
-            raise LiveEvidenceError(f"pricing catalog has no {REGION} product for {service_code}")
-        decoded = json.loads(products[0])
-        publication = decoded.get("publicationDate")
-        if not publication:
-            raise LiveEvidenceError(f"pricing catalog publication date missing for {service_code}")
-        observations.append(
-            {
-                "catalog_sample_sha256": _sha(canonical_json(decoded).encode("utf-8")),
-                "publication_date": str(publication),
-                "service_code": service_code,
+        dimensions: list[dict[str, Any]] = []
+        token: str | None = None
+        tokens: set[str] = set()
+        while True:
+            kwargs: dict[str, Any] = {
+                "ServiceCode": service_code,
+                "Filters": [{"Type": "TERM_MATCH", "Field": "regionCode", "Value": REGION}],
+                "FormatVersion": "aws_v1",
+                "MaxResults": 100,
             }
-        )
+            if token:
+                kwargs["NextToken"] = token
+            response = pricing.get_products(**kwargs)
+            for encoded in response.get("PriceList", []):
+                dimensions.extend(
+                    ondemand_dimensions(
+                        json.loads(encoded), region=REGION, observed_at_epoch=observed_at_epoch
+                    )
+                )
+            token = response.get("NextToken")
+            if not token:
+                break
+            if token in tokens or len(tokens) >= 512:
+                raise LiveEvidenceError("pricing pagination cycle or bounded page limit exceeded")
+            tokens.add(token)
+        for line in profile["lines"]:
+            if line["service_code"] != service_code:
+                continue
+            matches = [
+                row
+                for row in dimensions
+                if row["unit"] in line["units"]
+                and re.search(
+                    line["usage_pattern"],
+                    str(row["attributes"].get("usagetype", "")) + " " + row["description"],
+                    re.IGNORECASE,
+                )
+            ]
+            if not matches:
+                raise LiveEvidenceError(
+                    f"no current exact-region OnDemand USD rate for {line['component']}"
+                )
+            # Charge all units at the maximum applicable tier, with no free-tier deduction.
+            selected = max(matches, key=lambda row: (row["unit_cost_microusd"], row["rate_id"]))
+            observations.append(
+                {
+                    "component": line["component"],
+                    "service_code": service_code,
+                    "region": REGION,
+                    "unit_cost_microusd": selected["unit_cost_microusd"],
+                    "conservative_maximum_tier": True,
+                    "matching_dimension_count": len(matches),
+                    "selected_dimension": {
+                        key: value for key, value in selected.items() if key != "attributes"
+                    },
+                }
+            )
     return observations
 
 
-def _cost_envelope(observed_at_epoch: int) -> dict[str, Any]:
-    # Each line is a deliberately conservative upper bound for one bounded run plus 30-day
-    # accidental retention. Live Pricing API availability/publication is checked separately.
-    bounds_usd = {
-        "cloudwatch_logs_metrics_dashboard": Decimal("10.00"),
-        "dynamodb_requests_and_storage": Decimal("1.00"),
-        "glue_catalog_metadata": Decimal("1.00"),
-        "glue_two_dpu_fifteen_minutes": Decimal("1.00"),
-        "kms_key_and_requests": Decimal("2.00"),
-        "lambda_requests_and_duration": Decimal("0.50"),
-        "s3_requests_and_storage": Decimal("1.00"),
-        "step_functions_transitions": Decimal("0.10"),
-    }
-    lines = [
-        {"component": component, "upper_bound_microusd": int(amount * 1_000_000)}
-        for component, amount in sorted(bounds_usd.items())
-    ]
-    subtotal = sum(row["upper_bound_microusd"] for row in lines)
-    worst_case = (subtotal * 12_000 + 9_999) // 10_000
-    maximum = 25_000_000
-    if worst_case > maximum:
-        raise LiveEvidenceError("conservative cost envelope exceeds the authorized ceiling")
-    return {
-        "admitted": True,
-        "authorization_headroom_microusd": maximum - worst_case,
-        "currency": "USD",
-        "lines": lines,
-        "maximum_microusd": maximum,
-        "pricing_observed_at_epoch": observed_at_epoch,
-        "safety_margin_bps": 2_000,
-        "subtotal_microusd": subtotal,
-        "worst_case_microusd": worst_case,
-    }
+def _cost_envelope(
+    observed_at_epoch: int, profile: Mapping[str, Any], rates: list[dict[str, Any]]
+) -> dict[str, Any]:
+    if profile.get("region") != REGION or profile.get("bound_enforcement_verified") is not True:
+        raise LiveEvidenceError(
+            "frozen workload and thirty-day retention bounds are not independently enforced"
+        )
+    return priced_cost_envelope(profile, rates, observed_at_epoch=observed_at_epoch)
 
 
-def _financial_visibility(account_id: str) -> dict[str, Any]:
-    budgets = _client("budgets", "us-east-1").describe_budgets(AccountId=account_id)
+def _financial_visibility(
+    account_id: str, observed_at_epoch: int, worst_case_microusd: int
+) -> dict[str, Any]:
+    client = _client("budgets", "us-east-1")
+    rows: list[dict[str, Any]] = []
+    token: str | None = None
+    seen: set[str] = set()
+    while True:
+        kwargs: dict[str, Any] = {
+            "AccountId": account_id,
+            "MaxResults": 100,
+            "ShowFilterExpression": True,
+        }
+        if token:
+            kwargs["NextToken"] = token
+        page = client.describe_budgets(**kwargs)
+        rows.extend(page.get("Budgets", []))
+        token = page.get("NextToken")
+        if not token:
+            break
+        if token in seen or len(seen) >= 100:
+            raise LiveEvidenceError("budget pagination is cyclic or excessive")
+        seen.add(token)
+    headroom = budget_headroom(
+        rows, observed_at_epoch=observed_at_epoch, worst_case_microusd=worst_case_microusd
+    )
     today = datetime.now(UTC).date()
     start = today.replace(day=1).isoformat()
     end = (today + timedelta(days=1)).isoformat()
@@ -372,14 +411,14 @@ def _financial_visibility(account_id: str) -> dict[str, Any]:
         TimePeriod={"Start": start, "End": end},
         Granularity="MONTHLY",
         Metrics=["UnblendedCost"],
+        Filter={"Not": {"Dimensions": {"Key": "RECORD_TYPE", "Values": ["Credit", "Refund"]}}},
     )
     if not cost.get("ResultsByTime"):
         raise LiveEvidenceError("Cost Explorer returned no current-month visibility")
     return {
         "account_cost_visibility_verified": True,
         "account_spend_not_used_to_reduce_project_ceiling": True,
-        "budget_count": len(budgets.get("Budgets", [])),
-        "project_authorization_headroom_verified": True,
+        "budget_authority": headroom,
     }
 
 
@@ -392,6 +431,9 @@ def qualify(run_id: str, source_branch: str) -> dict[str, Any]:
     sanitized = sanitized_identity(account_id, str(identity["Arn"]), ROLE_NAME)
     backend, _ = _verify_backend(account_id)
     inventory = _inventory(account_id, run_id)
+    profile = json.loads(Path("docs/stage6/cost-workload-profile.json").read_text())
+    prices = _pricing(observed_at, profile)
+    cost = _cost_envelope(observed_at, profile, prices)
     receipt: dict[str, Any] = {
         "account": sanitized,
         "backend": backend,
@@ -400,8 +442,11 @@ def qualify(run_id: str, source_branch: str) -> dict[str, Any]:
             "BACKEND_BUCKET_SECURITY_CONFIGURATION",
             "INITIAL_EMPTY_STATE_CONDITIONAL_CREATE",
         ],
-        "cost_envelope": _cost_envelope(observed_at),
-        "financial_visibility": _financial_visibility(account_id),
+        "cost_envelope": cost,
+        "cost_profile_sha256": _sha(canonical_json(profile).encode()),
+        "financial_visibility": _financial_visibility(
+            account_id, observed_at, cost["worst_case_microusd"]
+        ),
         "inventory": {
             "digest": _sha(canonical_json(inventory).encode("utf-8")),
             "empty": True,
@@ -411,7 +456,7 @@ def qualify(run_id: str, source_branch: str) -> dict[str, Any]:
         "observed_at_epoch": observed_at,
         "observed_at_utc": datetime.fromtimestamp(observed_at, UTC).isoformat(),
         "oidc": _verify_oidc(account_id, source_branch),
-        "pricing": _pricing(),
+        "pricing": prices,
         "project": PROJECT,
         "quotas": _quotas(),
         "region": REGION,

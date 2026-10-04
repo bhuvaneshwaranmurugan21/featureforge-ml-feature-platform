@@ -44,9 +44,11 @@ INDEXED = (
     "docs/runbook.md",
     "docs/stage6/aws-read-api-manifest.json",
     "docs/stage6/autonomous-recovery.md",
+    "docs/stage6/autonomy-checkpoint.md",
     "docs/stage6/claims.json",
     "docs/stage6/cleanup-matrix.md",
     "docs/stage6/cost-model.md",
+    "docs/stage6/cost-workload-profile.json",
     "docs/stage6/failure-repair-log.md",
     "docs/stage6/iam-matrix.md",
     "docs/stage6/lease-procedure.md",
@@ -61,6 +63,11 @@ INDEXED = (
     "evidence/stage6/bootstrap-receipt.json",
     "evidence/stage6/failure-recovery-proof.json",
     "evidence/stage6/local-proof.json",
+    "evidence/stage6/recovery-observation.json",
+    "evidence/stage6/historical-reconstitution/normalized-plan.json",
+    "evidence/stage6/historical-reconstitution/plan-authority.json",
+    "evidence/stage6/historical-reconstitution/no-mutation-receipt.json",
+    "evidence/stage6/historical-reconstitution/reconstitution-report.json",
     "evidence/stage6/toolchain-qualification.json",
     "infra/terraform/.terraform.lock.hcl",
     "infra/terraform/README.md",
@@ -81,12 +88,21 @@ INDEXED = (
     "tests/test_stage6_contract.py",
     "tests/test_stage6_managed.py",
     "tests/test_stage6_live.py",
+    "tests/test_stage6_cost_authority.py",
+    "tests/test_stage6_glue_provenance.py",
+    "tests/test_stage6_infra_security.py",
+    "tests/test_stage6_oracle_authority.py",
+    "tests/test_stage6_orchestration_shape.py",
+    "tests/test_stage6_reconstitution.py",
     "tests/test_stage6_recovery.py",
+    "tests/test_stage6_runtime_effects.py",
+    "tests/test_stage6_strict_manifest.py",
     "tests/test_stage6_terraform.py",
     "tools/build_stage6_artifacts.py",
     "tools/run_stage6_proof.py",
     "tools/qualify_stage6_aws.py",
     "tools/recover_stage6_readonly.py",
+    "tools/reconstitute_stage6_historical.py",
     "tools/validate_stage6.py",
 )
 
@@ -419,8 +435,9 @@ def main() -> None:
         return
     validate(args.root, args.expect_head)
     print(
-        "Stage 6 local validation passed: ST6-AC-01 through ST6-AC-13, ST6-AC-20 "
-        "through ST6-AC-22 are locally closed; AWS plan and governance gates remain explicit."
+        "Stage 6 local structural and deterministic checks passed. This is not an acceptance "
+        "closure receipt: managed integration, current AWS/cost/lease/plan authority, "
+        "exact-head governance, and continuation gates require separate evidence."
     )
 
 

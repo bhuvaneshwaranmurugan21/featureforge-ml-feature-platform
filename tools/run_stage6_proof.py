@@ -23,10 +23,78 @@ from featureforge.managed import (
     s3_get_object_request,
     stale_variant,
 )
+from tests.stage6_oracle import admission_projection, cost_projection, manifest_digest
 
 PROJECT = "featureforge-ml-feature-platform"
 BASE = "86b3cd27ae95a6142a1d6601d188d83b8e783d29"
 TREE = "a9aeb81af407af5fb2108e9d2ef3a194770b9761"
+
+
+def primitive_fixture() -> dict[str, Any]:
+    """Freeze primitive input before constructing any production authority."""
+    return {
+        "manifest": {
+            "contract": "stage6-managed-run-v1",
+            "run_id": "stage6-run-001",
+            "source_commit": BASE,
+            "source_tree": TREE,
+            "region": "ap-south-1",
+            "account_fingerprint": "a" * 64,
+            "namespace": "stage6",
+            "inputs": [
+                {
+                    "bucket": "featureforge-input-123",
+                    "key": "inputs/source.json",
+                    "version_id": "version-1",
+                    "sha256": "b" * 64,
+                }
+            ],
+            "output_bucket": "featureforge-output-123",
+            "output_prefix": "stage6/runs/stage6-run-001/",
+            "artifact_digests": ["c" * 64, "d" * 64],
+            "max_input_rows": 10_000,
+            "max_output_rows": 2_000,
+            "max_cost_microusd": 25_000_000,
+            "safety_margin_bps": 2_000,
+        },
+        "lease": {
+            "contract": "stage6-lease-snapshot-v1",
+            "lease_id": "stage6-lease",
+            "owner": "stage6-run-001",
+            "source_commit": BASE,
+            "acquired_at_epoch": 1_000,
+            "heartbeat_at_epoch": 1_100,
+            "expires_at_epoch": 1_600,
+        },
+        "inventory": {
+            "contract": "stage6-residual-inventory-v1",
+            "namespace": "stage6",
+            "observed_at_epoch": 1_140,
+            "items": [],
+        },
+        "cost": {
+            "pricing_observed_at_epoch": 1_150,
+            "lines": [
+                {
+                    "component": "glue",
+                    "quantity_millionths": 1_000_000,
+                    "unit_cost_microusd": 10_000_000,
+                },
+                {
+                    "component": "requests",
+                    "quantity_millionths": 1_000_000,
+                    "unit_cost_microusd": 100_000,
+                },
+            ],
+            "safety_margin_bps": 2_000,
+            "maximum_microusd": 25_000_000,
+        },
+        "observed_account_fingerprint": "a" * 64,
+        "observed_region": "ap-south-1",
+        "available_quotas": {"glue-concurrent-runs": 1},
+        "required_quotas": {"glue-concurrent-runs": 1},
+        "observed_at_epoch": 1_200,
+    }
 
 
 def fixture() -> tuple[
@@ -84,6 +152,12 @@ def fixture() -> tuple[
 
 
 def proofs() -> tuple[dict[str, Any], dict[str, Any]]:
+    primitive = primitive_fixture()
+    expected_admission = admission_projection(primitive)
+    expected_cost = cost_projection(primitive["cost"])
+    expected_manifest = primitive["manifest"] | {
+        "manifest_digest": manifest_digest(primitive["manifest"])
+    }
     manifest, lease, inventory, cost, plan = fixture()
     admission = admit_managed_run(
         manifest,
@@ -96,19 +170,35 @@ def proofs() -> tuple[dict[str, Any], dict[str, Any]]:
         cost=cost,
         observed_at_epoch=1_200,
     )
+    oracle_comparisons = {
+        "admission": admission.admission_digest == expected_admission.get("admission_digest")
+        and admission.decision == expected_admission["decision"],
+        "manifest": manifest.as_dict() == expected_manifest,
+        "cost": cost.as_dict() == expected_cost,
+    }
+    if not all(oracle_comparisons.values()):
+        raise AssertionError(f"independent oracle disagrees: {oracle_comparisons}")
     plan.assert_current(plan, 1_200)
     local: dict[str, Any] = {
         "admission_digest": admission.admission_digest,
         "checks": {
             "artifact_authority_bounded": True,
             "cost_with_margin_admitted": cost.admitted,
-            "independent_oracle_agrees": True,
+            "independent_oracle_agrees": all(oracle_comparisons.values()),
             "managed_manifest_bound": True,
             "plan_authority_current": True,
             "request_shapes_valid": True,
         },
         "cost": cost.as_dict(),
         "manifest": manifest.as_dict(),
+        "oracle_comparisons": oracle_comparisons,
+        "oracle_expected_digest": digest(
+            {
+                "admission": expected_admission,
+                "manifest": expected_manifest,
+                "cost": expected_cost,
+            }
+        ),
         "plan_authority_digest": digest(plan.as_dict()),
         "project": PROJECT,
         "request_operations": [
@@ -156,11 +246,23 @@ def proofs() -> tuple[dict[str, Any], dict[str, Any]]:
         "observed_at_epoch": 1_200,
     }
     for control, change in admission_cases:
+        oracle_change = {
+            key: value.as_dict() if isinstance(value, (ResidualInventory, CostEnvelope)) else value
+            for key, value in change.items()
+        }
+        expected_negative = admission_projection(primitive | oracle_change)
+        if expected_negative["decision"] != "DENIED":
+            raise AssertionError(f"independent oracle unexpectedly admitted: {control}")
         try:
             admit_managed_run(manifest, **(base_kwargs | change))
         except AdmissionDenied as error:
             admission_controls.append(
-                {"control": control, "outcome": "DENIED", "reason": str(error)}
+                {
+                    "control": control,
+                    "outcome": "DENIED",
+                    "reason": str(error),
+                    "oracle_outcome": expected_negative["decision"],
+                }
             )
         else:  # pragma: no cover - proof must fail closed
             raise AssertionError(f"admission control unexpectedly passed: {control}")
@@ -185,9 +287,7 @@ def proofs() -> tuple[dict[str, Any], dict[str, Any]]:
         try:
             plan.assert_current(stale_variant(plan, field), 1_200)
         except StalePlanError as error:
-            stale_controls.append(
-                {"control": field, "outcome": "DENIED", "reason": str(error)}
-            )
+            stale_controls.append({"control": field, "outcome": "DENIED", "reason": str(error)})
         else:  # pragma: no cover - proof must fail closed
             raise AssertionError(f"stale plan unexpectedly passed: {field}")
     try:

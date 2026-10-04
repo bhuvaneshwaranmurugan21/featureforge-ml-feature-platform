@@ -2,7 +2,14 @@
 
 ## Claim boundary
 
-Stage 6 makes the FeatureForge AWS path deployable and plan-verifiable. It does not apply Terraform,
+The following flow is the required target architecture, not evidence that Stage 6 is complete.
+Integration review found admission, output-provenance, online-effects, orchestration-shape, and cost
+proof defects. Repairs and their validation are tracked in the autonomy checkpoint. In particular,
+runtime admission must fail closed until an independently verified current authority is wired; a
+manifest-byte match alone never makes a run eligible. Historical plan receipts do not qualify the
+changed source or runtime archives.
+
+Stage 6 is intended to make the FeatureForge AWS path deployable and plan-verifiable. It does not apply Terraform,
 create resources, execute a managed workload, or claim live Glue, DynamoDB, S3, Lambda, Step
 Functions, CloudWatch, or KMS behavior. Those claims require later bounded-run evidence.
 

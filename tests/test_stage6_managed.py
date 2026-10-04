@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import io
 import json
@@ -258,9 +259,10 @@ def test_request_builders_are_bounded_and_exact() -> None:
     )
     assert put["ServerSideEncryption"] == "aws:kms"
     assert put["ChecksumAlgorithm"] == "SHA256"
-    assert glue_start_job_request("featureforge-stage6", manifest())["Arguments"][
-        "--manifest-digest"
-    ] == manifest().manifest_digest
+    assert (
+        glue_start_job_request("featureforge-stage6", manifest())["Arguments"]["--manifest-digest"]
+        == manifest().manifest_digest
+    )
     with pytest.raises(ManagedContractError):
         s3_put_object_request(
             bucket="b", key="k", body=b"x", kms_key_arn="k", expected_bucket_owner="bad"
@@ -334,6 +336,19 @@ def test_dynamodb_task_ledger_persists_exact_replay() -> None:
         ledger.complete("run", "VALIDATE", {"ok": False})
 
 
+def test_execution_owner_survives_new_dynamo_ledger_instance() -> None:
+    client = FakeDynamo()
+    original = DynamoTaskLedger(client, "control-table")
+    owned = task_request("run", "VALIDATE", SHA_A, {"execution_id": "execution-1"})
+    original.begin(owned)
+    original.complete("run", "VALIDATE", {"execution_id": "execution-1"})
+    restarted = DynamoTaskLedger(client, "control-table")
+    assert restarted.begin(owned)["result"] == {"execution_id": "execution-1"}
+    with pytest.raises(RuntimeConflict, match="conflicting immutable content"):
+        restarted.begin(task_request("run", "VALIDATE", SHA_A, {"execution_id": "execution-2"}))
+    assert original.get("run", "VALIDATE")["request_digest"] == owned["request_digest"]
+
+
 class FakeS3:
     def __init__(self, objects: dict[tuple[str, str, str], bytes]) -> None:
         self.objects = objects
@@ -346,7 +361,7 @@ class FakeS3:
     def put_object(self, **kwargs: Any) -> dict[str, Any]:
         self.writes.append(kwargs)
         return {
-            "ChecksumSHA256": hashlib.sha256(kwargs["Body"]).hexdigest(),
+            "ChecksumSHA256": base64.b64encode(hashlib.sha256(kwargs["Body"]).digest()).decode(),
             "VersionId": "written-v1",
         }
 
@@ -383,24 +398,22 @@ def test_control_worker_validate_replay_and_parity() -> None:
     value = manifest()
     body = json.dumps(value.as_dict(), sort_keys=True, separators=(",", ":")).encode()
     auth = S3ObjectAuthority("manifest", "run.json", "v1", hashlib.sha256(body).hexdigest())
-    worker = ControlWorker(s3=FakeS3({("manifest", "run.json", "v1"): body}), ledger=TaskLedger())
+    ledger = TaskLedger()
+    worker = ControlWorker(s3=FakeS3({("manifest", "run.json", "v1"): body}), ledger=ledger)
     event = {
         "action": "VALIDATE",
         "manifest": value.as_dict(),
         "manifest_authority": auth.as_dict(),
         "payload": {},
     }
-    first = worker.dispatch(event)
-    second = worker.dispatch(event)
-    assert first["result"]["decision"] == "ELIGIBLE"
-    assert second["result"] == first["result"]
+    with pytest.raises(AdmissionDenied, match="admission boundary"):
+        worker.dispatch(event)
+    assert ledger.get(value.run_id, "VALIDATE") is None
 
 
 def _worker_event(action: str, payload: dict[str, Any]) -> tuple[ControlWorker, dict[str, Any]]:
     value = manifest()
-    manifest_body = json.dumps(
-        value.as_dict(), sort_keys=True, separators=(",", ":")
-    ).encode()
+    manifest_body = json.dumps(value.as_dict(), sort_keys=True, separators=(",", ":")).encode()
     manifest_authority = S3ObjectAuthority(
         "manifest", "run.json", "v1", hashlib.sha256(manifest_body).hexdigest()
     )
@@ -425,13 +438,10 @@ def _worker_event(action: str, payload: dict[str, Any]) -> tuple[ControlWorker, 
 
 
 def test_control_worker_glue_completion_fails_closed() -> None:
-    worker, event = _worker_event(
-        "RECORD_GLUE", {"glue_job_run_id": "jr-1", "state": "SUCCEEDED"}
-    )
-    assert worker.dispatch(event)["result"]["glue_job_run_id"] == "jr-1"
-    worker, event = _worker_event(
-        "RECORD_GLUE", {"glue_job_run_id": "jr-2", "state": "FAILED"}
-    )
+    worker, event = _worker_event("RECORD_GLUE", {"glue_job_run_id": "jr-1", "state": "SUCCEEDED"})
+    with pytest.raises(AdmissionDenied, match="durable"):
+        worker.dispatch(event)
+    worker, event = _worker_event("RECORD_GLUE", {"glue_job_run_id": "jr-2", "state": "FAILED"})
     with pytest.raises(AdmissionDenied):
         worker.dispatch(event)
 
@@ -449,20 +459,17 @@ def test_control_worker_reads_online_payload_by_exact_authority() -> None:
         "MATERIALIZE_ONLINE",
         {"online_payload_authority": online_authority.as_dict(), "_online_body": online_body},
     )
-    result = worker.dispatch(event)["result"]
-    assert result["candidate_count"] == 1
-    assert result["payload_authority"] == online_authority.as_dict()
+    with pytest.raises(AdmissionDenied, match="durable"):
+        worker.dispatch(event)
 
 
 def test_control_worker_parity_and_activation_are_guarded() -> None:
-    worker, event = _worker_event(
-        "PARITY", {"expected_digest": SHA_A, "observed_digest": SHA_A}
-    )
-    assert worker.dispatch(event)["result"]["decision"] == "ELIGIBLE"
-    worker, event = _worker_event(
-        "PARITY", {"expected_digest": SHA_A, "observed_digest": SHA_B}
-    )
-    assert worker.dispatch(event)["result"]["decision"] == "QUARANTINED"
+    worker, event = _worker_event("PARITY", {"expected_digest": SHA_A, "observed_digest": SHA_A})
+    with pytest.raises(AdmissionDenied, match="durable"):
+        worker.dispatch(event)
+    worker, event = _worker_event("PARITY", {"expected_digest": SHA_A, "observed_digest": SHA_B})
+    with pytest.raises(AdmissionDenied, match="durable"):
+        worker.dispatch(event)
     worker, event = _worker_event(
         "ACTIVATE",
         {
@@ -472,7 +479,8 @@ def test_control_worker_parity_and_activation_are_guarded() -> None:
             "parity_decision": "ELIGIBLE",
         },
     )
-    assert worker.dispatch(event)["result"]["pointer_version"] == 5
+    with pytest.raises(AdmissionDenied, match="durable"):
+        worker.dispatch(event)
     worker, event = _worker_event("ACTIVATE", {"parity_decision": "QUARANTINED"})
     with pytest.raises(AdmissionDenied):
         worker.dispatch(event)
@@ -487,7 +495,8 @@ def test_control_worker_completion_receipt_and_unknown_action() -> None:
             "task_receipts": [{"task": "VALIDATE", "state": "COMPLETED"}],
         },
     )
-    assert worker.dispatch(event)["result"]["contract"] == "stage6-completion-receipt-v1"
+    with pytest.raises(AdmissionDenied, match="durable"):
+        worker.dispatch(event)
     worker, event = _worker_event("UNKNOWN", {})
     with pytest.raises(ManagedContractError, match="unsupported managed task"):
         worker.dispatch(event)

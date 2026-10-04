@@ -22,7 +22,9 @@ content-addressed activation decisions, controlled-clock freshness semantics, bo
 and a frozen 3-by-3 local benchmark with all 486 correctness-bound raw trials retained.
 Stage 6 adds fail-closed managed-run, object, lease, cost, inventory, and saved-plan authority;
 deterministic runtime packages; and a bounded, encrypted AWS Terraform graph. The graph is
-plan-only and disabled by default. No AWS mutation or managed execution is claimed.
+plan-only and disabled by default. Separately authorized bootstrap and the original exclusive-lease
+write are enumerated in Stage 6 evidence; no Terraform apply or managed execution is claimed.
+Stage 6 remains incomplete while current admission, cost-bound, plan, and integration gates are open.
 
 Its central opinion is that a feature value needs more than an entity, value, and event time:
 

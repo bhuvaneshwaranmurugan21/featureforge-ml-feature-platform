@@ -74,3 +74,17 @@ def test_read_api_manifest_contains_no_mutations() -> None:
         re.search(r":(?:Put|Create|Delete|Update|Start|Invoke|Stop|Tag|Untag)", action)
         for action in manifest["actions"]
     )
+
+
+def test_online_table_matches_canonical_stage4_keys_and_exact_scan_scope() -> None:
+    text = (TF / "main.tf").read_text()
+    online = text.split('resource "aws_dynamodb_table" "online"', 1)[1]
+    assert 'hash_key     = "PK"' in online
+    assert 'range_key    = "SK"' in online
+    assert 'attribute_name = "expires_at"' in online
+    assert "ONLINE_TABLE                = aws_dynamodb_table.online.name" in text
+    iam = (TF / "iam.tf").read_text()
+    scan = iam.split('sid       = "ExactOnlineCandidateReconciliation"', 1)[1].split("}", 1)[0]
+    assert 'actions   = ["dynamodb:Scan"]' in scan
+    assert "resources = [aws_dynamodb_table.online.arn]" in scan
+    assert "aws_dynamodb_table.control.arn" not in scan

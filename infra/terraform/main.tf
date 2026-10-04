@@ -3,9 +3,19 @@ data "aws_partition" "current" {}
 data "aws_caller_identity" "current" {}
 
 locals {
-  name          = "featureforge-${var.environment}-${var.run_id}"
-  bucket_prefix = "${local.name}-${data.aws_caller_identity.current.account_id}"
-  alarm_actions = var.alarm_topic_arn == "" ? [] : [var.alarm_topic_arn]
+  name                   = "featureforge-${var.environment}-${var.run_id}"
+  bucket_prefix          = "${local.name}-${data.aws_caller_identity.current.account_id}"
+  alarm_actions          = var.alarm_topic_arn == "" ? [] : [var.alarm_topic_arn]
+  glue_security_name     = "${local.name}-security"
+  glue_role_name         = "${local.name}-glue"
+  glue_log_group_prefix  = "/aws-glue/jobs/${local.name}"
+  glue_log_group_base    = "${local.glue_log_group_prefix}/${local.glue_security_name}-role/${local.glue_role_name}"
+  managed_log_group_names = {
+    control_worker = "/aws/lambda/${local.name}-control-worker"
+    orchestration  = "/aws/vendedlogs/states/${local.name}"
+    glue_error     = "${local.glue_log_group_base}/error"
+    glue_output    = "${local.glue_log_group_base}/output"
+  }
   common_environment = {
     CONTROL_TABLE               = aws_dynamodb_table.control.name
     EVIDENCE_BUCKET             = aws_s3_bucket.evidence.bucket
@@ -33,7 +43,9 @@ data "aws_iam_policy_document" "kms" {
     actions = [
       "kms:Decrypt",
       "kms:Encrypt",
-      "kms:GenerateDataKey*"
+      "kms:GenerateDataKey*",
+      "kms:ReEncrypt*",
+      "kms:DescribeKey"
     ]
     resources = ["*"]
     principals {
@@ -41,9 +53,9 @@ data "aws_iam_policy_document" "kms" {
       identifiers = ["logs.${var.aws_region}.amazonaws.com"]
     }
     condition {
-      test     = "ArnLike"
+      test     = "ArnEquals"
       variable = "kms:EncryptionContext:aws:logs:arn"
-      values   = ["arn:${data.aws_partition.current.partition}:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/*"]
+      values   = [for name in values(local.managed_log_group_names) : "arn:${data.aws_partition.current.partition}:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:${name}"]
     }
   }
 }
@@ -169,15 +181,15 @@ resource "aws_dynamodb_table" "control" {
 resource "aws_dynamodb_table" "online" {
   name         = "${local.name}-online"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "entity_id"
-  range_key    = "generation_feature"
+  hash_key     = "PK"
+  range_key    = "SK"
 
   attribute {
-    name = "entity_id"
+    name = "PK"
     type = "S"
   }
   attribute {
-    name = "generation_feature"
+    name = "SK"
     type = "S"
   }
 

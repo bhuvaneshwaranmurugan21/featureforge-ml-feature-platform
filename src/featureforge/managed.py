@@ -41,13 +41,22 @@ class StalePlanError(RuntimeError):
 
 def _hex(value: str, length: int, field: str) -> None:
     alphabet = HEX40 if length == 40 else HEX64
-    if len(value) != length or any(char not in alphabet for char in value):
+    if (
+        not isinstance(value, str)
+        or len(value) != length
+        or any(char not in alphabet for char in value)
+    ):
         raise ManagedContractError(f"{field} must be {length} lowercase hexadecimal characters")
 
 
 def _identity(value: str, field: str, *, maximum: int = 128) -> None:
-    if not value or len(value) > maximum or value.strip() != value:
+    if not isinstance(value, str) or not value or len(value) > maximum or value.strip() != value:
         raise ManagedContractError(f"{field} is empty, padded, or too long")
+
+
+def _integer(value: int, field: str) -> None:
+    if type(value) is not int:
+        raise ManagedContractError(f"{field} must be an integer without coercion")
 
 
 @dataclass(frozen=True)
@@ -93,6 +102,9 @@ class ManagedRunManifest:
     manifest_digest: str = ""
 
     def __post_init__(self) -> None:
+        for name in ("max_input_rows", "max_output_rows", "max_cost_microusd", "safety_margin_bps"):
+            if type(getattr(self, name)) is not int:
+                raise ManagedContractError(f"{name} must be an integer without coercion")
         for field, value in (
             ("run_id", self.run_id),
             ("region", self.region),
@@ -171,22 +183,27 @@ class ManagedRunManifest:
         raw_inputs = value.get("inputs")
         if not isinstance(raw_inputs, list):
             raise ManagedContractError("managed inputs must be a list")
+        object_fields = {"bucket", "key", "version_id", "sha256"}
+        if any(not isinstance(item, Mapping) or set(item) != object_fields for item in raw_inputs):
+            raise ManagedContractError("managed input authority has missing or unexpected fields")
+        if not isinstance(value["artifact_digests"], list):
+            raise ManagedContractError("artifact digests must be a list")
         return cls(
-            run_id=str(value["run_id"]),
-            source_commit=str(value["source_commit"]),
-            source_tree=str(value["source_tree"]),
-            region=str(value["region"]),
-            account_fingerprint=str(value["account_fingerprint"]),
-            namespace=str(value["namespace"]),
+            run_id=value["run_id"],
+            source_commit=value["source_commit"],
+            source_tree=value["source_tree"],
+            region=value["region"],
+            account_fingerprint=value["account_fingerprint"],
+            namespace=value["namespace"],
             inputs=tuple(S3ObjectAuthority(**item) for item in raw_inputs),
-            output_bucket=str(value["output_bucket"]),
-            output_prefix=str(value["output_prefix"]),
-            artifact_digests=tuple(str(item) for item in value["artifact_digests"]),
-            max_input_rows=int(value["max_input_rows"]),
-            max_output_rows=int(value["max_output_rows"]),
-            max_cost_microusd=int(value["max_cost_microusd"]),
-            safety_margin_bps=int(value["safety_margin_bps"]),
-            manifest_digest=str(value["manifest_digest"]),
+            output_bucket=value["output_bucket"],
+            output_prefix=value["output_prefix"],
+            artifact_digests=tuple(value["artifact_digests"]),
+            max_input_rows=value["max_input_rows"],
+            max_output_rows=value["max_output_rows"],
+            max_cost_microusd=value["max_cost_microusd"],
+            safety_margin_bps=value["safety_margin_bps"],
+            manifest_digest=value["manifest_digest"],
         )
 
 
@@ -203,12 +220,15 @@ class LeaseSnapshot:
         _identity(self.lease_id, "lease_id")
         _identity(self.owner, "owner")
         _hex(self.source_commit, 40, "source_commit")
+        for field in ("acquired_at_epoch", "heartbeat_at_epoch", "expires_at_epoch"):
+            _integer(getattr(self, field), field)
         if not 0 <= self.acquired_at_epoch <= self.heartbeat_at_epoch < self.expires_at_epoch:
             raise ManagedContractError("lease timestamps are not monotonic")
         if self.expires_at_epoch - self.heartbeat_at_epoch > 3_600:
             raise ManagedContractError("lease heartbeat horizon exceeds sixty minutes")
 
     def current_for(self, manifest: ManagedRunManifest, observed_at_epoch: int) -> bool:
+        _integer(observed_at_epoch, "observed_at_epoch")
         return (
             self.owner == manifest.run_id
             and self.source_commit == manifest.source_commit
@@ -227,6 +247,7 @@ class ResidualInventory:
 
     def __post_init__(self) -> None:
         _identity(self.namespace, "namespace")
+        _integer(self.observed_at_epoch, "observed_at_epoch")
         if self.observed_at_epoch < 0:
             raise ManagedContractError("inventory observation time cannot be negative")
         if len(set(self.items)) != len(self.items):
@@ -252,11 +273,11 @@ class CostLine:
 
     def __post_init__(self) -> None:
         _identity(self.component, "component")
+        for field in ("quantity_millionths", "unit_cost_microusd", "extended_microusd"):
+            _integer(getattr(self, field), field)
         if self.quantity_millionths < 0 or self.unit_cost_microusd < 0:
             raise ManagedContractError("cost quantities and rates cannot be negative")
-        expected = (
-            self.quantity_millionths * self.unit_cost_microusd + 999_999
-        ) // 1_000_000
+        expected = (self.quantity_millionths * self.unit_cost_microusd + 999_999) // 1_000_000
         if self.extended_microusd != expected:
             raise ManagedContractError("extended cost is not the rounded-up integer product")
 
@@ -269,6 +290,8 @@ class CostEnvelope:
     maximum_microusd: int
 
     def __post_init__(self) -> None:
+        for field in ("pricing_observed_at_epoch", "safety_margin_bps", "maximum_microusd"):
+            _integer(getattr(self, field), field)
         if self.pricing_observed_at_epoch < 0 or not self.lines:
             raise ManagedContractError("pricing authority is absent or empty")
         if (
@@ -283,9 +306,7 @@ class CostEnvelope:
 
     @property
     def worst_case_microusd(self) -> int:
-        return (
-            self.subtotal_microusd * (10_000 + self.safety_margin_bps) + 9_999
-        ) // 10_000
+        return (self.subtotal_microusd * (10_000 + self.safety_margin_bps) + 9_999) // 10_000
 
     @property
     def admitted(self) -> bool:
@@ -333,6 +354,7 @@ def admit_managed_run(
     cost: CostEnvelope,
     observed_at_epoch: int,
 ) -> AdmissionDecision:
+    _integer(observed_at_epoch, "observed_at_epoch")
     _hex(observed_account_fingerprint, 64, "observed_account_fingerprint")
     if observed_account_fingerprint != manifest.account_fingerprint:
         raise AdmissionDenied("AWS account fingerprint mismatch")
@@ -342,16 +364,25 @@ def admit_managed_run(
         raise AdmissionDenied("lease is not current")
     if inventory.namespace != manifest.namespace or inventory.items:
         raise AdmissionDenied("FeatureForge residual inventory is not empty")
-    if not inventory.observed_at_epoch <= observed_at_epoch <= (
-        inventory.observed_at_epoch + MAX_AUTHORITY_AGE_SECONDS
+    if (
+        not inventory.observed_at_epoch
+        <= observed_at_epoch
+        <= (inventory.observed_at_epoch + MAX_AUTHORITY_AGE_SECONDS)
     ):
         raise AdmissionDenied("inventory observation is absent, future, or stale")
-    if not cost.pricing_observed_at_epoch <= observed_at_epoch <= (
-        cost.pricing_observed_at_epoch + MAX_AUTHORITY_AGE_SECONDS
+    if (
+        not cost.pricing_observed_at_epoch
+        <= observed_at_epoch
+        <= (cost.pricing_observed_at_epoch + MAX_AUTHORITY_AGE_SECONDS)
     ):
         raise AdmissionDenied("pricing observation is absent, future, or stale")
     if set(available_quotas) != set(required_quotas):
         raise AdmissionDenied("required quota observation is incomplete")
+    if not required_quotas or any(
+        type(amount) is not int
+        for amount in (*available_quotas.values(), *required_quotas.values())
+    ):
+        raise AdmissionDenied("quota observations must be nonempty integer authorities")
     if any(amount < 0 for amount in (*available_quotas.values(), *required_quotas.values())):
         raise AdmissionDenied("quota observations cannot be negative")
     if any(available_quotas[name] < amount for name, amount in required_quotas.items()):
@@ -394,6 +425,8 @@ class PlanAuthority:
     def __post_init__(self) -> None:
         _hex(self.source_commit, 40, "source_commit")
         _hex(self.source_tree, 40, "source_tree")
+        for field in ("state_serial", "created_at_epoch", "expires_at_epoch"):
+            _integer(getattr(self, field), field)
         for field in (
             "variable_digest",
             "provider_lock_digest",
@@ -404,7 +437,7 @@ class PlanAuthority:
             "binary_plan_sha256",
             "normalized_plan_sha256",
         ):
-            _hex(str(getattr(self, field)), 64, field)
+            _hex(getattr(self, field), 64, field)
         if self.state_serial < 0 or not self.artifact_digests:
             raise ManagedContractError("plan state serial or artifacts are invalid")
         if len(set(self.artifact_digests)) != len(self.artifact_digests):
@@ -426,6 +459,7 @@ class PlanAuthority:
         }
 
     def assert_current(self, current: PlanAuthority, observed_at_epoch: int) -> None:
+        _integer(observed_at_epoch, "observed_at_epoch")
         if not self.created_at_epoch <= observed_at_epoch < self.expires_at_epoch:
             raise StalePlanError("saved plan is outside its validity interval")
         for field in self.__dataclass_fields__:

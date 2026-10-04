@@ -2,9 +2,9 @@
   "base_sha": "15fbe0a66a74cd340a717266fb80ee36388411bc",
   "base_tree": "437f33ed2f0c5aa469bd5c52a741a675e849144a",
   "files_sha256": {
-    ".github/workflows/ci.yml": "6fa4de393d3e939b050985e1702c458fc85454f96ce5c72a8e64cbcf3f261fe0",
+    ".github/workflows/ci.yml": "28c1566e99c5a0d6547f6ecc766a9eeeb889cd276e8f96d2ad10135730b7e7d2",
     "Makefile": "9df52a137cc7c9952544d0084a80513179b8cbbffc8f75b97c64f05a38065809",
-    "README.md": "d8fdd8312346cd1c02ec3f172d4c21f9c2b3c9827defe986da293723ba14fc70",
+    "README.md": "2d69420950a2e1823108df908f415c7a2ccd134a5f90655aff2a5d1cdeb4c5d9",
     "contracts/online-activation-receipt-v1.json": "4ae56a3a3158ca0a1d3e2020f4f730a9b47a1e68f6b43b75098876cf6dfbac8f",
     "contracts/online-active-pointer-v1.json": "89a8b8344a9491c31c9cb649b95d2b55806cda510017dcab28312429a1e9cb3c",
     "contracts/online-feature-record-v1.json": "974d585705664cde4da368b63a82fe548bddcd4e0ac76e4c29d362067ab766ea",

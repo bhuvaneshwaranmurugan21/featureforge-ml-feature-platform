@@ -1,17 +1,29 @@
 resource "aws_cloudwatch_log_group" "control_worker" {
-  name              = "/aws/lambda/${local.name}-control-worker"
+  name              = local.managed_log_group_names.control_worker
   retention_in_days = 7
   kms_key_id        = aws_kms_key.platform.arn
 }
 
 resource "aws_cloudwatch_log_group" "orchestration" {
-  name              = "/aws/vendedlogs/states/${local.name}"
+  name              = local.managed_log_group_names.orchestration
+  retention_in_days = 7
+  kms_key_id        = aws_kms_key.platform.arn
+}
+
+resource "aws_cloudwatch_log_group" "glue_error" {
+  name              = local.managed_log_group_names.glue_error
+  retention_in_days = 7
+  kms_key_id        = aws_kms_key.platform.arn
+}
+
+resource "aws_cloudwatch_log_group" "glue_output" {
+  name              = local.managed_log_group_names.glue_output
   retention_in_days = 7
   kms_key_id        = aws_kms_key.platform.arn
 }
 
 resource "aws_glue_security_configuration" "managed" {
-  name = "${local.name}-security"
+  name = local.glue_security_name
   encryption_configuration {
     cloudwatch_encryption {
       cloudwatch_encryption_mode = "SSE-KMS"
@@ -54,10 +66,13 @@ resource "aws_glue_job" "offline" {
     "--enable-continuous-cloudwatch-log" = "true"
     "--enable-glue-datacatalog"          = "true"
     "--enable-metrics"                   = "true"
+    "--custom-logGroup-prefix"           = local.glue_log_group_prefix
     "--extra-py-files"                   = "s3://${aws_s3_object.glue_library.bucket}/${aws_s3_object.glue_library.key}"
     "--job-language"                     = "python"
     "--TempDir"                          = "s3://${aws_s3_bucket.offline.bucket}/tmp/${var.run_id}/"
   }
+
+  depends_on = [aws_cloudwatch_log_group.glue_error, aws_cloudwatch_log_group.glue_output]
 }
 
 resource "aws_lambda_function" "control_worker" {
@@ -121,6 +136,9 @@ resource "aws_sfn_state_machine" "materialization" {
             action                 = "VALIDATE"
             "manifest.$"           = "$.manifest"
             "manifest_authority.$" = "$.manifest_authority"
+            payload = {
+              "execution_id.$" = "$$.Execution.Id"
+            }
           }
         }
         ResultPath = "$.validation_result"
@@ -132,8 +150,19 @@ resource "aws_sfn_state_machine" "materialization" {
         Type     = "Task"
         Resource = "arn:${data.aws_partition.current.partition}:states:::glue:startJobRun.sync"
         Parameters = {
-          JobName       = aws_glue_job.offline.name
-          "Arguments.$" = "$.glue_arguments"
+          JobName = aws_glue_job.offline.name
+          Arguments = {
+            "--input-bucket.$"        = "$.manifest.inputs[0].bucket"
+            "--input-key.$"           = "$.manifest.inputs[0].key"
+            "--input-version.$"       = "$.manifest.inputs[0].version_id"
+            "--input-sha256.$"        = "$.manifest.inputs[0].sha256"
+            "--output-bucket.$"       = "$.manifest.output_bucket"
+            "--output-prefix.$"       = "$.manifest.output_prefix"
+            "--kms-key-arn"           = aws_kms_key.platform.arn
+            "--expected-bucket-owner" = data.aws_caller_identity.current.account_id
+            "--max-input-rows.$"      = "States.Format('{}', $.manifest.max_input_rows)"
+            "--max-output-rows.$"     = "States.Format('{}', $.manifest.max_output_rows)"
+          }
         }
         ResultPath = "$.glue_result"
         Retry = [{
@@ -143,7 +172,46 @@ resource "aws_sfn_state_machine" "materialization" {
           BackoffRate     = 2
         }]
         Catch = local.catch_quarantine
-        Next  = "RecordGlueCompletion"
+        Next  = "VerifyGlueCompletion"
+      }
+      VerifyGlueCompletion = {
+        Type     = "Task"
+        Resource = "arn:${data.aws_partition.current.partition}:states:::aws-sdk:glue:getJobRun"
+        Parameters = {
+          JobName              = aws_glue_job.offline.name
+          "RunId.$"            = "$.glue_result.JobRunId"
+          PredecessorsIncluded = false
+        }
+        ResultPath = "$.glue_completion"
+        Retry = [{
+          ErrorEquals     = ["Glue.InternalServiceException", "Glue.OperationTimeoutException", "Glue.ThrottlingException"]
+          IntervalSeconds = 2
+          MaxAttempts     = 2
+          BackoffRate     = 2
+        }]
+        Catch = local.catch_quarantine
+        Next  = "GlueCompletionDecision"
+      }
+      GlueCompletionDecision = {
+        Type = "Choice"
+        Choices = [{
+          And = [
+            {
+              Variable         = "$.glue_completion.JobRun.Id"
+              StringEqualsPath = "$.glue_result.JobRunId"
+            },
+            {
+              Variable         = "$.glue_completion.JobRun.JobName"
+              StringEqualsPath = "$.glue_result.JobName"
+            },
+            {
+              Variable     = "$.glue_completion.JobRun.JobRunState"
+              StringEquals = "SUCCEEDED"
+            }
+          ]
+          Next = "RecordGlueCompletion"
+        }]
+        Default = "Quarantined"
       }
       RecordGlueCompletion = {
         Type     = "Task"
@@ -155,8 +223,9 @@ resource "aws_sfn_state_machine" "materialization" {
             "manifest.$"           = "$.manifest"
             "manifest_authority.$" = "$.manifest_authority"
             payload = {
-              "glue_job_run_id.$" = "$.glue_result.JobRun.Id"
-              "state.$"           = "$.glue_result.JobRun.JobRunState"
+              "glue_job_run_id.$" = "$.glue_completion.JobRun.Id"
+              "state.$"           = "$.glue_completion.JobRun.JobRunState"
+              job_name            = aws_glue_job.offline.name
             }
           }
         }
@@ -175,7 +244,11 @@ resource "aws_sfn_state_machine" "materialization" {
             "manifest.$"           = "$.manifest"
             "manifest_authority.$" = "$.manifest_authority"
             payload = {
-              "online_payload_authority.$" = "$.online_payload_authority"
+              "online_payload_authority.$" = "$.glue_receipt.Payload.result.online_payload_authority"
+              "feature_set.$"              = "$.materialization_context.feature_set"
+              "materialized_at.$"          = "$.materialization_context.materialized_at"
+              "request_time.$"             = "$.materialization_context.request_time"
+              "maximum_freshness_age.$"    = "$.materialization_context.maximum_freshness_age"
             }
           }
         }
@@ -193,7 +266,13 @@ resource "aws_sfn_state_machine" "materialization" {
             action                 = "PARITY"
             "manifest.$"           = "$.manifest"
             "manifest_authority.$" = "$.manifest_authority"
-            "payload.$"            = "$.parity_payload"
+            payload = {
+              "online_payload_authority.$" = "$.glue_receipt.Payload.result.online_payload_authority"
+              "feature_set.$"              = "$.materialization_context.feature_set"
+              "materialized_at.$"          = "$.materialization_context.materialized_at"
+              "request_time.$"             = "$.materialization_context.request_time"
+              "maximum_freshness_age.$"    = "$.materialization_context.maximum_freshness_age"
+            }
           }
         }
         ResultPath = "$.parity_result"
@@ -204,7 +283,7 @@ resource "aws_sfn_state_machine" "materialization" {
       ParityDecision = {
         Type = "Choice"
         Choices = [{
-          Variable     = "$.parity_result.Payload.decision"
+          Variable     = "$.parity_result.Payload.result.decision"
           StringEquals = "ELIGIBLE"
           Next         = "ActivateGeneration"
         }]
@@ -219,7 +298,11 @@ resource "aws_sfn_state_machine" "materialization" {
             action                 = "ACTIVATE"
             "manifest.$"           = "$.manifest"
             "manifest_authority.$" = "$.manifest_authority"
-            "payload.$"            = "$.activation_payload"
+            payload = {
+              "expected_generation.$"   = "$.activation_context.expected_generation"
+              "expected_version.$"      = "$.activation_context.expected_version"
+              "parity_receipt_digest.$" = "$.parity_result.Payload.result.parity_digest"
+            }
           }
         }
         ResultPath = "$.activation_result"
@@ -236,7 +319,11 @@ resource "aws_sfn_state_machine" "materialization" {
             action                 = "COMPLETE"
             "manifest.$"           = "$.manifest"
             "manifest_authority.$" = "$.manifest_authority"
-            "payload.$"            = "$.completion_payload"
+            payload = {
+              "admission.$"      = "$.validation_result.Payload.result"
+              "output_objects.$" = "$.glue_receipt.Payload.result.output_objects"
+              "task_receipts.$"  = "States.Array($.validation_result.Payload, $.glue_receipt.Payload, $.online_result.Payload, $.parity_result.Payload, $.activation_result.Payload)"
+            }
           }
         }
         Retry = local.lambda_retry

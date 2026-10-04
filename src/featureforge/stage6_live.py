@@ -5,10 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
+from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal, InvalidOperation
 from typing import Any, cast
 
 from featureforge.canonical import canonical_json, digest
-from featureforge.managed import LeaseSnapshot, ManagedContractError
+from featureforge.managed import CostEnvelope, CostLine, LeaseSnapshot, ManagedContractError
 
 ALLOWED_ACTIONS = frozenset({("create",), ("no-op",), ("read",)})
 ALLOWED_RESOURCE_TYPES = frozenset(
@@ -39,6 +41,147 @@ ALLOWED_RESOURCE_TYPES = frozenset(
 
 class LiveEvidenceError(ValueError):
     """Live evidence is missing, stale, unsafe, or contains an unexpected action."""
+
+
+def usd_microusd(value: Any) -> int:
+    """Convert USD conservatively, rejecting nonfinite or negative money."""
+    try:
+        amount = Decimal(str(value))
+        if not amount.is_finite() or amount < 0:
+            raise ValueError("invalid USD amount")
+        return int((amount * 1_000_000).to_integral_value(rounding=ROUND_CEILING))
+    except (InvalidOperation, ValueError, TypeError) as error:
+        raise LiveEvidenceError("USD amount must be finite and nonnegative") from error
+
+
+def ondemand_dimensions(
+    product: Mapping[str, Any], *, region: str, observed_at_epoch: int
+) -> list[dict[str, Any]]:
+    """Extract real OnDemand USD dimensions, never a catalog-sample surrogate."""
+    identity = product.get("product", {})
+    attributes = identity.get("attributes", {})
+    if attributes.get("regionCode") != region:
+        raise LiveEvidenceError("pricing product is not in the authorized region")
+    sku = identity.get("sku")
+    publication = product.get("publicationDate")
+    if not isinstance(sku, str) or not sku or not isinstance(publication, str):
+        raise LiveEvidenceError("pricing SKU or publication provenance is absent")
+    rows = []
+    for term_id, term in product.get("terms", {}).get("OnDemand", {}).items():
+        effective = term.get("effectiveDate")
+        try:
+            effective_epoch = int(
+                datetime.fromisoformat(effective.replace("Z", "+00:00")).timestamp()
+            )
+        except (AttributeError, ValueError, TypeError) as error:
+            raise LiveEvidenceError("pricing effective-date provenance is invalid") from error
+        if effective_epoch > observed_at_epoch:
+            continue
+        for rate_id, dimension in term.get("priceDimensions", {}).items():
+            if "USD" not in dimension.get("pricePerUnit", {}):
+                raise LiveEvidenceError("pricing dimension is missing USD")
+            rows.append(
+                {
+                    "sku": sku,
+                    "term_id": term_id,
+                    "rate_id": rate_id,
+                    "effective_at_epoch": effective_epoch,
+                    "publication_date": publication,
+                    "unit": dimension.get("unit"),
+                    "begin_range": dimension.get("beginRange"),
+                    "end_range": dimension.get("endRange"),
+                    "unit_cost_microusd": usd_microusd(dimension["pricePerUnit"]["USD"]),
+                    "attributes": dict(attributes),
+                    "description": str(dimension.get("description", "")),
+                    "catalog_sha256": sha256_bytes(canonical_json(product).encode()),
+                }
+            )
+    return rows
+
+
+def priced_cost_envelope(
+    profile: Mapping[str, Any], rates: Sequence[Mapping[str, Any]], *, observed_at_epoch: int
+) -> dict[str, Any]:
+    expected = {line["component"] for line in profile["lines"]}
+    actual = [str(rate["component"]) for rate in rates]
+    if len(actual) != len(set(actual)) or set(actual) != expected:
+        raise LiveEvidenceError("pricing coverage must match every frozen component exactly")
+    indexed = {str(rate["component"]): rate for rate in rates}
+    lines = []
+    for row in profile["lines"]:
+        quantity = row["quantity_millionths"]
+        rate = indexed[row["component"]]["unit_cost_microusd"]
+        if type(quantity) is not int or type(rate) is not int:
+            raise LiveEvidenceError("price and quantity must be integer fixed-point values")
+        lines.append(
+            CostLine(row["component"], quantity, rate, (quantity * rate + 999_999) // 1_000_000)
+        )
+    result = CostEnvelope(observed_at_epoch, tuple(lines), 2_000, 25_000_000)
+    if not result.admitted:
+        raise LiveEvidenceError(
+            "priced cost envelope exceeds USD 25 including twenty-percent margin"
+        )
+    return result.as_dict()
+
+
+def budget_headroom(
+    budgets: Sequence[Mapping[str, Any]], *, observed_at_epoch: int, worst_case_microusd: int
+) -> dict[str, Any]:
+    """Select an applicable account-wide gross USD monthly cost budget, not its mere existence."""
+    applicable = []
+    for budget in budgets:
+        period = budget.get("TimePeriod", {})
+        start, end = period.get("Start"), period.get("End")
+        if not isinstance(start, datetime) or not isinstance(end, datetime):
+            continue
+        cost_types = budget.get("CostTypes", {})
+        if (
+            budget.get("BudgetType") != "COST"
+            or budget.get("TimeUnit") != "MONTHLY"
+            or budget.get("BudgetLimit", {}).get("Unit") != "USD"
+            or budget.get("CostFilters")
+            or budget.get("FilterExpression")
+            or cost_types.get("IncludeCredit") is not False
+            or cost_types.get("IncludeRefund") is not False
+            or not (
+                start.replace(tzinfo=start.tzinfo or UTC).timestamp()
+                <= observed_at_epoch
+                < end.replace(tzinfo=end.tzinfo or UTC).timestamp()
+            )
+        ):
+            continue
+        spent = budget.get("CalculatedSpend", {})
+        actual, forecast = spent.get("ActualSpend", {}), spent.get("ForecastedSpend", {})
+        if actual.get("Unit") != "USD" or forecast.get("Unit") != "USD":
+            continue
+        usd_microusd(budget["BudgetLimit"]["Amount"])
+        limit = int(
+            (Decimal(str(budget["BudgetLimit"]["Amount"])) * 1_000_000).to_integral_value(
+                rounding=ROUND_FLOOR
+            )
+        )
+        observed = max(usd_microusd(actual["Amount"]), usd_microusd(forecast["Amount"]))
+        applicable.append((limit - observed, budget, limit, observed))
+    if not applicable:
+        raise LiveEvidenceError(
+            "no applicable current gross-USD monthly account budget with actual and forecast"
+        )
+    # Multiple applicable account budgets are all constraints: use the most restrictive.
+    headroom, selected, limit, spent = min(applicable, key=lambda row: row[0])
+    if headroom < worst_case_microusd:
+        raise LiveEvidenceError(
+            "actual/forecast budget headroom is below the complete cost envelope"
+        )
+    return {
+        "applicable_budget_count": len(applicable),
+        "budget_fingerprint": fingerprint(str(selected["BudgetName"])),
+        "budget_limit_microusd": limit,
+        "actual_or_forecast_microusd": spent,
+        "available_headroom_microusd": headroom,
+        "required_microusd": worst_case_microusd,
+        "credits_and_refunds_excluded": True,
+        "headroom_verified": True,
+    }
 
 
 def sha256_bytes(value: bytes) -> str:

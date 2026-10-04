@@ -1,0 +1,48 @@
+{
+  "authorized_read_actions": [
+    "sts:GetCallerIdentity",
+    "s3:ListBucketVersions",
+    "s3:GetObjectVersion"
+  ],
+  "aws_writes_executed": false,
+  "contract": "stage6-read-only-recovery-observation-v1",
+  "current_execution_authority": false,
+  "evidence_kind": "LIVE_READ_ONLY_OBSERVATION",
+  "executor_commit": "ac1907373b89273d70e1247ebc38db90c314db0d",
+  "historical_evidence_only": true,
+  "historical_plan_source_commit": "60c9fb508548470943ba6c66cec6774cc86ad3c0",
+  "historical_plan_source_tree": "66ab91cefa34fd74403750f4d63d193861a5b289",
+  "identity": {
+    "account_fingerprint": "2d264a0c15cea7dc3d80006d10b1337485435393e4b2f9febd5530f6a9d4425b",
+    "caller_arn_fingerprint": "5489311d0e5dcbd3304a737cc5c37a2b9d75e9b78e327ad6f7e84b1ced54638b",
+    "role_fingerprint": "d09c229209be9883c9a64bdc6673ad030cf071f785ffb8af96805f37f225719d",
+    "verified": true
+  },
+  "lease": {
+    "acquired_at_epoch": 1790917837,
+    "digest": "9036fb35f032eb92f823d80b75ff2c533fa2d5095f998449b472a5024765c77f",
+    "expires_at_epoch": 1790921137,
+    "heartbeat_at_epoch": 1790917837,
+    "lease_id_fingerprint": "a0e31589cf18ebc58c3083b486410501c6bbc58348955c174f83aa8edbe9fdd7",
+    "owner": "s6-plan-20260930",
+    "source_commit": "60c9fb508548470943ba6c66cec6774cc86ad3c0"
+  },
+  "lease_expired_at_observation": true,
+  "lease_object_sha256": "6fd527d67013fb86225d19c54ba7e2f2dd3f04cd51b5bbfb77340dc972619099",
+  "lease_object_version_fingerprint": "6afda4e75158fa14b748709eba4fe8a2c5a6795cfa72838de1986119022600dc",
+  "lease_renewed": false,
+  "lease_single_version": true,
+  "observed_at_epoch": 1790930032,
+  "pre_post_versions_unchanged": true,
+  "receipt_sha256": "756edd3e6deec133df05e79991696c456afc306b33479786b070424814b10a13",
+  "region": "ap-southeast-2",
+  "state": {
+    "lineage_fingerprint": "46bc30012efc3425bc4de01868757715fad0f233a9371d6f6bbca85e857e60f5",
+    "serial": 0,
+    "sha256": "923d1161b365158a847c44e4ffe6dedfe7fd5be8bd5bca73c64dcf6a3faebefc",
+    "terraform_version": "1.9.8"
+  },
+  "state_single_version": true,
+  "state_version_fingerprint": "0e3458b8886701d255aa424a05fe9b1336759d6397c201baf87be361c6fa60ed",
+  "terraform_executed": false
+}

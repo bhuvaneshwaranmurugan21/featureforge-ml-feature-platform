@@ -46,6 +46,12 @@ data "aws_iam_policy_document" "control_worker" {
   }
 
   statement {
+    sid       = "ExactOnlineCandidateReconciliation"
+    actions   = ["dynamodb:Scan"]
+    resources = [aws_dynamodb_table.online.arn]
+  }
+
+  statement {
     sid = "ManagedKmsKey"
     actions = [
       "kms:Decrypt",
@@ -59,6 +65,13 @@ data "aws_iam_policy_document" "control_worker" {
     sid       = "WorkerLogs"
     actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
     resources = ["${aws_cloudwatch_log_group.control_worker.arn}:*"]
+  }
+
+  # These X-Ray APIs do not support resource-level permissions.
+  statement {
+    sid       = "WorkerActiveTracing"
+    actions   = ["xray:PutTraceSegments", "xray:PutTelemetryRecords"]
+    resources = ["*"]
   }
 }
 
@@ -78,7 +91,7 @@ data "aws_iam_policy_document" "glue_assume" {
 }
 
 resource "aws_iam_role" "glue" {
-  name               = "${local.name}-glue"
+  name               = local.glue_role_name
   assume_role_policy = data.aws_iam_policy_document.glue_assume.json
 }
 
@@ -123,14 +136,26 @@ data "aws_iam_policy_document" "glue" {
   }
 
   statement {
-    sid = "GlueLogs"
-    actions = [
-      "logs:AssociateKmsKey",
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
-    ]
-    resources = ["arn:${data.aws_partition.current.partition}:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws-glue/jobs/*"]
+    sid       = "ExactGlueLogGroupConfiguration"
+    actions   = ["logs:AssociateKmsKey", "logs:CreateLogGroup"]
+    resources = [aws_cloudwatch_log_group.glue_error.arn, aws_cloudwatch_log_group.glue_output.arn]
+  }
+
+  statement {
+    sid       = "ExactGlueLogStreams"
+    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["${aws_cloudwatch_log_group.glue_error.arn}:*", "${aws_cloudwatch_log_group.glue_output.arn}:*"]
+  }
+
+  statement {
+    sid       = "ExactGlueLogKeyAssociation"
+    actions   = ["kms:DescribeKey"]
+    resources = [aws_kms_key.platform.arn]
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["logs.${var.aws_region}.amazonaws.com"]
+    }
   }
 }
 
@@ -165,6 +190,18 @@ data "aws_iam_policy_document" "states" {
     sid       = "RunExactGlueJob"
     actions   = ["glue:BatchStopJobRun", "glue:GetJobRun", "glue:GetJobRuns", "glue:StartJobRun"]
     resources = [aws_glue_job.offline.arn]
+  }
+
+  # The four service-managed tracing APIs have no resource-level permissions.
+  statement {
+    sid = "StateMachineActiveTracing"
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+      "xray:GetSamplingRules",
+      "xray:GetSamplingTargets"
+    ]
+    resources = ["*"]
   }
 
   # Step Functions log-delivery APIs do not support resource-level permissions.
