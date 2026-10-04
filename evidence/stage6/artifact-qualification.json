@@ -4,13 +4,13 @@
   "builder": "tools/build_stage6_artifacts.py",
   "build_count": 2,
   "byte_identical_rebuild": true,
-  "artifact_manifest_sha256": "50bc58a74c291efdf49c695030593ee930b27d773d8648a694464b8665715210",
+  "artifact_manifest_sha256": "a139cfcf5bd58afe99c7c3456f50b9ed3ec726c19af52be62aaff1bcb2480d72",
   "artifacts": [
     {
       "maximum_bytes": 10485760,
       "name": "featureforge-control-worker.zip",
-      "sha256": "02e753fb51ab9d9ed2aab9717ce9a507827639b5a72f57823462838aefc00656",
-      "size_bytes": 50374
+      "sha256": "22392060494086dec9c2b25f71a6824bd50cedfe972b6ee7e6a085fce77b7d06",
+      "size_bytes": 50582
     },
     {
       "maximum_bytes": 10485760,

@@ -383,6 +383,39 @@ def test_exact_s3_read_and_versioned_write() -> None:
     assert canonical_payload_bytes({"b": 1, "a": 2}) == b'{"a":2,"b":1}'
 
 
+def test_bounded_exact_s3_read_rejects_oversize_and_closes_stream() -> None:
+    class TrackedBody(io.BytesIO):
+        def __init__(self, body: bytes) -> None:
+            super().__init__(body)
+            self.requested: list[int] = []
+
+        def read(self, size: int = -1) -> bytes:
+            self.requested.append(size)
+            return super().read(size)
+
+    class Boundary(FakeS3):
+        def __init__(self, body: bytes) -> None:
+            super().__init__({})
+            self.body = TrackedBody(body)
+
+        def get_object(self, **kwargs: Any) -> dict[str, Any]:
+            return {"Body": self.body, "VersionId": kwargs["VersionId"]}
+
+    body = b"12345"
+    source = S3ObjectAuthority("bucket", "k", "v1", hashlib.sha256(body).hexdigest())
+    client = Boundary(body)
+    with pytest.raises(ManagedContractError, match="exceeds the enforced read byte bound"):
+        read_exact_object(client, source, maximum_bytes=4)
+    assert client.body.requested == [5]
+    assert client.body.closed
+    client = Boundary(body)
+    assert read_exact_object(client, source, maximum_bytes=5).body == body
+    assert client.body.requested == [6]
+    assert client.body.closed
+    with pytest.raises(ManagedContractError, match="positive integer"):
+        read_exact_object(client, source, maximum_bytes=True)
+
+
 def test_completion_receipt_binds_tasks_and_objects() -> None:
     receipt = completion_receipt(
         manifest=manifest(),

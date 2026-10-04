@@ -70,7 +70,11 @@ class ExactObject:
     body: bytes
 
 
-def read_exact_object(client: S3Client, authority: S3ObjectAuthority) -> ExactObject:
+def read_exact_object(
+    client: S3Client, authority: S3ObjectAuthority, *, maximum_bytes: int | None = None
+) -> ExactObject:
+    if maximum_bytes is not None and (type(maximum_bytes) is not int or maximum_bytes < 1):
+        raise ManagedContractError("S3 read byte bound must be a positive integer")
     response = client.get_object(**s3_get_object_request(authority))
     body_value = response.get("Body")
     if isinstance(body_value, bytes):
@@ -79,9 +83,16 @@ def read_exact_object(client: S3Client, authority: S3ObjectAuthority) -> ExactOb
         reader = getattr(body_value, "read", None)
         if not callable(reader):
             raise ManagedContractError("S3 GetObject body is not readable")
-        body = reader()
+        try:
+            body = reader() if maximum_bytes is None else reader(maximum_bytes + 1)
+        finally:
+            closer = getattr(body_value, "close", None)
+            if callable(closer):
+                closer()
     if not isinstance(body, bytes):
         raise ManagedContractError("S3 GetObject body is not bytes")
+    if maximum_bytes is not None and len(body) > maximum_bytes:
+        raise ManagedContractError("S3 object exceeds the enforced read byte bound")
     returned_version = response.get("VersionId")
     if returned_version != authority.version_id:
         raise ManagedContractError("S3 returned a different object version")

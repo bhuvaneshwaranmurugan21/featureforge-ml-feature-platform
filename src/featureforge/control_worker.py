@@ -93,7 +93,10 @@ class ControlWorker:
         admission = self._prior(manifest, "VALIDATE")
         glue = self._prior(manifest, "RECORD_GLUE")
         source = _mapping(
-            json.loads(read_exact_object(self._s3, manifest.inputs[0]).body), "source"
+            json.loads(
+                read_exact_object(self._s3, manifest.inputs[0], maximum_bytes=32 * 1024 * 1024).body
+            ),
+            "source",
         )
         authority = _authority(
             _mapping(payload.get("online_payload_authority"), "online_payload_authority")
@@ -222,7 +225,12 @@ class ControlWorker:
             ):
                 raise ManagedContractError("VALIDATE requires a bounded execution identity")
             source = _mapping(
-                json.loads(read_exact_object(self._s3, manifest.inputs[0]).body), "immutable source"
+                json.loads(
+                    read_exact_object(
+                        self._s3, manifest.inputs[0], maximum_bytes=32 * 1024 * 1024
+                    ).body
+                ),
+                "immutable source",
             )
             definitions = source.get("definitions")
             events = source.get("events")

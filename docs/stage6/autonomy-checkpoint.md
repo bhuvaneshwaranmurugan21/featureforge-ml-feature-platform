@@ -133,3 +133,9 @@ unverified; no approval, lease, state, AWS resource, or managed workload was wri
 The previous saved plan is superseded and cannot qualify these changed artifacts and IAM definitions.
 
 Final local validation of the durable launch repair: 426 tests passed, 87.69% coverage, Ruff and strict MyPy passed, all seven local validators passed, and two clean runtime artifact rebuilds matched byte for byte. These are local results; aggregate cost-bound qualification and refreshed AWS/plan/governance closure remain open.
+
+## Immutable-input read-bound follow-up
+
+The worker now applies the same 32 MiB immutable-input byte limit as the Glue entry point before parsing the source in validation and independent projection. Bounded reads request only the limit plus one byte and close the stream on both success and rejection. Output/manifest reads retain their existing behavior; this is not an aggregate S3 storage or memory proof. The final local suite passed 427 tests with 87.72% coverage, Ruff and strict MyPy passed, and two updated artifact rebuilds matched byte for byte.
+
+Published launch repair source `4664cc77ebea04727a326fabeee8acea5c9eb760` passed Infrastructure run `37230304592` and quality run `37230304542`. AWS qualification run `37230304563`, job `111518389658`, rejected the unproved frozen-workload/thirty-day-retention bounds. That rejection remains a necessary open gate, not a rerun-only or CloudShell-access issue. The input-read follow-up supersedes that source for final exact-head validation and saved planning. No new lease, AWS resource/state mutation, PR, merge, or completion receipt was performed.
