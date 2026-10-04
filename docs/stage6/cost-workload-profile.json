@@ -208,7 +208,7 @@
       "component": "glue-catalog-storage",
       "service_code": "AWSGlue",
       "units": [
-        "Objects"
+        "Obj-Month"
       ],
       "usage_pattern": "(?:Storage|Catalog)",
       "quantity_millionths": 1000000000
@@ -217,7 +217,7 @@
       "component": "glue-catalog-requests",
       "service_code": "AWSGlue",
       "units": [
-        "Requests"
+        "Request"
       ],
       "usage_pattern": "(?:Request|Catalog)",
       "quantity_millionths": 1000000000

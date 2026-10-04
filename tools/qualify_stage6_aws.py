@@ -307,6 +307,7 @@ def _quotas() -> list[dict[str, Any]]:
 def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[str, Any]]:
     pricing = _client("pricing", "us-east-1")
     observations: list[dict[str, Any]] = []
+    missing_rates: list[str] = []
     for service_code in PRICE_SERVICES:
         dimensions: list[dict[str, Any]] = []
         token: str | None = None
@@ -353,11 +354,12 @@ def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[st
                         for row in dimensions
                     }
                 )
-                raise LiveEvidenceError(
+                missing_rates.append(
                     f"no current exact-region OnDemand USD rate for {line['component']}; "
                     f"observed unit/usage shapes (first 32 of {len(catalog_shapes)}): "
                     f"{catalog_shapes[:32]}"
                 )
+                continue
             # Charge all units at the maximum applicable tier, with no free-tier deduction.
             selected = max(matches, key=lambda row: (row["unit_cost_microusd"], row["rate_id"]))
             observations.append(
@@ -373,6 +375,8 @@ def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[st
                     },
                 }
             )
+    if missing_rates:
+        raise LiveEvidenceError(" | ".join(missing_rates))
     return observations
 
 
