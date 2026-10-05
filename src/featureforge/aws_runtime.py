@@ -463,6 +463,11 @@ class DynamoOnlineRuntime:
         owner = self._owner(plan)
         if owner is None or owner["state"] == {"S": "WRITING"}:
             raise RuntimeConflict("exact reconciliation requires an immutable sealed generation")
+        expected_by_key = {
+            (record.partition_key, record.sort_key): record for record in plan.records
+        }
+        if len(expected_by_key) != plan.expected_count:
+            raise RuntimeConflict("immutable plan has duplicate record keys or a count mismatch")
         cursor: Mapping[str, Any] | None = None
         seen_cursors: set[str] = set()
         seen_keys: set[tuple[str, str]] = set()
@@ -500,14 +505,7 @@ class DynamoOnlineRuntime:
                 result.append(row)
                 if len(result) > plan.expected_count:
                     raise RuntimeConflict("candidate contains unexpected records")
-                expected_record = next(
-                    (
-                        record
-                        for record in plan.records
-                        if (record.partition_key, record.sort_key) == key
-                    ),
-                    None,
-                )
+                expected_record = expected_by_key.get(key)
                 if expected_record is None or row != expected_record.as_dict():
                     raise RuntimeConflict("candidate content differs from immutable plan")
                 expected_item = dynamodb_record_item(expected_record) | {"record_json": raw}

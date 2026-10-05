@@ -17,12 +17,29 @@ from featureforge.managed import ManagedContractError, S3ObjectAuthority
 from jobs.glue_point_in_time import (
     MAX_OBJECT_BYTES,
     _bounded_body,
+    managed_s3_client,
     publish_outputs,
     put_immutable_output,
 )
 
 KMS = "arn:aws:kms:ap-southeast-2:857229544428:key/12345678-1234-1234-1234-123456789012"
 OWNER = "857229544428"
+
+
+def test_glue_s3_client_has_exact_region_and_no_hidden_retry() -> None:
+    import boto3
+
+    session = boto3.Session(
+        aws_access_key_id="local-shape-probe", aws_secret_access_key="local-only"
+    )
+    client = managed_s3_client(session, "ap-southeast-2")
+    assert client.meta.region_name == "ap-southeast-2"
+    assert client.meta.config.retries["total_max_attempts"] == 1
+    assert client.meta.config.connect_timeout == 5
+    assert client.meta.config.read_timeout == 10
+    client.close()
+    with pytest.raises(ManagedContractError, match="explicit managed AWS region"):
+        managed_s3_client(session, "")
 
 
 def manifest_body(rows: bytes = b"[]\n", generation: str = "g1") -> bytes:

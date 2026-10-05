@@ -93,3 +93,17 @@ Local SQLite tests exercise independent concurrent database connections and pers
 launcher reconstruction. They validate request shapes against the pinned SDK and inject lost
 acknowledgements at reservation, launch and completion boundaries. This is local contract evidence,
 not a live DynamoDB/Glue test or aggregate cost proof. The workload cost profile remains unverified.
+
+## Bounded control transport and complete evidence inventory
+
+The immutable pre-run projector writes `expected-state.json` before any Glue launch. Its closed `stage6-frozen-expected-v1` body binds execution, manifest, source, definitions, and every projected row. The ledger and Step Functions carry its exact bucket/key/version/SHA256 authority and content digests rather than the row list. The same bounded conditional publisher now serves both runtimes; it never overwrites, rejects checksum/KMS/version drift, and reconciles ambiguous acknowledgements against an explicitly pinned recovered version.
+
+The full exhaustive parity report is stored as `parity-report.json`; the control receipt contains a closed `stage6-parity-summary-v1` and the full report authority. Activation rereads that exact report, verifies its embedded digest and agreement with the eligible summary, and then revalidates the immutable candidate before CAS. Completion verifies and inventories all five objects: expected state, rows, generation manifest, Glue output authority, and parity report. None of the independent expected-state or exhaustive parity comparisons were reduced to sampling.
+
+Control events are limited to 64 KiB and completed task receipts to 16 KiB. Six retained receipts contribute at most 96 KiB before the final task; combined with a 64 KiB input and fixed integration metadata this leaves room below the 256 KiB Step Functions boundary. The task ledger stores compact receipt JSON rather than a potentially multi-megabyte row set. Immutable objects retain the 32 MiB per-object bound. Oversized data or control input rejects before activation; these controls do not establish aggregate Spark spill, billing, or lifetime bounds.
+
+Candidate reconciliation indexes expected records by exact composite key once, preserving duplicate, missing, extra, semantic, and DynamoDB-envelope rejection while eliminating a full expected-plan search for each scanned record. A counted traversal test proves linear expected-record visits; it is not a managed performance benchmark.
+
+Glue startup pins the source region and SDK retry count. Job `NonOverridableArguments` may not replace any manifest-bound argument or launch digest. This check precedes durable slot reservation and physical launch.
+
+Service-limit references: https://docs.aws.amazon.com/step-functions/latest/dg/service-quotas.html and https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html . Glue argument precedence: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-arguments.html .

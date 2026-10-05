@@ -25,6 +25,9 @@ BASE = "86b3cd27ae95a6142a1d6601d188d83b8e783d29"
 BASE_TREE = "a9aeb81af407af5fb2108e9d2ef3a194770b9761"
 ACCEPTANCE = {f"ST6-AC-{number:02d}" for number in range(1, 25)}
 INDEXED = (
+    "contracts/stage6-parity-summary-v1.json",
+    "contracts/stage6-frozen-expected-v1.json",
+    "src/featureforge/s3_immutable.py",
     "contracts/stage6-glue-launch-v1.json",
     "contracts/stage6-glue-output-authority-v2.json",
     "src/featureforge/glue_launch.py",
@@ -162,7 +165,7 @@ def _validate_oracle(root: Path) -> None:
 
 def _validate_contracts(root: Path) -> None:
     paths = sorted((root / "contracts").glob("stage6-*.json"))
-    _check(len(paths) == 10, "exactly ten Stage 6 contracts are required")
+    _check(len(paths) == 12, "exactly twelve Stage 6 contracts are required")
     for path in paths:
         value = json.loads(path.read_text(encoding="utf-8"))
         _check(str(value.get("$id", "")).startswith("urn:featureforge:stage6-"), path.name)

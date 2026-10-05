@@ -43,6 +43,7 @@ def launch_request(
         "WorkerType": "G.1X",
         "NumberOfWorkers": 2,
         "Arguments": {
+            "--region": manifest.region,
             "--input-bucket": source.bucket,
             "--input-key": source.key,
             "--input-version": source.version_id,
@@ -115,6 +116,8 @@ class DurableGlueLauncher:
         if not callable(get_job):
             raise ManagedContractError("Glue client cannot qualify the deployed job")
         job = get_job(JobName=self.job_name).get("Job", {})
+        if not isinstance(job, Mapping) or not isinstance(job.get("ExecutionProperty"), Mapping):
+            raise AdmissionDenied("deployed Glue job authority is malformed")
         if (
             job.get("Name") != self.job_name
             or type(job.get("MaxRetries")) is not int
@@ -125,6 +128,15 @@ class DurableGlueLauncher:
             raise AdmissionDenied(
                 "deployed Glue job retries or concurrency exceed launch authority"
             )
+        non_overridable = job.get("NonOverridableArguments", {})
+        if not isinstance(non_overridable, Mapping) or any(
+            not isinstance(key, str) or not isinstance(value, str)
+            for key, value in non_overridable.items()
+        ):
+            raise AdmissionDenied("deployed Glue non-overridable arguments are malformed")
+        protected_arguments = set(request["Arguments"]) | {"--launch-authority-digest"}
+        if protected_arguments.intersection(non_overridable):
+            raise AdmissionDenied("deployed Glue arguments override immutable launch authority")
         binding = digest(
             {
                 "manifest_digest": manifest.manifest_digest,

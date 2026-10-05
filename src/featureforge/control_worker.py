@@ -17,11 +17,12 @@ from typing import Any, Protocol
 from featureforge.aws_runtime import (
     DynamoOnlineRuntime,
     DynamoTaskLedger,
+    RuntimeConflict,
     S3Client,
     TaskLedgerBoundary,
     read_exact_object,
 )
-from featureforge.canonical import digest
+from featureforge.canonical import canonical_json, digest
 from featureforge.expected import (
     compare_online_records,
     project_feature_rows,
@@ -39,6 +40,7 @@ from featureforge.managed import (
 from featureforge.managed_admission import AWSManagedAdmission, object_authority
 from featureforge.model import FeatureDefinition, FeatureValue
 from featureforge.online import MaterializationPlan, build_materialization_plan
+from featureforge.s3_immutable import MAX_OBJECT_BYTES, put_immutable_output
 
 
 def _mapping(value: Any, name: str) -> Mapping[str, Any]:
@@ -144,12 +146,45 @@ class ControlWorker:
             source_digest=manifest.inputs[0].sha256,
             materialized_at=materialized_at,
         )
-        expected_rows = admission.get("frozen_expected")
+        frozen_authority = _authority(
+            _mapping(admission.get("frozen_expected_authority"), "frozen expected authority")
+        )
         if (
-            not isinstance(expected_rows, list)
+            frozen_authority.bucket != manifest.output_bucket
+            or frozen_authority.key != manifest.output_prefix + "expected-state.json"
+        ):
+            raise AdmissionDenied("frozen expected state escaped its immutable run prefix")
+        frozen = _mapping(
+            json.loads(
+                read_exact_object(self._s3, frozen_authority, maximum_bytes=MAX_OBJECT_BYTES).body
+            ),
+            "frozen expected state",
+        )
+        expected_rows = frozen.get("rows")
+        if (
+            set(frozen)
+            != {
+                "contract",
+                "execution_id",
+                "manifest_digest",
+                "source_sha256",
+                "definitions",
+                "definitions_digest",
+                "rows",
+                "rows_digest",
+            }
+            or frozen.get("contract") != "stage6-frozen-expected-v1"
+            or frozen.get("execution_id") != admission.get("execution_id")
+            or frozen.get("manifest_digest") != manifest.manifest_digest
+            or frozen.get("source_sha256") != manifest.inputs[0].sha256
+            or frozen.get("definitions") != list(definition_rows)
+            or frozen.get("definitions_digest") != digest(list(definition_rows))
+            or frozen.get("definitions_digest") != admission.get("frozen_definitions_digest")
+            or not isinstance(expected_rows, list)
+            or len(expected_rows) > manifest.max_output_rows
+            or frozen.get("rows_digest") != digest(expected_rows)
             or digest(expected_rows) != admission.get("frozen_expected_digest")
             or admission.get("frozen_source_sha256") != manifest.inputs[0].sha256
-            or admission.get("frozen_definitions") != list(definition_rows)
         ):
             raise AdmissionDenied("pre-run expected authority is missing or corrupt")
         ordered_rows = sorted(rows, key=lambda row: (row["customer_id"], row["feature_name"]))
@@ -168,6 +203,8 @@ class ControlWorker:
     def dispatch(
         self, event: Mapping[str, Any], *, invocation_id: str | None = None
     ) -> dict[str, Any]:
+        if len(canonical_json(dict(event)).encode()) > 64 * 1024:
+            raise ManagedContractError("control event exceeds the 64 KiB orchestration bound")
         action = str(event.get("action", ""))
         manifest = ManagedRunManifest.from_dict(_mapping(event.get("manifest"), "manifest"))
         authority = _authority(_mapping(event.get("manifest_authority"), "manifest_authority"))
@@ -179,6 +216,23 @@ class ControlWorker:
             raise ManagedContractError("manifest object bytes differ from supplied authority")
         payload = dict(_mapping(event.get("payload", {}), "payload"))
         started = task_request(manifest.run_id, action, manifest.manifest_digest, payload)
+        if action == "VALIDATE":
+            if self._admission is None:
+                raise AdmissionDenied("verified managed admission boundary is not configured")
+            execution_id = payload.get("execution_id")
+            if (
+                not isinstance(execution_id, str)
+                or not execution_id
+                or len(execution_id) > 256
+                or execution_id.strip() != execution_id
+            ):
+                raise ManagedContractError("VALIDATE requires a bounded execution identity")
+            existing = self._ledger.get(manifest.run_id, action)
+            if existing is not None and any(
+                existing.get(field) != started.get(field)
+                for field in ("contract", "manifest_digest", "request_digest")
+            ):
+                raise RuntimeConflict("validation owner conflicts with durable task authority")
         admitted_result = self._execute(action, manifest, payload) if action == "VALIDATE" else None
         if action != "VALIDATE":
             admitted = self._prior(manifest, "VALIDATE")
@@ -195,6 +249,13 @@ class ControlWorker:
             if admitted_result is not None
             else self._execute(action, manifest, payload, invocation_id=invocation_id)
         )
+        projected_receipt = started | {
+            "state": "COMPLETED",
+            "result": result,
+            "result_digest": digest(result),
+        }
+        if len(canonical_json(projected_receipt).encode()) > 16 * 1024:
+            raise ManagedContractError("task receipt exceeds the 16 KiB orchestration bound")
         receipt = self._ledger.complete(manifest.run_id, action, result)
         return receipt | {"result": result}
 
@@ -264,11 +325,31 @@ class ControlWorker:
                     knowledge_cutoff=int(source["knowledge_cutoff"]),
                 )
             )
+            frozen_body = {
+                "contract": "stage6-frozen-expected-v1",
+                "execution_id": execution_id,
+                "manifest_digest": manifest.manifest_digest,
+                "source_sha256": manifest.inputs[0].sha256,
+                "definitions": definitions_with_digest,
+                "definitions_digest": digest(definitions_with_digest),
+                "rows": frozen,
+                "rows_digest": digest(frozen),
+            }
+            if self._glue_launcher is None:
+                raise AdmissionDenied("deployment authority is required to freeze expected state")
+            expected_object = put_immutable_output(
+                self._s3,
+                bucket=manifest.output_bucket,
+                key=manifest.output_prefix + "expected-state.json",
+                body=canonical_json(frozen_body).encode(),
+                owner=self._glue_launcher.account,
+                kms_key=self._glue_launcher.kms_key,
+            )
             expected_authority = {
                 "execution_id": execution_id,
-                "frozen_expected": frozen,
+                "frozen_expected_authority": expected_object.as_dict(),
                 "frozen_expected_digest": digest(frozen),
-                "frozen_definitions": definitions_with_digest,
+                "frozen_definitions_digest": digest(definitions_with_digest),
                 "frozen_source_sha256": manifest.inputs[0].sha256,
             }
             for key, value in expected_authority.items():
@@ -397,9 +478,36 @@ class ControlWorker:
             report = compare_online_records(
                 expected, actual, request_time=request_time, maximum_freshness_age=age
             )
+            if self._glue_launcher is None:
+                raise AdmissionDenied("deployment authority is required to freeze parity evidence")
+            report_object = put_immutable_output(
+                self._s3,
+                bucket=manifest.output_bucket,
+                key=manifest.output_prefix + "parity-report.json",
+                body=canonical_json(report).encode(),
+                owner=self._glue_launcher.account,
+                kms_key=self._glue_launcher.kms_key,
+            )
+            summary = {
+                key: report[key]
+                for key in (
+                    "actual_count",
+                    "actual_digest",
+                    "compared_count",
+                    "envelope_mismatch_count",
+                    "expected_count",
+                    "expected_digest",
+                    "passed",
+                    "reasons",
+                    "sampled",
+                    "selected_keys_digest",
+                    "report_digest",
+                )
+            } | {"contract": "stage6-parity-summary-v1"}
             result = {
                 "decision": "ELIGIBLE" if report["passed"] else "QUARANTINED",
-                "parity_report": report,
+                "parity_report": summary,
+                "parity_report_authority": report_object.as_dict(),
                 "plan_digest": plan.plan_digest,
                 "validation_receipt": prior["validation_receipt"],
             }
@@ -410,6 +518,37 @@ class ControlWorker:
                 "parity_receipt_digest"
             ):
                 raise AdmissionDenied("activation requires exact durable eligible parity")
+            report_authority = _authority(
+                _mapping(parity.get("parity_report_authority"), "parity report authority")
+            )
+            if (
+                report_authority.bucket != manifest.output_bucket
+                or report_authority.key != manifest.output_prefix + "parity-report.json"
+            ):
+                raise AdmissionDenied("parity evidence escaped the immutable run prefix")
+            full_report = dict(
+                _mapping(
+                    json.loads(
+                        read_exact_object(
+                            self._s3, report_authority, maximum_bytes=MAX_OBJECT_BYTES
+                        ).body
+                    ),
+                    "full parity report",
+                )
+            )
+            full_digest = full_report.pop("report_digest", None)
+            frozen_summary = _mapping(parity.get("parity_report"), "parity summary")
+            if (
+                full_digest != digest(full_report)
+                or full_digest != frozen_summary.get("report_digest")
+                or full_report.get("passed") is not True
+                or any(
+                    full_report.get(key) != value
+                    for key, value in frozen_summary.items()
+                    if key not in {"contract", "report_digest"}
+                )
+            ):
+                raise AdmissionDenied("full parity evidence differs from immutable summary")
             materialization = self._prior(manifest, "MATERIALIZE_ONLINE")
             plan, _expected = self._plan(
                 manifest,
@@ -465,7 +604,14 @@ class ControlWorker:
             admission_digest = str(admission_value.get("admission_digest", ""))
             if len(admission_digest) != 64:
                 raise ManagedContractError("completion admission digest is invalid")
-            output_authorities = tuple(_authority(_mapping(row, "output")) for row in outputs)
+            parity_value = self._prior(manifest, "PARITY")
+            all_outputs = list(outputs) + [
+                admission_value["frozen_expected_authority"],
+                parity_value["parity_report_authority"],
+            ]
+            output_authorities = tuple(_authority(_mapping(row, "output")) for row in all_outputs)
+            for output_authority in output_authorities:
+                read_exact_object(self._s3, output_authority, maximum_bytes=MAX_OBJECT_BYTES)
             body: dict[str, Any] = {
                 "admission_digest": admission_digest,
                 "contract": "stage6-completion-receipt-v1",

@@ -262,6 +262,41 @@ def test_sdk_hidden_retries_are_rejected(tmp_path: Path) -> None:
         launcher(PersistentBoundary(tmp_path / "control.sqlite"), GlueBoundary(attempts=2))
 
 
+@pytest.mark.parametrize(
+    "argument",
+    [
+        "--input-bucket",
+        "--region",
+        "--input-key",
+        "--input-version",
+        "--input-sha256",
+        "--output-bucket",
+        "--output-prefix",
+        "--kms-key-arn",
+        "--expected-bucket-owner",
+        "--max-input-rows",
+        "--max-output-rows",
+        "--launch-authority-digest",
+    ],
+)
+def test_non_overridable_job_argument_cannot_replace_counted_authority(
+    tmp_path: Path, argument: str
+) -> None:
+    class OverridingJob(GlueBoundary):
+        def get_job(self, **request: Any) -> dict[str, Any]:
+            response = super().get_job(**request)
+            response["Job"]["NonOverridableArguments"] = {argument: "unadmitted-value"}
+            return response
+
+    db = PersistentBoundary(tmp_path / "control.sqlite")
+    glue = OverridingJob()
+    with pytest.raises(AdmissionDenied, match="override immutable launch authority"):
+        launcher(db, glue).start(manifest(), execution_id="execution-1", invocation_id="call-1")
+    assert not glue.calls
+    with db.connect() as connection:
+        assert connection.execute("SELECT count(*) FROM items").fetchone()[0] == 0
+
+
 def test_launch_request_binds_inputs_outputs_and_compute_limits() -> None:
     request = launch_request(
         manifest(),

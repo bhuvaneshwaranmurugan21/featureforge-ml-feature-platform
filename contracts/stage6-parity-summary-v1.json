@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage6-parity-summary:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "actual_count",
+    "compared_count",
+    "envelope_mismatch_count",
+    "expected_count",
+    "actual_digest",
+    "expected_digest",
+    "selected_keys_digest",
+    "report_digest",
+    "passed",
+    "sampled",
+    "reasons"
+  ],
+  "properties": {
+    "contract": {
+      "const": "stage6-parity-summary-v1"
+    },
+    "actual_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500000
+    },
+    "compared_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500000
+    },
+    "envelope_mismatch_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500000
+    },
+    "expected_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500000
+    },
+    "actual_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "expected_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "selected_keys_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "report_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "passed": {
+      "type": "boolean"
+    },
+    "sampled": {
+      "const": false
+    },
+    "reasons": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 6,
+      "items": {
+        "enum": [
+          "MISSING_RECORD",
+          "EXTRA_RECORD",
+          "SEMANTIC_MISMATCH",
+          "ENVELOPE_MISMATCH",
+          "INELIGIBLE_RECORD",
+          "AGGREGATE_MISMATCH"
+        ]
+      }
+    }
+  }
+}

@@ -14,14 +14,24 @@
       "evidence": [
         "contracts/stage6-*.json",
         "src/featureforge/managed.py",
-        "tests/test_stage6_managed.py"
+        "tests/test_stage6_managed.py",
+        "src/featureforge/s3_immutable.py",
+        "contracts/stage6-frozen-expected-v1.json",
+        "contracts/stage6-parity-summary-v1.json",
+        "tests/test_stage6_runtime_effects.py",
+        "tests/test_stage6_glue_provenance.py"
       ]
     },
     {
       "acceptance": "ST6-AC-03",
       "evidence": [
         "tests/stage6_oracle.py",
-        "evidence/stage6/local-proof.json"
+        "evidence/stage6/local-proof.json",
+        "src/featureforge/s3_immutable.py",
+        "contracts/stage6-frozen-expected-v1.json",
+        "contracts/stage6-parity-summary-v1.json",
+        "tests/test_stage6_runtime_effects.py",
+        "tests/test_stage6_glue_provenance.py"
       ]
     },
     {
@@ -29,7 +39,12 @@
       "evidence": [
         "src/featureforge/managed.py",
         "src/featureforge/aws_runtime.py",
-        "jobs/glue_point_in_time.py"
+        "jobs/glue_point_in_time.py",
+        "src/featureforge/s3_immutable.py",
+        "contracts/stage6-frozen-expected-v1.json",
+        "contracts/stage6-parity-summary-v1.json",
+        "tests/test_stage6_runtime_effects.py",
+        "tests/test_stage6_glue_provenance.py"
       ]
     },
     {
@@ -55,7 +70,12 @@
         "src/featureforge/control_worker.py",
         "evidence/stage6/failure-recovery-proof.json",
         "src/featureforge/glue_launch.py",
-        "tests/test_stage6_glue_launch.py"
+        "tests/test_stage6_glue_launch.py",
+        "src/featureforge/s3_immutable.py",
+        "contracts/stage6-frozen-expected-v1.json",
+        "contracts/stage6-parity-summary-v1.json",
+        "tests/test_stage6_runtime_effects.py",
+        "tests/test_stage6_glue_provenance.py"
       ]
     },
     {
@@ -71,7 +91,12 @@
       "acceptance": "ST6-AC-09",
       "evidence": [
         "tools/build_stage6_artifacts.py",
-        "evidence/stage6/artifact-qualification.json"
+        "evidence/stage6/artifact-qualification.json",
+        "src/featureforge/s3_immutable.py",
+        "contracts/stage6-frozen-expected-v1.json",
+        "contracts/stage6-parity-summary-v1.json",
+        "tests/test_stage6_runtime_effects.py",
+        "tests/test_stage6_glue_provenance.py"
       ]
     },
     {
