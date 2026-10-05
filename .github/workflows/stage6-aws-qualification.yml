@@ -42,6 +42,8 @@ jobs:
           aws-region: ap-southeast-2
           role-session-name: featureforge-stage6-qualification
           mask-aws-account-id: true
+          allowed-account-ids: "857229544428"
+          unset-current-credentials: true
       - name: Execute enumerated read-only qualification
         run: |
           set -euo pipefail

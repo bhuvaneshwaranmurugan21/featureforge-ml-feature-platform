@@ -85,6 +85,39 @@ retain the existing correctness, observability, security and cleanup acceptance 
 cost profile must remain unverified until those controls are independently reproduced. No new AWS
 permission, runtime resource, workload, budget mutation or lease write was exercised by this review.
 
+## Initial candidate transaction projection
+
+The online runtime preflights every planned record and its generation-owner item before the first
+DynamoDB request. The same item builder supplies the physical transaction and projection, including
+the `record_json` copy, UTF-8 attribute names and values, nullable values, and conservative numeric
+representation. Unsupported attribute shapes and service-invalid numeric ranges reject. An oversized
+later record cannot leave an earlier partially written candidate.
+
+The versioned compact projection binds the plan digest, record count, total and maximum item byte
+bounds, owner size, and initial transactional units. Record writes round each item upward to one-KiB
+blocks and count two write units per block. Owner ConditionCheck actions in TransactWriteItems also
+round the initial owner to one-KiB blocks and count two write units per block, included in the total.
+This covers the initial successful record pass
+only. Retries, failed conditions, reconciliation scans, control writes, per-item storage overhead
+and PITR remain separate obligations. The projection cannot establish aggregate cost admission.
+
+Qualification SDK clients use one physical attempt, explicit five-second connection and ten-second
+read timeouts. Cost Explorer accepts only one complete response; a next-page token rejects without
+another paid request. The query interval derives from the observation timestamp. Its published
+request charge still needs current price provenance and an explicit cost line before final closure.
+Across separate qualification executions, request counts remain unbounded; this is a per-execution
+physical-attempt control, not a lifetime cost claim.
+
+Enabled Glue job metrics now have the missing `cloudwatch:PutMetricData` permission, restricted to
+the `Glue` namespace and configured region. This repairs publication authority, not the proposed
+ten-series ceiling. No metric, IAM resource or workload was created by this change.
+
+Primary service references:
+- https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+- https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+- https://docs.aws.amazon.com/cost-management/latest/userguide/ce-what-is.html
+- https://docs.aws.amazon.com/glue/latest/dg/monitoring-awsglue-with-cloudwatch-metrics.html
+
 ## Observed catalog applicability repair
 
 Read-only catalog qualification identified the actual billing dimensions: Glue catalog uses

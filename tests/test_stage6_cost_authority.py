@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import boto3
 import pytest
 from botocore.session import get_session
 
@@ -16,6 +17,63 @@ from featureforge.stage6_live import (
     usd_microusd,
 )
 from tools import qualify_stage6_aws as qualifier
+
+
+def test_qualification_client_has_one_physical_attempt_and_explicit_timeouts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session = boto3.Session(aws_access_key_id="local-shape-only", aws_secret_access_key="local")
+    monkeypatch.setattr(qualifier.boto3, "client", session.client)
+    monkeypatch.setenv("AWS_MAX_ATTEMPTS", "8")
+    client = qualifier._client("ce", "us-east-1")
+    try:
+        assert client.meta.config.retries["total_max_attempts"] == 1
+        assert client.meta.config.connect_timeout == 5
+        assert client.meta.config.read_timeout == 10
+        assert client.meta.endpoint_url == "https://ce.us-east-1.amazonaws.com"
+    finally:
+        client.close()
+
+
+def test_wrong_account_rejects_before_any_inventory_or_price_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = []
+
+    class Identity:
+        def get_caller_identity(self) -> dict[str, str]:
+            return {"Account": "000000000000", "Arn": "wrong"}
+
+    def local_client(service: str, region: str = qualifier.REGION) -> Any:
+        calls.append(service)
+        assert service == "sts"
+        return Identity()
+
+    monkeypatch.setattr(qualifier, "_client", local_client)
+    with pytest.raises(LiveEvidenceError, match="authorized account"):
+        qualifier.qualify("s6-plan-20260930", "part3-stage6-aws-plan-qualification")
+    assert calls == ["sts"]
+
+
+def test_cost_visibility_rejects_incomplete_page_without_another_paid_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed = int(datetime(2026, 10, 2, tzinfo=UTC).timestamp())
+    requests = []
+
+    class Billing:
+        def describe_budgets(self, **kwargs: Any) -> dict[str, Any]:
+            return {"Budgets": [budget()]}
+
+        def get_cost_and_usage(self, **kwargs: Any) -> dict[str, Any]:
+            requests.append(kwargs)
+            return {"ResultsByTime": [{}], "NextPageToken": "unread"}
+
+    monkeypatch.setattr(qualifier, "_client", lambda *args: Billing())
+    with pytest.raises(LiveEvidenceError, match="one-request"):
+        qualifier._financial_visibility("local-account", observed, 1)
+    assert len(requests) == 1
+    assert requests[0]["TimePeriod"] == {"Start": "2026-10-01", "End": "2026-10-03"}
 
 
 def product(rate: str = "0.0000001", region: str = "ap-southeast-2") -> dict[str, Any]:

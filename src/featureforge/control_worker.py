@@ -20,6 +20,7 @@ from featureforge.aws_runtime import (
     RuntimeConflict,
     S3Client,
     TaskLedgerBoundary,
+    candidate_write_projection,
     read_exact_object,
 )
 from featureforge.canonical import canonical_json, digest
@@ -389,7 +390,14 @@ class ControlWorker:
                 reader = getattr(body_value, "read", None)
                 if not callable(reader):
                     raise ManagedContractError("Glue output authority body is unreadable")
-                authority_bytes = reader()
+                try:
+                    authority_bytes = reader(MAX_OBJECT_BYTES + 1)
+                finally:
+                    close = getattr(body_value, "close", None)
+                    if callable(close):
+                        close()
+            if not isinstance(authority_bytes, bytes) or len(authority_bytes) > MAX_OBJECT_BYTES:
+                raise ManagedContractError("Glue output authority exceeds the immutable read bound")
             version = response.get("VersionId")
             if (
                 not isinstance(authority_bytes, bytes)
@@ -449,10 +457,12 @@ class ControlWorker:
         if action == "MATERIALIZE_ONLINE":
             plan, _expected = self._plan(manifest, payload)
             assert self._online is not None
+            projection = candidate_write_projection(plan)
             receipt = self._online.materialize(plan)
             return {
                 "candidate_count": plan.expected_count,
                 "candidate_digest": plan.records_digest,
+                "write_charge_projection": projection,
                 "plan_digest": plan.plan_digest,
                 "validation_receipt": receipt,
                 "materialization_context": dict(payload),

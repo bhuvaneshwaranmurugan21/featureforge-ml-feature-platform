@@ -12,6 +12,8 @@
     {
       "acceptance": "ST6-AC-02",
       "evidence": [
+        "contracts/stage6-candidate-write-projection-v1.json",
+        "tests/test_stage6_capacity_preflight.py",
         "contracts/stage6-*.json",
         "src/featureforge/managed.py",
         "tests/test_stage6_managed.py",
@@ -125,6 +127,7 @@
     {
       "acceptance": "ST6-AC-13",
       "evidence": [
+        "tests/test_stage6_infra_security.py",
         "infra/terraform/iam.tf",
         "docs/stage6/iam-matrix.md"
       ]
@@ -132,6 +135,8 @@
     {
       "acceptance": "ST6-AC-14",
       "evidence": [
+        "tests/test_stage6_cost_authority.py",
+        "tools/qualify_stage6_aws.py",
         "evidence/stage6/aws-read-only-receipt.json"
       ]
     },

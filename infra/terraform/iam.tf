@@ -130,6 +130,23 @@ resource "aws_iam_role" "glue" {
 }
 
 data "aws_iam_policy_document" "glue" {
+  # Glue job metrics use this namespace and have no resource ARN.
+  statement {
+    sid       = "ExactGlueMetricNamespace"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "cloudwatch:namespace"
+      values   = ["Glue"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestedRegion"
+      values   = [var.aws_region]
+    }
+  }
+
   statement {
     sid       = "ReadArtifacts"
     actions   = ["s3:GetObject", "s3:GetObjectVersion"]

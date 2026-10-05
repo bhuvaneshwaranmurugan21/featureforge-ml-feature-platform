@@ -22,6 +22,7 @@ from featureforge.expected import project_feature_rows
 from featureforge.managed import ManagedRunManifest, S3ObjectAuthority, admit_managed_run
 from featureforge.model import FeatureDefinition, FeatureValue, PaymentEvent
 from featureforge.online import build_materialization_plan, validate_dynamodb_request
+from featureforge.s3_immutable import MAX_OBJECT_BYTES
 from tests.test_stage6_glue_launch import GlueBoundary, PersistentBoundary, launcher, manifest
 from tests.test_stage6_managed import FakeS3, costs, inventory, lease
 
@@ -562,3 +563,47 @@ def test_completion_rejects_output_from_another_counted_launch(tmp_path: Path) -
                 "state": "SUCCEEDED",
             },
         )
+
+
+def test_recording_glue_authority_bounds_and_closes_latest_version_stream(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worker, request, database = fixture(tmp_path)
+    run = ManagedRunManifest.from_dict(request["manifest"])
+
+    class OversizedStream:
+        closed = False
+        reads: list[int] = []
+
+        def read(self, size: int) -> bytes:
+            self.reads.append(size)
+            return b"x" * size
+
+        def close(self) -> None:
+            self.closed = True
+
+    stream = OversizedStream()
+    original = worker._s3.get_object
+
+    def read(**kwargs: Any) -> Any:
+        response = original(**kwargs)
+        if kwargs["Key"].endswith("output-authority.json"):
+            response["Body"] = stream
+        return response
+
+    monkeypatch.setattr(worker._s3, "get_object", read)
+    calls = list(database.calls)
+    with pytest.raises(ValueError, match="immutable read bound"):
+        worker._execute(
+            "RECORD_GLUE",
+            run,
+            {
+                "glue_job_run_id": "jr-1",
+                "job_name": "featureforge-stage6-run-001-offline",
+                "state": "SUCCEEDED",
+            },
+        )
+    assert stream.reads == [MAX_OBJECT_BYTES + 1]
+    assert stream.closed
+    assert database.calls == calls

@@ -11,6 +11,7 @@ import hashlib
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from typing import Any, Protocol
 
 from featureforge.canonical import canonical_json, digest
@@ -54,6 +55,99 @@ class GlueClient(Protocol):
 
 class RuntimeConflict(RuntimeError):
     """A durable identity was reused for different content."""
+
+
+def candidate_item(record: Any) -> dict[str, Any]:
+    """One item builder shared by capacity preflight and the physical request."""
+    item = dynamodb_record_item(record) | {"record_json": {"S": canonical_json(record.as_dict())}}
+    for name, maximum in (("PK", 2048), ("SK", 1024)):
+        if not 1 <= len(item[name]["S"].encode("utf-8")) <= maximum:
+            raise RuntimeConflict("candidate primary key exceeds the service byte bound")
+    return item
+
+
+def candidate_owner_item(plan: MaterializationPlan) -> dict[str, Any]:
+    return {
+        "PK": {"S": f"GENERATION#{plan.generation_id}"},
+        "SK": {"S": "OWNER"},
+        "plan_digest": {"S": plan.plan_digest},
+        "feature_set": {"S": plan.feature_set},
+        "operation_id": {"S": plan.operation_id},
+        "state": {"S": "WRITING"},
+    }
+
+
+def scalar_item_size_upper_bound(item: Mapping[str, Any]) -> int:
+    """Bound the deployed scalar-only item, including UTF-8 attribute names.
+
+    DynamoDB numbers have up to 38 significant digits; 21 bytes conservatively
+    covers their binary representation, including sign. JSON wire size is not
+    stored item size. Unsupported attribute types reject instead of undercounting.
+    """
+    size = 0
+    for name, attribute in item.items():
+        if not isinstance(name, str) or not isinstance(attribute, Mapping):
+            raise RuntimeConflict("candidate item has malformed attributes")
+        size += len(name.encode("utf-8"))
+        if set(attribute) == {"S"} and isinstance(attribute["S"], str):
+            size += len(attribute["S"].encode("utf-8"))
+        elif set(attribute) == {"NULL"} and attribute["NULL"] is True:
+            size += 1
+        elif set(attribute) == {"N"} and isinstance(attribute["N"], str):
+            text = attribute["N"]
+            if len(text) > 256:
+                raise RuntimeConflict("candidate numeric attribute exceeds service bounds")
+            try:
+                number = Decimal(text)
+            except InvalidOperation as error:
+                raise RuntimeConflict("candidate numeric attribute is invalid") from error
+            digits = list(number.as_tuple().digits)
+            while digits and digits[-1] == 0:
+                digits.pop()
+            if not number.is_finite() or (
+                number != 0 and (len(digits) > 38 or not -130 <= number.adjusted() <= 125)
+            ):
+                raise RuntimeConflict("candidate numeric attribute exceeds service bounds")
+            size += 21
+        else:
+            raise RuntimeConflict("candidate item uses an unaccounted attribute type")
+    return size
+
+
+def candidate_write_projection(plan: MaterializationPlan) -> dict[str, Any]:
+    """Preflight only initial record transactions, not aggregate execution cost.
+
+    Each record transaction puts one item and condition-checks its owner.
+    ConditionCheck is a TransactWriteItems action and consumes write units.
+    Retries, scans, control writes, other tasks and standing resources remain
+    separate cost obligations. No database request occurs during this projection.
+    """
+    total_bytes = maximum_bytes = write_units = count = 0
+    for record in plan.records:
+        size = scalar_item_size_upper_bound(candidate_item(record))
+        if size > 400 * 1024:
+            raise RuntimeConflict("candidate item exceeds the 400 KiB service size bound")
+        total_bytes += size
+        maximum_bytes = max(maximum_bytes, size)
+        write_units += 2 * ((size + 1023) // 1024)
+        count += 1
+    if count != plan.expected_count:
+        raise RuntimeConflict("candidate charge projection count differs from immutable plan")
+    owner_size = scalar_item_size_upper_bound(candidate_owner_item(plan))
+    if owner_size > 400 * 1024:
+        raise RuntimeConflict("candidate owner exceeds the service size bound")
+    condition_units = 2 * count * ((owner_size + 1023) // 1024)
+    body = {
+        "contract": "stage6-candidate-write-projection-v1",
+        "plan_digest": plan.plan_digest,
+        "record_count": count,
+        "item_bytes_upper_bound": total_bytes,
+        "maximum_item_bytes_upper_bound": maximum_bytes,
+        "transaction_write_units_upper_bound": write_units + condition_units,
+        "owner_item_bytes": owner_size,
+        "transaction_condition_write_units_upper_bound": condition_units,
+    }
+    return body | {"projection_digest": digest(body)}
 
 
 class TaskLedgerBoundary(Protocol):
@@ -397,12 +491,7 @@ class DynamoOnlineRuntime:
         current = self._owner(plan)
         if current is not None:
             return current
-        item = self._owner_key(plan) | {
-            "plan_digest": {"S": plan.plan_digest},
-            "feature_set": {"S": plan.feature_set},
-            "operation_id": {"S": plan.operation_id},
-            "state": {"S": "WRITING"},
-        }
+        item = candidate_owner_item(plan)
         request = {
             "TableName": self.control_table,
             "Item": item,
@@ -432,7 +521,7 @@ class DynamoOnlineRuntime:
     def _write_record(self, plan: MaterializationPlan, record: Any) -> None:
         put = put_record_request(self.online_table, record)
         put.pop("ReturnValues")
-        put["Item"]["record_json"] = {"S": canonical_json(record.as_dict())}
+        put["Item"] = candidate_item(record)
         request = {
             "TransactItems": [{"ConditionCheck": self._condition(plan, "WRITING")}, {"Put": put}],
             "ClientRequestToken": digest(
@@ -529,6 +618,7 @@ class DynamoOnlineRuntime:
         raise RuntimeConflict("candidate scan exceeded its bounded page budget")
 
     def materialize(self, plan: MaterializationPlan) -> dict[str, Any]:
+        candidate_write_projection(plan)
         owner = self._acquire(plan)
         if owner["state"] == {"S": "WRITING"}:
             for record in plan.records:

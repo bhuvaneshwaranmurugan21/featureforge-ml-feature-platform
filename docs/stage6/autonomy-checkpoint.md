@@ -147,3 +147,38 @@ Resumed the published source `3f0fa0e82eaad8cd58a7f9844528823b61abd2e2`, tree `f
 Move full primitive-derived expected state and exhaustive parity evidence into bounded immutable S3 objects, retaining version/checksum authorities and compact digests in task receipts. Activation verifies the full parity object before conditional promotion; completion reads and inventories all five objects. Bound control ingress to 64 KiB and task receipts to 16 KiB, preserving full independent projection and exhaustive parity. Version both new evidence contracts. No dependency was added. The attempted use of an unavailable optional JSON Schema package in a new test was replaced with repository-native closed-contract checks plus production semantic validation; no package or requirement was bypassed.
 
 Final local validation: 446 tests passed, 88.07% coverage; Ruff and strict MyPy (25 source files) passed. Stage 6 deterministic proof regeneration matched committed bytes. Two clean artifact rebuilds matched. Exact-source CI and current AWS qualification must run after publication; historical green checks are not final-head proof. The cost-bound flag remains false: native logs, Spark spill, cumulative workflow effects, charged-unit accounting, and finite retained-resource lifetime remain open. No AWS write, lease replacement, Terraform runtime operation, PR, merge, or Stage 6 continuation/completion receipt was performed.
+
+## 2026-10-05 charged-effect continuation
+
+Resumed remote source `53f886f1889bf0303a91d80740637ccc96fe1bb0`, tree
+`b92d2991b162492541dccedf0775f2871ecf0bc1`; independently checked that remote main remained
+`86b3cd27ae95a6142a1d6601d188d83b8e783d29`. No completed initialization was restarted.
+
+Added initial candidate transaction projections derived from the exact physical item builder,
+including canonical duplicated content and UTF-8 names/values. Every record and owner is preflighted
+before the first DynamoDB request; invalid numeric ranges, unaccounted attribute shapes and an
+oversized later item reject without database effects. The compact projection has a thirteenth
+versioned closed contract and is retained in the materialization task result. It covers initial
+record transactions only, not retry, scan, control, storage/PITR or lifetime quantities.
+
+Pinned qualification SDK clients to one physical attempt and explicit timeouts. Qualification
+rejects a wrong account before backend/inventory/pricing reads; its OIDC workflow also binds the
+authorized account. Cost Explorer query dates derive from the observation timestamp, and an
+incomplete page rejects without another paid request. The published query fee remains an unclosed
+pricing obligation; no paid Cost Explorer call occurred during local verification.
+
+Added the permission required by enabled Glue metrics, restricted to the configured region and Glue
+namespace, without disabling observability. Bounded and closed the latest Glue-authority stream read.
+These controls do not establish aggregate cost or a thirty-day end-of-billing guarantee. The profile
+remains unverified. Standing billable resources have no enforced termination, and a cleanup retry
+controller alone cannot guarantee a finite deadline under unavailable/denied deletion APIs. A
+documented promise or a smaller fixture cannot close that requirement.
+
+Final local integration passed 470 tests with 88.14% coverage, the unchanged 85% gate, Ruff and
+strict MyPy across 25 source files. All seven stage validators passed; two clean final artifact
+builds matched byte for byte, and deterministic proof bytes remained unchanged. Official AWS
+transaction documentation was checked before final publication: owner ConditionCheck actions are
+counted as transactional writes at one-KiB boundaries, including in the projected total. Boundary
+tests distinguish that charge from four-KiB transactional reads. Exact-source remote checks must
+still be independently completed after publication; local success is not acceptance closure.
+No AWS write, lease replacement, Terraform runtime operation, workload, PR or merge was performed.

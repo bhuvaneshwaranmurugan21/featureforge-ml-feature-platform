@@ -7,6 +7,7 @@
 | Control worker | Start/get one Glue job | Exact job ARN | Bounded orchestration |
 | Control worker | KMS encrypt/decrypt/data key | One project key | Required by encrypted buckets/tables |
 | Glue job | Read artifacts and exact inputs; write isolated output | Artifact, offline, and evidence buckets | Execute bounded feature computation |
+| Glue job | Publish enabled job metrics | `Glue` namespace and configured region; API has no resource ARN | Preserve job observability; aggregate cardinality remains an open cost gate |
 | Glue job | KMS encrypt/decrypt/data key | One project key | Encrypted input/output and logs |
 | State machine | Invoke exact Lambda; read exact Glue job-run status | Exact function/job | Managed control graph; launching requires durable worker admission |
 | EventBridge | Start exact state machine | Exact state machine | Disabled schedule definition only |

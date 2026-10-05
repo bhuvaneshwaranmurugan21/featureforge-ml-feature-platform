@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from featureforge.canonical import canonical_json
@@ -30,6 +31,7 @@ from featureforge.stage6_live import (
 PROJECT = "featureforge-ml-feature-platform"
 REGION = "ap-southeast-2"
 ROLE_NAME = "FeatureForgeGitHubOidcRole"
+EXPECTED_ACCOUNT_FINGERPRINT = fingerprint("857229544428")
 RUN_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{2,15}$")
 ABSENT_CODES = frozenset(
     {
@@ -63,7 +65,15 @@ def _sha(value: bytes) -> str:
 
 
 def _client(service: str, region: str = REGION) -> Any:
-    return boto3.client(service, region_name=region)
+    return boto3.client(
+        service,
+        region_name=region,
+        config=Config(
+            retries={"mode": "standard", "total_max_attempts": 1},
+            connect_timeout=5,
+            read_timeout=10,
+        ),
+    )
 
 
 def _absent_or_present(call: Callable[[], Any], label: str) -> dict[str, str]:
@@ -481,7 +491,7 @@ def _financial_visibility(
     headroom = budget_headroom(
         rows, observed_at_epoch=observed_at_epoch, worst_case_microusd=worst_case_microusd
     )
-    today = datetime.now(UTC).date()
+    today = datetime.fromtimestamp(observed_at_epoch, UTC).date()
     start = today.replace(day=1).isoformat()
     end = (today + timedelta(days=1)).isoformat()
     cost = _client("ce", "us-east-1").get_cost_and_usage(
@@ -490,6 +500,8 @@ def _financial_visibility(
         Metrics=["UnblendedCost"],
         Filter={"Not": {"Dimensions": {"Key": "RECORD_TYPE", "Values": ["Credit", "Refund"]}}},
     )
+    if cost.get("NextPageToken"):
+        raise LiveEvidenceError("Cost Explorer pagination exceeds the one-request authority")
     if not cost.get("ResultsByTime"):
         raise LiveEvidenceError("Cost Explorer returned no current-month visibility")
     return {
@@ -505,6 +517,8 @@ def qualify(run_id: str, source_branch: str) -> dict[str, Any]:
     observed_at = int(time.time())
     identity = _client("sts").get_caller_identity()
     account_id = str(identity["Account"])
+    if fingerprint(account_id) != EXPECTED_ACCOUNT_FINGERPRINT:
+        raise LiveEvidenceError("qualification identity is outside the authorized account")
     sanitized = sanitized_identity(account_id, str(identity["Arn"]), ROLE_NAME)
     backend, _ = _verify_backend(account_id)
     inventory = _inventory(account_id, run_id)

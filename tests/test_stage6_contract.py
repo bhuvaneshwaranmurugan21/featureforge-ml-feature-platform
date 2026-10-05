@@ -23,7 +23,7 @@ def test_stage6_acceptance_and_traceability_are_complete() -> None:
 
 def test_stage6_contracts_are_closed_and_versioned() -> None:
     contracts = sorted((ROOT / "contracts").glob("stage6-*.json"))
-    assert len(contracts) == 12
+    assert len(contracts) == 13
     for path in contracts:
         schema = json.loads(path.read_text())
         assert schema["$schema"].endswith("2020-12/schema")

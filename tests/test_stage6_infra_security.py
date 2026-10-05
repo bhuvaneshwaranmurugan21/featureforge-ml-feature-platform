@@ -19,6 +19,20 @@ def _statement(policy: str, sid: str) -> str:
     return policy[match.end() :].split("\n  }", 1)[0]
 
 
+def test_enabled_glue_metrics_have_namespace_and_region_limited_publication_permission() -> None:
+    compute = _text("compute.tf")
+    assert '"--enable-metrics"' in compute
+    block = _statement(_text("iam.tf"), "ExactGlueMetricNamespace")
+    assert re.findall(r'"(cloudwatch:[^"\n]+)"', block) == [
+        "cloudwatch:PutMetricData",
+        "cloudwatch:namespace",
+    ]
+    assert 'resources = ["*"]' in block
+    assert 'values   = ["Glue"]' in block
+    assert 'variable = "aws:RequestedRegion"' in block
+    assert "values   = [var.aws_region]" in block
+
+
 def test_glue5_custom_security_log_names_match_the_job_configuration() -> None:
     main = _text("main.tf")
     compute = _text("compute.tf")
@@ -48,8 +62,7 @@ def test_glue5_custom_security_log_names_match_the_job_configuration() -> None:
     assert "name = local.glue_security_name" in compute
     assert "name               = local.glue_role_name" in iam
     assert (
-        "depends_on = [aws_cloudwatch_log_group.glue_error, "
-        "aws_cloudwatch_log_group.glue_output]"
+        "depends_on = [aws_cloudwatch_log_group.glue_error, aws_cloudwatch_log_group.glue_output]"
     ) in compute
 
 
@@ -71,7 +84,7 @@ def test_log_key_encryption_context_permits_only_exact_managed_groups() -> None:
         "kms:EncryptionContext:aws:logs:arn",
     }
     names = main.split("managed_log_group_names = {", 1)[1].split("\n  }", 1)[0]
-    assert len(re.findall(r'^    [a-z_]+\s*=', names, re.MULTILINE)) == 4
+    assert len(re.findall(r"^    [a-z_]+\s*=", names, re.MULTILINE)) == 4
 
 
 def test_glue_log_permissions_cannot_escape_the_two_retained_groups() -> None:
@@ -123,5 +136,8 @@ def test_expanded_managed_resource_graph_adds_only_two_glue_log_groups() -> None
     assert text.count("for_each                = local.managed_buckets") == 1
     assert len(resources) + 3 * (3 - 1) == 44
     assert {name for kind, name in resources if kind == "aws_cloudwatch_log_group"} == {
-        "control_worker", "orchestration", "glue_error", "glue_output"
+        "control_worker",
+        "orchestration",
+        "glue_error",
+        "glue_output",
     }
