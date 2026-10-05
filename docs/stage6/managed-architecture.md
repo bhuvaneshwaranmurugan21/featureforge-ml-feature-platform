@@ -66,11 +66,11 @@ claimed to be continuously enumerated live inventory. Each later task rechecks t
 against its durable admission receipt before performing effects.
 
 The new eighth contract is `stage6-admission-authority-v1`. Local boundary tests prove rejection
-behavior and read request construction, not real AWS execution or a complete cost bound.
-No production approval has been issued. The cost-bound evidence digest identifies an issuer's
-proof; it does not manufacture one. `bound_enforcement_verified` remains false until aggregate
-internal effects, redrive limits and finite teardown are mechanically proved. Runtime enablement
-and admission authority therefore remain absent by default.
+behavior and read request construction, not real AWS execution. No production approval has been
+issued. The cost-bound evidence digest identifies the issuer's exact one-execution, thirty-day
+worksheet; it does not manufacture runtime or billing evidence. Runtime enablement and admission
+authority remain absent by default, while managed execution, billed cost and completed teardown
+remain explicitly unclaimed.
 
 ## Durable Glue launch admission
 
@@ -92,7 +92,8 @@ job timeout; quarantine does not claim that AWS cancellation or resource cleanup
 Local SQLite tests exercise independent concurrent database connections and persistence across
 launcher reconstruction. They validate request shapes against the pinned SDK and inject lost
 acknowledgements at reservation, launch and completion boundaries. This is local contract evidence,
-not a live DynamoDB/Glue test or aggregate cost proof. The workload cost profile remains unverified.
+not a live DynamoDB/Glue test. The verified planning profile authorizes at most one later execution;
+actual request, usage and billing reconciliation remain Stage 7/8 evidence.
 
 ## Bounded control transport and complete evidence inventory
 
@@ -101,6 +102,11 @@ The immutable pre-run projector writes `expected-state.json` before any Glue lau
 The full exhaustive parity report is stored as `parity-report.json`; the control receipt contains a closed `stage6-parity-summary-v1` and the full report authority. Activation rereads that exact report, verifies its embedded digest and agreement with the eligible summary, and then revalidates the immutable candidate before CAS. Completion verifies and inventories all five objects: expected state, rows, generation manifest, Glue output authority, and parity report. None of the independent expected-state or exhaustive parity comparisons were reduced to sampling.
 
 Control events are limited to 64 KiB and completed task receipts to 16 KiB. Six retained receipts contribute at most 96 KiB before the final task; combined with a 64 KiB input and fixed integration metadata this leaves room below the 256 KiB Step Functions boundary. The task ledger stores compact receipt JSON rather than a potentially multi-megabyte row set. Immutable objects retain the 32 MiB per-object bound. Oversized data or control input rejects before activation; these controls do not establish aggregate Spark spill, billing, or lifetime bounds.
+
+The planned Glue job has no S3 TempDir. Its three deployment objects, one input and five immutable
+run outputs are the complete explicit S3 write inventory and are each bounded to 32 MiB. Versioned
+bucket lifecycle rules enforce the thirty-day worksheet horizon; exact Terraform destruction and
+independent residual proof remain future actions rather than Stage 6 completion claims.
 
 Candidate reconciliation indexes expected records by exact composite key once, preserving duplicate, missing, extra, semantic, and DynamoDB-envelope rejection while eliminating a full expected-plan search for each scanned record. A counted traversal test proves linear expected-record visits; it is not a managed performance benchmark.
 

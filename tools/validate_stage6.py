@@ -252,7 +252,17 @@ def _validate_terraform(root: Path) -> None:
     _check('required_version = "= 1.9.8"' in versions, "Terraform pin drift")
     _check('version = "= 5.100.0"' in versions, "provider pin drift")
     _check('version     = "5.100.0"' in lock, "provider lock drift")
-    _check("force_destroy = true" not in terraform, "destructive bucket default")
+    _check(
+        terraform.count("force_destroy = true") == 3,
+        "every exact Stage 6 bucket must be covered by the reviewed Terraform destroy inverse",
+    )
+    _check(
+        'resource "aws_s3_bucket_lifecycle_configuration" "managed"' in terraform
+        and 'id     = "stage6-thirty-day-cost-horizon"' in terraform
+        and "noncurrent_days = 30" in terraform,
+        "versioned object cost horizon is not configured",
+    )
+    _check('"--TempDir"' not in compute, "unbounded Glue S3 temporary prefix is configured")
     _check("runtime_execution_enabled == false" in terraform, "plan-only runtime gate missing")
     _check(
         "terraform plan" not in workflow and "terraform apply" not in workflow,

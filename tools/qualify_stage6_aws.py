@@ -58,6 +58,36 @@ QUOTA_RULES = {
     "glue": ("concurrent job runs per account", 1.0),
     "lambda": ("concurrent executions", 1.0),
 }
+COST_PROFILE_CONTRACT = "stage6-cost-workload-profile-v2"
+COST_PROFILE_SCOPE = "ONE_SEPARATELY_AUTHORIZED_EXECUTION_AND_THIRTY_DAY_COST_HORIZON"
+COST_EXPLORER_PRICE_URL = (
+    "https://aws.amazon.com/aws-cost-management/aws-cost-explorer/pricing/"
+)
+EXPECTED_COST_QUANTITIES = {
+    "glue-dpu-hours": 1_500_000,
+    "lambda-gb-seconds": 4_200_000_000,
+    "lambda-requests": 28_000_000,
+    "states-transitions": 2_000_000_000,
+    "dynamodb-write-units": 250_000_000_000,
+    "dynamodb-read-units": 250_000_000_000,
+    "dynamodb-storage": 2_000_000,
+    "dynamodb-pitr": 2_000_000,
+    "s3-storage": 2_000_000,
+    "s3-write-requests": 250_000_000_000,
+    "s3-read-requests": 250_000_000_000,
+    "kms-key": 1_000_000,
+    "kms-requests": 250_000_000_000,
+    "logs-ingestion": 1_000_000,
+    "logs-storage": 1_000_000,
+    "metric-alarms": 3_000_000,
+    "custom-metrics": 10_000_000,
+    "dashboard": 1_000_000,
+    "xray-recording": 250_000_000,
+    "xray-retrieval": 250_000_000,
+    "glue-catalog-storage": 1_000_000_000,
+    "glue-catalog-requests": 1_000_000_000,
+    "cost-explorer-requests": 1_000_000,
+}
 
 
 def _sha(value: bytes) -> str:
@@ -318,6 +348,43 @@ def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[st
     pricing = _client("pricing", "us-east-1")
     observations: list[dict[str, Any]] = []
     missing_rates: list[str] = []
+    for line in profile["lines"]:
+        if line["service_code"] != "DOCUMENTED_FIXED_RATE":
+            continue
+        if (
+            line.get("component") != "cost-explorer-requests"
+            or line.get("units") != ["Request"]
+            or line.get("usage_pattern") != "PrimaryBillingViewRequest"
+            or line.get("fixed_unit_cost_microusd") != 10_000
+            or line.get("price_authority_url") != COST_EXPLORER_PRICE_URL
+            or line.get("price_authority_observed_date") != "2026-10-05"
+        ):
+            raise LiveEvidenceError("Cost Explorer fixed price authority drift")
+        authority_date = datetime.strptime(
+            line["price_authority_observed_date"], "%Y-%m-%d"
+        ).date()
+        observation_date = datetime.fromtimestamp(observed_at_epoch, UTC).date()
+        age_days = (observation_date - authority_date).days
+        if not 0 <= age_days <= 7:
+            raise LiveEvidenceError("Cost Explorer published price authority is stale or future")
+        observations.append(
+            {
+                "component": "cost-explorer-requests",
+                "service_code": "AWSCostExplorer",
+                "region": "ACCOUNT_GLOBAL",
+                "unit_cost_microusd": 10_000,
+                "conservative_maximum_tier": True,
+                "matching_dimension_count": 1,
+                "selected_dimension": {
+                    "description": "primary billing view API request",
+                    "effective_date": authority_date.isoformat(),
+                    "pricing_scope": "PUBLISHED_FIXED_RATE",
+                    "rate_id": "aws-cost-explorer-primary-billing-view-request",
+                    "source": COST_EXPLORER_PRICE_URL,
+                    "unit": "Request",
+                },
+            }
+        )
     for service_code in PRICE_SERVICES:
         dimensions: list[dict[str, Any]] = []
         token: str | None = None
@@ -458,10 +525,66 @@ def _pricing(observed_at_epoch: int, profile: Mapping[str, Any]) -> list[dict[st
 def _cost_envelope(
     observed_at_epoch: int, profile: Mapping[str, Any], rates: list[dict[str, Any]]
 ) -> dict[str, Any]:
-    if profile.get("region") != REGION or profile.get("bound_enforcement_verified") is not True:
-        raise LiveEvidenceError(
-            "frozen workload and thirty-day retention bounds are not independently enforced"
-        )
+    expected_false_claims = (
+        "managed_runtime_executed",
+        "teardown_executed",
+        "billed_cost_observed",
+    )
+    if (
+        profile.get("contract") != COST_PROFILE_CONTRACT
+        or profile.get("region") != REGION
+        or profile.get("planning_bounds_verified") is not True
+        or profile.get("verification_scope") != COST_PROFILE_SCOPE
+        or profile.get("cost_horizon_days") != 30
+        or profile.get("maximum_workflow_executions") != 1
+        or profile.get("planned_max_input_rows") != 1_000
+        or profile.get("planned_max_output_rows") != 5_000
+        or profile.get("maximum_explicit_object_bytes") != 32 * 1024 * 1024
+        or profile.get("maximum_explicit_run_objects") != 9
+        or any(profile.get(field) is not False for field in expected_false_claims)
+    ):
+        raise LiveEvidenceError("Stage 6 planning-bound authority is incomplete or overstated")
+    quantities = {
+        line.get("component"): line.get("quantity_millionths")
+        for line in profile.get("lines", [])
+        if isinstance(line, Mapping)
+    }
+    if len(quantities) != len(profile.get("lines", [])) or quantities != EXPECTED_COST_QUANTITIES:
+        raise LiveEvidenceError("Stage 6 cost quantities differ from the reviewed planning bound")
+    compute = Path("infra/terraform/compute.tf").read_text(encoding="utf-8")
+    main = Path("infra/terraform/main.tf").read_text(encoding="utf-8")
+    launch = Path("src/featureforge/glue_launch.py").read_text(encoding="utf-8")
+    immutable = Path("src/featureforge/s3_immutable.py").read_text(encoding="utf-8")
+    required_compute = (
+        'worker_type            = "G.1X"',
+        "number_of_workers      = 2",
+        "timeout                = 15",
+        "max_retries            = 0",
+        "memory_size                    = 512",
+        "timeout                        = 300",
+        "reserved_concurrent_executions = 1",
+        "MaxAttempts     = 3",
+        "TimeoutSeconds = 3600",
+    )
+    if (
+        any(token not in compute for token in required_compute)
+        or compute.count("states:::lambda:invoke") != 7
+        or '"--TempDir"' in compute
+        or "MAX_GLUE_LAUNCHES = 3" not in launch
+        or "MAX_OBJECT_BYTES = 32 * 1024 * 1024" not in immutable
+        or main.count("force_destroy = true") != 3
+        or 'id     = "stage6-thirty-day-cost-horizon"' not in main
+        or "noncurrent_days = 30" not in main
+        or "days_after_initiation = 1" not in main
+    ):
+        raise LiveEvidenceError("Stage 6 cost profile differs from executable source controls")
+    fixed = [
+        line
+        for line in profile.get("lines", [])
+        if line.get("service_code") == "DOCUMENTED_FIXED_RATE"
+    ]
+    if len(fixed) != 1 or fixed[0].get("component") != "cost-explorer-requests":
+        raise LiveEvidenceError("Cost Explorer request charge is missing from the frozen worksheet")
     return priced_cost_envelope(profile, rates, observed_at_epoch=observed_at_epoch)
 
 

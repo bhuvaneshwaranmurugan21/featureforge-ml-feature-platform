@@ -87,6 +87,19 @@ def test_log_key_encryption_context_permits_only_exact_managed_groups() -> None:
     assert len(re.findall(r"^    [a-z_]+\s*=", names, re.MULTILINE)) == 4
 
 
+def test_versioned_buckets_have_a_bounded_cost_horizon_and_exact_destroy_path() -> None:
+    main = Path("infra/terraform/main.tf").read_text()
+    compute = Path("infra/terraform/compute.tf").read_text()
+    assert main.count("force_destroy = true") == 3
+    assert 'resource "aws_s3_bucket_lifecycle_configuration" "managed"' in main
+    assert 'id     = "stage6-thirty-day-cost-horizon"' in main
+    assert "days = 30" in main
+    assert "noncurrent_days = 30" in main
+    assert "days_after_initiation = 1" in main
+    assert "for_each = local.managed_buckets" in main
+    assert '"--TempDir"' not in compute
+
+
 def test_glue_log_permissions_cannot_escape_the_two_retained_groups() -> None:
     iam = _text("iam.tf")
     configure = _statement(iam, "ExactGlueLogGroupConfiguration")
@@ -127,14 +140,14 @@ def test_active_xray_uses_only_required_service_apis() -> None:
     assert "tracing_configuration { enabled = true }" in _text("compute.tf")
 
 
-def test_expanded_managed_resource_graph_adds_only_two_glue_log_groups() -> None:
+def test_expanded_managed_resource_graph_has_exact_log_and_lifecycle_resources() -> None:
     text = "\n".join(path.read_text() for path in sorted(TF.glob("*.tf")))
     resources = re.findall(r'^resource "([^"]+)" "([^"]+)"', text, re.MULTILINE)
-    assert len(resources) == len(set(resources)) == 38
-    # Three pre-existing S3 `managed` resources each expand over three buckets.
-    assert text.count("for_each = local.managed_buckets") == 2
+    assert len(resources) == len(set(resources)) == 39
+    # Four S3 `managed` resources each expand over the three exact buckets.
+    assert text.count("for_each = local.managed_buckets") == 3
     assert text.count("for_each                = local.managed_buckets") == 1
-    assert len(resources) + 3 * (3 - 1) == 44
+    assert len(resources) + 4 * (3 - 1) == 47
     assert {name for kind, name in resources if kind == "aws_cloudwatch_log_group"} == {
         "control_worker",
         "orchestration",

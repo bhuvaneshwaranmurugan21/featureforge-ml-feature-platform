@@ -16,7 +16,7 @@ The read-only AWS gate must capture the pricing observation time, budget/credit 
 unit prices, subtotal, margin, and final ceiling decision. Any missing price is conservatively bounded
 or blocks planning. A configuration change invalidates the worksheet and saved plan.
 
-## Current authority repair and deliberately open gate
+## Current plan-bound authority
 
 The original qualification sampled one arbitrary product per service and used hardcoded lump-sum
 allowances. Those observations are historical availability evidence, not an adequate current price
@@ -27,63 +27,57 @@ to integer micro-USD before quantity multiplication. Free tiers and credits neve
 Unknown products, absent components, pagination cycles and a twenty-percent-inclusive total above
 USD 25 reject admission.
 
-`cost-workload-profile.json` freezes proposed quantities, including three possible Glue launches
-(three durable slots), twenty-eight possible Lambda invocations (seven tasks, initial plus three
-retries), PITR, object versions, logs, custom metrics, alarms, dashboard and X-Ray. Each line is an
-explicit billed-unit quantity; it is not a currency allowance. Thirty-day storage quantities are
-full-month conservative bounds, not a claim that resources automatically expire. The profile's
-`bound_enforcement_verified` is intentionally **false**: existing controls do not yet prove aggregate
-Spark spill, all object versions, request/log/metric ceilings and cleanup deadline. A local arithmetic
-pass cannot close `ST6-AC-16`; live qualification rejects until those exact bounds are independently
-enforced and traced to configuration. Setting that flag without the missing proof is not a repair.
+`cost-workload-profile.json` freezes one future separately authorized execution and a thirty-day
+pricing/authorization horizon. It includes three durable Glue launch slots, twenty-eight possible
+Lambda invocations, PITR, object versions, logs, metrics, alarms, dashboard, X-Ray and the one paid
+Cost Explorer request made by qualification. The managed manifest is capped at 1,000 input and
+5,000 output rows. Each explicit object is capped at 32 MiB; the exact graph has three deployment
+artifacts, one immutable input and five run outputs. The Glue definition has no S3 TempDir, so the
+job has no unowned temporary-object prefix. All three versioned buckets expire current and
+noncurrent objects after thirty days, abort incomplete multipart uploads after one day, and are
+covered by the exact Terraform destroy inverse.
 
-Budget admission now requires a currently applicable account-wide COST/USD/MONTHLY budget, with
-credits and refunds excluded, exact USD actual and forecast spend, and sufficient remaining headroom
-after subtracting their maximum from the budget limit. If several applicable budgets exist, the
-smallest remaining headroom governs. Names are fingerprinted. A budget count, successful billing API
-read, credit balance, or project ceiling alone does not establish headroom. No budget is created or
-modified by qualification. Missing or credit-netted budgets reject rather than silently succeeding.
+`planning_bounds_verified=true` means only that this planned configuration and worksheet are
+internally consistent for that one execution and horizon. It does not claim that the managed runtime
+executed, that teardown already happened, that billed cost was observed, or that AWS deletion APIs
+cannot be unavailable. Those claims remain explicitly false and require Stage 7/8 evidence.
+
+Budget admission requires a currently applicable account-wide COST/USD/MONTHLY budget, with credits
+and refunds excluded, exact USD actual and forecast spend, and sufficient remaining headroom after
+subtracting their maximum from the budget limit. If several applicable budgets exist, the smallest
+remaining headroom governs. Names are fingerprinted. No budget is created or modified.
 
 Managed/runtime artifact and graph repairs supersede the old saved plan. A fresh exact-source price
-observation, enforced-bound proof, budget authority, exclusive lease and saved plan are still needed;
-the expired historical plan is not renewed by this code change.
+observation, budget authority, exclusive lease and saved plan are still needed; historical authority
+is not renewed by this code change.
 
-## Source review of the remaining quantity authority
+## Source review of the quantity authority
 
-The reviewed graph supplies finite *per-execution* compute limits: seven Lambda task states, each with
-an initial invocation plus at most three retries, use 512 MiB and a 300-second timeout. That gives
-at most `7 × 4 × 0.5 × 300 = 4,200 GB-seconds` and twenty-eight invocations **if there is exactly one
-admitted Step Functions execution without redrive**. The durable Glue launcher admits three slots, each
-using two `G.1X` workers for at most fifteen minutes: `3 × 2 × 15/60 = 1.5 DPU-hours` under the same
-single-execution condition. A ten-second polling wait and one-hour workflow timeout allow at most
-360 poll cycles per uninterrupted execution. Counting three GetJobRun attempts, one choice and one
-wait per cycle gives at most 1,800 monitoring transitions; the profile rounds up to 2,000 for task,
-retry and terminal paths. Redrive can reset workflow timing and retry bookkeeping, so these are
-not an aggregate proof across redrives. The durable slots independently bound physical Glue starts.
+Seven Lambda task states, each with an initial invocation plus at most three retries, use 512 MiB and
+a 300-second timeout. That gives `7 × 4 × 0.5 × 300 = 4,200 GB-seconds` and twenty-eight invocations
+for the one approved workflow execution. The durable Glue launcher admits three slots, each using
+two `G.1X` workers for at most fifteen minutes: `3 × 2 × 15/60 = 1.5 DPU-hours`. A ten-second polling
+wait and one-hour workflow timeout permit at most 360 poll cycles. Counting three GetJobRun attempts,
+one choice and one wait per cycle gives at most 1,800 monitoring transitions; the profile rounds up
+to 2,000 for task, retry and terminal paths. A redrive or second execution falls outside this
+worksheet and requires new approval.
 
-| Quantity | Mechanism present | Missing mechanical proof |
+| Quantity | Plan-time authority | Later-stage evidence still required |
 | --- | --- | --- |
-| Workflow executions | VALIDATE binds the execution identity. A fixed-slot durable launcher admits at most three physical Glue starts across retries and redrives, disables SDK retry, and verifies service job retries are zero. Completed launches replay their exact identity; unknown outcomes consume a slot. | Redrive can still repeat Lambda invocations and monitoring transitions. The launch proof does not bound all workflow effects. |
-| Explicit Glue outputs | Five stable run-object keys (including frozen expected state and exhaustive parity evidence), conditional `If-None-Match: *`, at most 32 MiB per object, bounded publication attempts | Launch arguments and output prefix are manifest-bound, non-overridable drift rejects before launch, and conditional publication/recovery pins exact versions. Five explicit objects contribute at most 160 MiB. Inputs, Terraform artifacts, Spark temporary objects, and all physical retry charges still need a complete aggregate inventory. |
-| S3 temporary storage | Run-scoped TempDir | No aggregate byte/key/version ceiling for Spark or Glue internal writes; a per-object output guard does not cover TempDir. |
-| DynamoDB charged units | Candidate row plan, conditional writes, bounded reconciliation pages | Bind the manifest row limit and scan evaluated-byte limit to the priced quantities, count transaction read/write multipliers and SDK attempts, and reject repeated workflow executions before they incur these effects. |
-| Log ingestion | Exact log groups and seven-day retention | Retention bounds storage age, not produced bytes. Glue/Spark service/runtime logs and error stacks are not collectively limited to the proposed one GiB. |
-| Custom metrics | Metrics explicitly enabled for Glue | A finite ten-series cardinality is not established for service-emitted job/run/executor metric dimensions. |
-| Retained resources | Cleanup inverse documented; KMS deletion window configured | No enforceable finite teardown horizon exists for dashboards, alarms, tables, PITR, KMS keys and buckets. A documented operator intention to delete within thirty days is not a completed control. |
-| Qualification calls | Read-only API allowlist | Cost Explorer query charges must be included in the observation/run cost scope with a current price basis and finite query count. Read-only does not imply free. |
+| Workflow execution | Approval pins the complete manifest and expires within one hour. VALIDATE binds one execution identity; the launcher admits three physical starts, disables SDK retry and verifies job retries are zero. | Stage 7 must prove only the approved execution was dispatched and reconcile attempts. |
+| S3 objects | Nine explicit artifact/input/output objects are each capped at 32 MiB. Conditional publication prevents changed replay; no S3 TempDir exists. Lifecycle rules cover every exact bucket. | Stage 7 records actual versions/bytes; Stage 8 proves destroy and residual state. |
+| DynamoDB | The approved manifest fixes 5,000 output rows. Candidate items are size-preflighted before the first write; the worksheet prices 250,000 read and write units plus two GiB-month of storage/PITR. | Stage 7 reconciles consumed capacity and item inventory. |
+| Logs and metrics | Four exact KMS-encrypted log groups retain seven days; one job is limited to two workers/fifteen minutes and one workflow to one hour. The worksheet charges one GiB ingestion/storage and ten metric series without free-tier credit. | Stage 7 records actual ingestion and metric cardinality; an observation above the profile invalidates authority. |
+| Standing resources | The worksheet charges a full thirty-day month. S3 lifecycle and the resource-specific Terraform destroy inverse cover every planned resource; KMS uses the seven-day deletion window. | Stage 8 must execute teardown and scan residuals; Stage 6 makes no completed-cleanup claim. |
+| Qualification calls | SDK retry is one physical attempt, Cost Explorer rejects pagination, and the worksheet includes one primary-billing-view request at the published USD 0.01 rate observed on 2026-10-05. | Any later qualification requires a new observation and worksheet. |
 
-Consequently the aggregate cost cannot be rigorously bounded by the existing graph. At least one
-standing resource has nonzero recurring cost and no finite enforced lifetime; repeating a workflow
-execution can also multiply compute before a later conflicting task is rejected. Increasing a
-safety margin, choosing smaller fixture data, disabling validation, or asserting that cleanup will
-happen does not resolve either root cause.
+This separation is deliberate: `ST6-AC-16` approves the exact plan and its conservative horizon;
+`ST6-AC-17` proves the destroy path covers the plan. Runtime usage, billed cost and completed cleanup
+remain later-stage acceptance criteria and are not relabeled as Stage 6 evidence.
 
-Completion requires an exact-source execution owner/admission proof; a complete bounded request,
-byte, metric and object inventory that includes managed internal effects; and a real finite cleanup
-authority/controller or another mechanically enforced end-of-billing boundary. These changes must
-retain the existing correctness, observability, security and cleanup acceptance requirements. The
-cost profile must remain unverified until those controls are independently reproduced. No new AWS
-permission, runtime resource, workload, budget mutation or lease write was exercised by this review.
+The documented Cost Explorer rate is accepted for at most seven days from its observation date.
+A later or predated qualification fails closed until the published authority is re-observed and the
+profile, evidence index, checks and plan are regenerated.
 
 ## Initial candidate transaction projection
 
@@ -103,14 +97,15 @@ and PITR remain separate obligations. The projection cannot establish aggregate 
 
 Qualification SDK clients use one physical attempt, explicit five-second connection and ten-second
 read timeouts. Cost Explorer accepts only one complete response; a next-page token rejects without
-another paid request. The query interval derives from the observation timestamp. Its published
-request charge still needs current price provenance and an explicit cost line before final closure.
-Across separate qualification executions, request counts remain unbounded; this is a per-execution
-physical-attempt control, not a lifetime cost claim.
+another paid request. The query interval derives from the observation timestamp. The worksheet
+includes that request at AWS's published USD 0.01 primary-billing-view rate, with the source and
+observation date retained. Each later qualification produces a new worksheet and pays its own
+request charge; one qualification never authorizes an unbounded series of later calls.
 
 Enabled Glue job metrics now have the missing `cloudwatch:PutMetricData` permission, restricted to
-the `Glue` namespace and configured region. This repairs publication authority, not the proposed
-ten-series ceiling. No metric, IAM resource or workload was created by this change.
+the `Glue` namespace and configured region. The worksheet prices the frozen ten-series planning
+quantity without free-tier credit. The later managed run must capture actual metric cardinality;
+an observation above ten invalidates this authority rather than being ignored.
 
 Primary service references:
 - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html

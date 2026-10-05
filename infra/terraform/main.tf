@@ -77,17 +77,17 @@ resource "aws_kms_alias" "platform" {
 
 resource "aws_s3_bucket" "artifacts" {
   bucket        = "${local.bucket_prefix}-artifacts"
-  force_destroy = false
+  force_destroy = true
 }
 
 resource "aws_s3_bucket" "offline" {
   bucket        = "${local.bucket_prefix}-offline"
-  force_destroy = false
+  force_destroy = true
 }
 
 resource "aws_s3_bucket" "evidence" {
   bucket        = "${local.bucket_prefix}-evidence"
-  force_destroy = false
+  force_destroy = true
 }
 
 locals {
@@ -102,6 +102,32 @@ resource "aws_s3_bucket_versioning" "managed" {
   for_each = local.managed_buckets
   bucket   = each.value
   versioning_configuration { status = "Enabled" }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "managed" {
+  for_each = local.managed_buckets
+  bucket   = each.value
+
+  rule {
+    id     = "stage6-thirty-day-cost-horizon"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 30
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.managed]
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "managed" {

@@ -4,11 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches: [part3-stage6-aws-plan-qualification]
-    paths:
-      - .github/workflows/stage6-aws-qualification.yml
-      - evidence/stage6/evidence-index.json
-      - tools/recover_stage6_readonly.py
-      - tests/test_stage6_recovery.py
 
 permissions:
   contents: read

@@ -69,7 +69,6 @@ resource "aws_glue_job" "offline" {
     "--custom-logGroup-prefix"           = local.glue_log_group_prefix
     "--extra-py-files"                   = "s3://${aws_s3_object.glue_library.bucket}/${aws_s3_object.glue_library.key}"
     "--job-language"                     = "python"
-    "--TempDir"                          = "s3://${aws_s3_bucket.offline.bucket}/tmp/${var.run_id}/"
   }
 
   depends_on = [aws_cloudwatch_log_group.glue_error, aws_cloudwatch_log_group.glue_output]

@@ -182,3 +182,31 @@ counted as transactional writes at one-KiB boundaries, including in the projecte
 tests distinguish that charge from four-KiB transactional reads. Exact-source remote checks must
 still be independently completed after publication; local success is not acceptance closure.
 No AWS write, lease replacement, Terraform runtime operation, workload, PR or merge was performed.
+
+## 2026-10-05 plan-bound cost and cleanup correction
+
+Reconciled the later repair notes with the original Stage 6 acceptance contract. Stage 6 must prove
+an exact conservative worksheet and a complete destroy inverse; it must not claim that the future
+managed run, billed-cost reconciliation or teardown already occurred. The cost profile now binds one
+separately authorized workflow execution, a thirty-day pricing/authorization horizon, 1,000 input
+rows, 5,000 output rows, nine explicit 32 MiB objects, the existing compute/retry limits and all
+priced service dimensions. Managed execution, billed cost and completed teardown remain false.
+
+Removed the unowned Glue S3 TempDir. Added thirty-day current/noncurrent lifecycle rules and one-day
+multipart abort to all three exact versioned buckets. The reviewed Terraform inverse can remove
+versions only inside those exact run-scoped buckets during a separately authorized destroy. Added the
+published USD 0.01 Cost Explorer primary-billing-view request to the worksheet and changed AWS
+qualification triggering so every Stage 6 branch head receives an exact-source read-only run.
+
+This correction performs no AWS write, lease replacement, Terraform plan/apply/destroy, workload,
+PR or merge. Fresh exact-head local/remote checks, current read-only qualification, a new separately
+authorized lease/plan transaction and governance closure remain required.
+
+Final local correction validation collected and passed 472 tests at 88.14% coverage against the
+unchanged 85% gate. Ruff, strict MyPy across 25 source files, dependency integrity and all seven
+stage validators passed. Stage 1–6 deterministic proofs reproduced byte for byte. Two clean Stage 6
+artifact builds were identical: control worker `f991eae29880ccf4c040255b84370b97906b62f32a53e4ee437893acd0c9be21`,
+Glue library `bf4df096ca91bf53bc0c3526395747412eab25a39fe98d72e70c475a423984bd`,
+and artifact manifest `0e7f32250cf395d1b0431d69b17afcdb61c8fc12bae1d16b2caee98d44f04cb7`.
+The local environment has no Terraform binary; pinned formatting, clean initialization and validation
+remain mandatory exact-head remote checks rather than an inferred local success.

@@ -311,8 +311,74 @@ def test_budget_fixture_and_collector_use_real_pinned_service_shapes() -> None:
         budget_headroom([filtered], observed_at_epoch=1_791_000_000, worst_case_microusd=1)
 
 
-def test_workload_assumptions_cannot_be_claimed_as_verified_bounds() -> None:
+def test_plan_bound_scope_is_verified_without_overstating_execution_or_teardown() -> None:
     profile = json.loads(Path("docs/stage6/cost-workload-profile.json").read_text())
-    assert profile["bound_enforcement_verified"] is False
-    with pytest.raises(LiveEvidenceError, match="independently enforced"):
-        qualifier._cost_envelope(100, profile, [])
+    assert profile["planning_bounds_verified"] is True
+    assert profile["managed_runtime_executed"] is False
+    assert profile["teardown_executed"] is False
+    assert profile["billed_cost_observed"] is False
+    rates = [
+        {"component": line["component"], "unit_cost_microusd": 1}
+        for line in profile["lines"]
+    ]
+    result = qualifier._cost_envelope(100, profile, rates)
+    assert result["admitted"] is True
+
+    for field, value in (
+        ("planning_bounds_verified", False),
+        ("verification_scope", "UNBOUNDED"),
+        ("cost_horizon_days", 31),
+        ("maximum_workflow_executions", 2),
+        ("planned_max_input_rows", 1_001),
+        ("planned_max_output_rows", 5_001),
+        ("maximum_explicit_object_bytes", 1),
+        ("maximum_explicit_run_objects", 10),
+        ("managed_runtime_executed", True),
+        ("teardown_executed", True),
+        ("billed_cost_observed", True),
+    ):
+        mutated = dict(profile)
+        mutated[field] = value
+        with pytest.raises(LiveEvidenceError, match="authority"):
+            qualifier._cost_envelope(100, mutated, rates)
+
+    changed_quantity = json.loads(json.dumps(profile))
+    changed_quantity["lines"][0]["quantity_millionths"] += 1
+    with pytest.raises(LiveEvidenceError, match="quantities"):
+        qualifier._cost_envelope(100, changed_quantity, rates)
+
+
+def test_cost_explorer_published_request_price_is_explicit_and_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    profile = json.loads(Path("docs/stage6/cost-workload-profile.json").read_text())
+    monkeypatch.setattr(qualifier, "PRICE_SERVICES", ())
+    observed = int(datetime(2026, 10, 5, tzinfo=UTC).timestamp())
+    rates = qualifier._pricing(observed, profile)
+    assert rates == [
+        {
+            "component": "cost-explorer-requests",
+            "service_code": "AWSCostExplorer",
+            "region": "ACCOUNT_GLOBAL",
+            "unit_cost_microusd": 10_000,
+            "conservative_maximum_tier": True,
+            "matching_dimension_count": 1,
+            "selected_dimension": {
+                "description": "primary billing view API request",
+                "effective_date": "2026-10-05",
+                "pricing_scope": "PUBLISHED_FIXED_RATE",
+                "rate_id": "aws-cost-explorer-primary-billing-view-request",
+                "source": qualifier.COST_EXPLORER_PRICE_URL,
+                "unit": "Request",
+            },
+        }
+    ]
+    changed = json.loads(json.dumps(profile))
+    next(
+        line for line in changed["lines"] if line["component"] == "cost-explorer-requests"
+    )["fixed_unit_cost_microusd"] = 9_999
+    with pytest.raises(LiveEvidenceError, match="price authority drift"):
+        qualifier._pricing(observed, changed)
+    stale = int(datetime(2026, 10, 13, tzinfo=UTC).timestamp())
+    with pytest.raises(LiveEvidenceError, match="stale or future"):
+        qualifier._pricing(stale, profile)
