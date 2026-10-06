@@ -40,6 +40,7 @@ SOURCE_TREE = "66ab91cefa34fd74403750f4d63d193861a5b289"
 STATE_SHA256 = "923d1161b365158a847c44e4ffe6dedfe7fd5be8bd5bca73c64dcf6a3faebefc"
 LINEAGE_FINGERPRINT = "46bc30012efc3425bc4de01868757715fad0f233a9371d6f6bbca85e857e60f5"
 STATE_VERSION_FINGERPRINT = "0e3458b8886701d255aa424a05fe9b1336759d6397c201baf87be361c6fa60ed"
+LEASE_VERSION_FINGERPRINT = "6afda4e75158fa14b748709eba4fe8a2c5a6795cfa72838de1986119022600dc"
 CAPS = {LEASE_KEY: 16_384, STATE_KEY: 32_768}
 READ_ACTIONS = (
     "sts:GetCallerIdentity",
@@ -70,23 +71,39 @@ def _identity(value: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _inventory(s3: Any, key: str) -> str:
+def _inventory(s3: Any, key: str) -> dict[str, Any]:
     _require(key in CAPS, "recovery key is not allowlisted")
     result = s3.list_object_versions(Bucket=BUCKET, Prefix=key, MaxKeys=10)
     _require(result.get("IsTruncated") is False, "version inventory is truncated")
     _require(not result.get("DeleteMarkers", []), "object has delete markers")
     versions = result.get("Versions")
-    _require(isinstance(versions, list) and len(versions) == 1, "not exactly one version")
-    version = versions[0]
-    _require(isinstance(version, Mapping), "invalid version inventory")
-    _require(version.get("Key") == key, "version inventory contains another key")
-    _require(version.get("IsLatest") is True, "immutable version is not latest")
-    version_id = version.get("VersionId")
-    _require(
-        isinstance(version_id, str) and bool(version_id) and version_id != "null",
-        "object has no immutable version identity",
-    )
-    return str(version_id)
+    _require(isinstance(versions, list) and bool(versions), "object has no immutable versions")
+    version_ids: list[str] = []
+    latest: list[str] = []
+    for version in versions:
+        _require(isinstance(version, Mapping), "invalid version inventory")
+        _require(version.get("Key") == key, "version inventory contains another key")
+        version_id = version.get("VersionId")
+        _require(
+            isinstance(version_id, str) and bool(version_id) and version_id != "null",
+            "object has no immutable version identity",
+        )
+        version_ids.append(version_id)
+        if version.get("IsLatest") is True:
+            latest.append(version_id)
+        else:
+            _require(version.get("IsLatest") is False, "version latest marker is invalid")
+    _require(len(version_ids) == len(set(version_ids)), "version inventory contains duplicates")
+    _require(len(latest) == 1, "version inventory must identify exactly one latest object")
+    return {"latest": latest[0], "versions": tuple(sorted(version_ids))}
+
+
+def _version_with_fingerprint(inventory: Mapping[str, Any], expected: str) -> str:
+    versions = inventory.get("versions")
+    _require(isinstance(versions, tuple), "normalized version inventory is invalid")
+    matches = [value for value in versions if fingerprint(value) == expected]
+    _require(len(matches) == 1, "required immutable object version is absent or ambiguous")
+    return str(matches[0])
 
 
 def _read_version(s3: Any, key: str, version_id: str) -> bytes:
@@ -152,12 +169,17 @@ def collect(sts: Any, s3: Any, *, executor_commit: str, observed_at_epoch: int) 
     _require(type(observed_at_epoch) is int and observed_at_epoch > 0, "invalid observation epoch")
     identity = _identity(sts.get_caller_identity())
     before = {key: _inventory(s3, key) for key in CAPS}
+    state_versions = before[STATE_KEY]["versions"]
     _require(
-        fingerprint(before[STATE_KEY]) == STATE_VERSION_FINGERPRINT,
+        len(state_versions) == 1
+        and fingerprint(before[STATE_KEY]["latest"]) == STATE_VERSION_FINGERPRINT,
         "state version differs from authorized bootstrap",
     )
-    lease_bytes = _read_version(s3, LEASE_KEY, before[LEASE_KEY])
-    state_bytes = _read_version(s3, STATE_KEY, before[STATE_KEY])
+    historical_lease_version = _version_with_fingerprint(
+        before[LEASE_KEY], LEASE_VERSION_FINGERPRINT
+    )
+    lease_bytes = _read_version(s3, LEASE_KEY, historical_lease_version)
+    state_bytes = _read_version(s3, STATE_KEY, before[STATE_KEY]["latest"])
     lease = _lease_proof(lease_bytes, observed_at_epoch)
     state = validate_initial_state(
         state_bytes, expected_lineage_fingerprint=LINEAGE_FINGERPRINT, expected_sha256=STATE_SHA256
@@ -175,13 +197,18 @@ def collect(sts: Any, s3: Any, *, executor_commit: str, observed_at_epoch: int) 
         "identity": identity,
         "lease": lease,
         "lease_object_sha256": sha256_bytes(lease_bytes),
-        "lease_object_version_fingerprint": fingerprint(before[LEASE_KEY]),
-        "lease_single_version": True,
+        "lease_object_version_fingerprint": fingerprint(historical_lease_version),
+        "lease_version_count": len(before[LEASE_KEY]["versions"]),
+        "lease_historical_version_preserved": True,
+        "lease_historical_version_latest": before[LEASE_KEY]["latest"]
+        == historical_lease_version,
+        "lease_successor_versions_present": len(before[LEASE_KEY]["versions"]) > 1,
+        "lease_single_version": len(before[LEASE_KEY]["versions"]) == 1,
         "lease_expired_at_observation": observed_at_epoch >= lease["expires_at_epoch"],
         "historical_evidence_only": True,
         "current_execution_authority": False,
         "state": state,
-        "state_version_fingerprint": fingerprint(before[STATE_KEY]),
+        "state_version_fingerprint": fingerprint(before[STATE_KEY]["latest"]),
         "state_single_version": True,
         "pre_post_versions_unchanged": True,
         "authorized_read_actions": list(READ_ACTIONS),

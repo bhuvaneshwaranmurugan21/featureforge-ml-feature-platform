@@ -21,3 +21,17 @@ URLs, session material, and private variable files are never committed.
 The normalized plan must contain only allowlisted FeatureForge creates/reads for the bounded graph. A
 delete, replacement, unexplained update, non-FeatureForge address, enabled schedule, concurrency above
 one, unencrypted store, or cost above the ceiling blocks approval.
+
+`tools/execute_stage6_plan.py` is the bounded plan-only executor. Before its sole conditional lease
+write becomes reachable, it requires the exact clean commit, a successful exact-head qualification
+completed within one hour, the authorized account, unchanged serial-zero state, empty residual
+inventory, an expired current lease, Terraform 1.9.8, backend-disabled initialization and validation,
+and two byte-identical artifact builds matching committed evidence. It then rechecks state and
+inventory and performs one `If-Match` successor write with SDK attempts fixed at one.
+
+The executor uses a private `TF_DATA_DIR`, private backend and variable files, `terraform plan
+-refresh=true -lock=false`, and a private binary plan. It implements no apply, destroy, import, IAM
+change, deployment, or workload path. After planning it requires an unchanged lease, unchanged state
+bytes/serial, unchanged empty inventory, and clean worktree. Only canonical sanitized JSON receipts
+and a deterministic public archive leave the private output directory. Authority expires at the
+earlier of the successor lease expiry and the qualification's one-hour freshness boundary.

@@ -50,6 +50,9 @@ class UnitS3:
         self.state = (canonical_json(state) + "\n").encode()
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.inventory_overrides: dict[str, Any] = {}
+        self.lease_versions = [
+            {"Key": recovery.LEASE_KEY, "IsLatest": True, "VersionId": "unit-lease-version"}
+        ]
         self.encryption = "AES256"
         self.drift = False
         self.truncate_body = False
@@ -57,15 +60,18 @@ class UnitS3:
 
     def list_object_versions(self, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_object_versions", kwargs))
-        version = (
-            "unit-lease-version" if kwargs["Prefix"] == recovery.LEASE_KEY else "unit-state-version"
-        )
+        if kwargs["Prefix"] == recovery.LEASE_KEY:
+            versions = [dict(row) for row in self.lease_versions]
+        else:
+            versions = [
+                {"Key": recovery.STATE_KEY, "IsLatest": True, "VersionId": "unit-state-version"}
+            ]
         if self.drift and len(self.calls) > 4:
-            version += "-changed"
+            versions[0]["VersionId"] += "-changed"
         return {
             "IsTruncated": False,
             "DeleteMarkers": [],
-            "Versions": [{"Key": kwargs["Prefix"], "IsLatest": True, "VersionId": version}],
+            "Versions": versions,
             **self.inventory_overrides,
         }
 
@@ -98,6 +104,7 @@ def unit_clients(monkeypatch: pytest.MonkeyPatch) -> tuple[UnitSTS, UnitS3]:
     monkeypatch.setattr(recovery, "STATE_SHA256", sha256_bytes(s3.state))
     monkeypatch.setattr(recovery, "LINEAGE_FINGERPRINT", fingerprint("unit-state-private-lineage"))
     monkeypatch.setattr(recovery, "STATE_VERSION_FINGERPRINT", fingerprint("unit-state-version"))
+    monkeypatch.setattr(recovery, "LEASE_VERSION_FINGERPRINT", fingerprint("unit-lease-version"))
     return sts, s3
 
 
@@ -110,6 +117,9 @@ def test_unit_fixture_read_allowlist_and_historical_receipt(
 ) -> None:
     receipt = observe(unit_clients)
     assert receipt["lease_expired_at_observation"]
+    assert receipt["lease_single_version"]
+    assert receipt["lease_historical_version_latest"]
+    assert not receipt["lease_successor_versions_present"]
     assert receipt["historical_evidence_only"]
     assert not receipt["current_execution_authority"]
     assert receipt["lease"]["digest"] == digest(lease_fixture())
@@ -208,6 +218,21 @@ def test_unit_cannot_claim_current_authority(unit_clients: tuple[UnitSTS, UnitS3
         observe(unit_clients, 99)
     with pytest.raises(LiveEvidenceError, match="executor"):
         recovery.collect(*unit_clients, executor_commit="invalid", observed_at_epoch=4000)
+
+
+def test_unit_preserves_historical_lease_after_cas_successor(
+    unit_clients: tuple[UnitSTS, UnitS3],
+) -> None:
+    unit_clients[1].lease_versions = [
+        {"Key": recovery.LEASE_KEY, "IsLatest": True, "VersionId": "unit-successor-version"},
+        {"Key": recovery.LEASE_KEY, "IsLatest": False, "VersionId": "unit-lease-version"},
+    ]
+    receipt = observe(unit_clients)
+    assert receipt["lease_version_count"] == 2
+    assert receipt["lease_historical_version_preserved"]
+    assert not receipt["lease_historical_version_latest"]
+    assert receipt["lease_successor_versions_present"]
+    assert not receipt["lease_single_version"]
 
 
 def test_unit_state_version_mismatch_fails_before_reads(

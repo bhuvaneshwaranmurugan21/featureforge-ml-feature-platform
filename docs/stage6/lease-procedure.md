@@ -14,11 +14,21 @@ object in the private FeatureForge Terraform-backend bucket at
 - A future heartbeat may extend expiry only while the same owner and source remain current.
 - Expiry does not authorize takeover while an AWS execution is active; the operator must reconcile
   execution and residual inventory first.
-- Acquisition is one conditional `PutObject` with `If-None-Match: *`, AES-256 server-side
+- Initial acquisition is one conditional `PutObject` with `If-None-Match: *`, AES-256 server-side
   encryption, and a maximum sixty-minute horizon. It occurs only after the final branch head is
-  known. A conflict fails closed; Stage 6 never overwrites or silently takes over a lease.
-- Lease acquisition is an explicitly authorized coordination bootstrap write. Every subsequent
-  Stage 6 operation is read-only, and no runtime resource or managed workload is mutated.
+  known. A conflict fails closed.
+- A successor is permitted only by separate, explicit authorization after the current lease is
+  expired, the exact Stage 6 residual inventory is empty, and the backend is still the byte-exact
+  serial-zero state. It is one AES-256 `PutObject` guarded by `If-Match` against the exact current
+  ETag. A missing object, conflict, precondition failure, changed state/inventory, or unknown write
+  outcome stops execution; an unknown outcome is observed before any possible retry.
+- The successor preserves every prior immutable object version and creates no delete marker. The
+  public receipt fingerprints the prior and successor versions and bodies without exposing raw
+  version IDs, ETags, account IDs, or bucket names. This is a compare-and-swap transition, not a
+  silent overwrite or takeover.
+- Lease acquisition or succession is an explicitly authorized coordination write. Every operation
+  after that one write is read-only AWS qualification or refresh-aware planning; Terraform apply,
+  runtime-resource mutation, and managed workload execution remain forbidden.
 - The public receipt records only the lease content digest, object-version fingerprint, source
   commit, owner/run ID, timestamps, and decision. Bucket names, account identifiers, raw version
   IDs, and credentials remain private.

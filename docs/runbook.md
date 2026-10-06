@@ -63,25 +63,31 @@ request and does not authorize a plan or apply.
 1. Resolve the exact authorized region and approved OIDC role or AWS session mechanism; record only
    sanitized account and role fingerprints publicly.
 2. Reverify the immutable Git head/tree, provider lock, artifact digests, backend identity, and the
-   current project-neutral FeatureForge lease.
+   current project-neutral FeatureForge lease. An initial lease must be absent; an explicitly
+   authorized successor requires an expired current lease whose exact ETag is retained for CAS.
 3. Execute only the APIs in `docs/stage6/aws-read-api-manifest.json`, restrict resource queries to
    the exact FeatureForge namespace, and produce a sanitized read-only receipt.
-4. Fail closed on wrong account/region/role, conflicting or expired lease, residual inventory,
-   missing service, quota shortfall, unknown price, insufficient budget headroom, or stale input.
-5. Build deterministic artifacts, create private variables/backend inputs, run refresh-aware
-   Terraform planning, and retain the binary plan only in private temporary storage.
-6. Normalize and review the plan. Reject deletion, replacement, non-FeatureForge addresses,
+4. Fail closed on wrong account/region/role, a current/conflicting lease, residual inventory,
+   changed state, missing service, quota shortfall, unknown price, insufficient budget headroom,
+   or stale input.
+5. Before a separately authorized successor, verify Terraform 1.9.8, locally initialize and
+   validate with the backend disabled, build artifacts twice, and recheck state and inventory.
+6. Perform exactly one encrypted `If-Match` successor lease write. Preserve version history, stop
+   on conflict or unknown outcome, and perform no other AWS write.
+7. Create private variables/backend inputs, run `terraform plan -refresh=true -lock=false`, and
+   retain the binary plan and raw JSON only in private temporary storage.
+8. Normalize and review the plan. Reject deletion, replacement, non-FeatureForge addresses,
    enabled scheduling/runtime, unencrypted storage, concurrency above one, or any action outside the
    allowlist.
-7. Bind the binary and normalized plan digests to commit/tree, variables, provider lock, state
+9. Bind the binary and normalized plan digests to commit/tree, variables, provider lock, state
    lineage/serial, account, region, artifacts, inventory, lease, cost, creation, and expiry.
-8. Commit only sanitized receipts. Never commit state, plan binaries, private backend configuration,
+10. Retain only sanitized receipts. Never commit state, plan binaries, private backend configuration,
    account IDs, ARNs containing account IDs, signed URLs, credentials, or session material.
 
-The OIDC role, hardened backend bucket, initial empty state lineage, and conditional exclusive lease
-are separately authorized bootstrap writes. They must be enumerated in the bootstrap receipt and do
-not authorize any Terraform apply or runtime-resource mutation. After lease acquisition, the
-qualification and saved-plan command window is read-only.
+The OIDC role, hardened backend bucket, initial empty state lineage, and each conditional exclusive
+lease transition are separately authorized writes. They do not authorize Terraform apply or
+runtime-resource mutation. After the one lease transition, the saved-plan command window is
+read-only.
 
 Stage 6 ends at a verified saved plan. Apply, workload execution, and teardown require later,
 separate authorization.

@@ -105,12 +105,14 @@ INDEXED = (
     "tests/test_stage6_infra_security.py",
     "tests/test_stage6_oracle_authority.py",
     "tests/test_stage6_orchestration_shape.py",
+    "tests/test_stage6_plan_execution.py",
     "tests/test_stage6_reconstitution.py",
     "tests/test_stage6_recovery.py",
     "tests/test_stage6_runtime_effects.py",
     "tests/test_stage6_strict_manifest.py",
     "tests/test_stage6_terraform.py",
     "tools/build_stage6_artifacts.py",
+    "tools/execute_stage6_plan.py",
     "tools/run_stage6_proof.py",
     "tools/qualify_stage6_aws.py",
     "tools/recover_stage6_readonly.py",
@@ -304,6 +306,36 @@ def _validate_read_manifest(root: Path) -> None:
     _check(not any(mutation.search(str(action)) for action in actions), "mutating AWS API allowed")
 
 
+def _validate_plan_executor(root: Path) -> None:
+    executor = (root / "tools/execute_stage6_plan.py").read_text(encoding="utf-8")
+    recovery = (root / "tools/recover_stage6_readonly.py").read_text(encoding="utf-8")
+    _check(executor.count("s3.put_object(**request)") == 1, "lease writer count differs")
+    _check('"IfMatch": previous_etag' in executor, "successor lease is not CAS guarded")
+    _check('"IfNoneMatch"' not in executor, "successor executor uses initial-acquisition guard")
+    _check('"ChecksumAlgorithm": "SHA256"' in executor, "lease checksum request missing")
+    _check('"ServerSideEncryption": "AES256"' in executor, "lease encryption request missing")
+    _check('"total_max_attempts": 1' in executor, "plan executor SDK can physically retry")
+    _check('"TF_DATA_DIR"' in executor, "Terraform data is not privately isolated")
+    _check('"-refresh=true"' in executor, "Terraform plan is not refresh aware")
+    _check('"-lock=false"' in executor, "Terraform plan can mutate the state lock")
+    for command in ('"apply"', '"destroy"', '"import"'):
+        _check(command not in executor, f"forbidden Terraform command implemented: {command}")
+    _check(
+        executor.count("qualifier._verify_backend(account)") == 3,
+        "backend state is not checked before and after the successor plan",
+    )
+    _check(
+        executor.count("qualifier._inventory(account, RUN_ID)") == 3,
+        "residual inventory is not checked before and after the successor plan",
+    )
+    _check(
+        "LEASE_VERSION_FINGERPRINT" in recovery
+        and "_version_with_fingerprint" in recovery
+        and '"lease_successor_versions_present"' in recovery,
+        "historical recovery does not preserve the pinned lease across successors",
+    )
+
+
 def _validate_bootstrap_receipt(root: Path) -> None:
     receipt = _load(root, "evidence/stage6/bootstrap-receipt.json")
     _check(receipt.get("project") == PROJECT, "bootstrap project mismatch")
@@ -400,6 +432,7 @@ def validate(root: Path, expect_head: str | None = None) -> None:
     _validate_artifacts(root)
     _validate_terraform(root)
     _validate_read_manifest(root)
+    _validate_plan_executor(root)
     _validate_bootstrap_receipt(root)
     claims = _load(root, "docs/stage6/claims.json")
     _check(

@@ -256,3 +256,37 @@ builds. The checksum-verified workflow-pinned Terraform 1.9.8 binary passed recu
 clean backend-disabled initialization. Local provider-schema validation cannot open its required
 Unix socket in this execution sandbox (`socket: operation not permitted`), so exact-head GitHub
 Infrastructure validation remains mandatory rather than inferred or bypassed.
+
+## 2026-10-06 exact-head budget qualification and successor-plan repair
+
+The modern budget-shape repair was published without rewriting history at exact head
+`ac39316f43e217e8ef04f31c7861154da0a38394`, tree
+`1ba19c0ae56b85a90441a65ee4367a312961b59c`. Exact-head CI run `37413701529` passed. Stage 6 AWS
+Qualification run `37413701426` passed both qualification and historical recovery. Its sanitized
+qualification receipt SHA-256 is
+`a58774097515d821a14d6af219901c73f3a218629f13febf1479cec238dd6dcb`.
+
+The live cost subtotal was USD 14.752928 and the unchanged twenty-percent-margin envelope was USD
+17.703514 against the USD 25 project ceiling. The applicable current gross-cost budget had a USD 20
+limit, USD 0.806 actual-or-forecast spend, USD 19.194 available headroom, and USD 1.490486 remaining
+buffer after the project envelope. Residual Stage 6 inventory was empty and the backend remained the
+initial serial-zero state. No Terraform plan/apply, runtime mutation, or managed workload occurred in
+that qualification. Infrastructure inputs were byte-identical to the parent exact head whose
+Infrastructure run `37411791744` passed.
+
+The historical lease is expired but its fixed object key already exists. Therefore the original
+initial-only `If-None-Match: *` procedure cannot create current plan authority. Deleting or silently
+overwriting the object would destroy the concurrency/evidence contract. The separately authorized
+repair adds a fail-closed successor protocol: require the expired current lease, unchanged empty
+inventory and serial-zero state; perform one AES-256 `PutObject` with `If-Match` against the exact
+ETag; preserve immutable version history; and stop without blind retry on any unknown outcome.
+Historical recovery continues to select and verify the pinned original lease version even after a
+successor exists.
+
+The plan-only executor keeps Terraform data, backend/variable inputs, the binary plan, and raw plan
+JSON outside the repository. It verifies Terraform 1.9.8 and backend-disabled validation before the
+single write, rebuilds artifacts twice, rechecks live preconditions, runs only refresh-aware unlocked
+planning, validates the normalized allowlist/invariants, and proves the lease, state bytes, empty
+inventory, and worktree did not change. Apply, destroy, import, IAM change, deployment, and managed
+workload paths remain absent and unauthorized. This repair requires complete local validation,
+publication, and a new exact-head qualification before the one authorized lease transition may run.

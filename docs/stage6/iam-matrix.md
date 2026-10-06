@@ -12,6 +12,7 @@
 | State machine | Invoke exact Lambda; read exact Glue job-run status | Exact function/job | Managed control graph; launching requires durable worker admission |
 | EventBridge | Start exact state machine | Exact state machine | Disabled schedule definition only |
 | GitHub plan role | Get/list/describe/simulate | Read-only qualification APIs | Terraform refresh and qualification, never apply |
+| Explicitly authorized operator session | One conditional encrypted `PutObject` | Exact private Stage 6 lease key | CAS successor only; no retry on unknown outcome and no deployment write |
 
 The plan role trust requires audience `sts.amazonaws.com` and the immutable GitHub subject
 `repo:bhuvaneshwaranmurugan21@276895096/featureforge-ml-feature-platform@1332971230:environment:featureforge-stage6-plan`.
@@ -19,6 +20,10 @@ The immutable owner and repository identifiers prevent a renamed or recreated re
 inheriting this trust boundary.
 It has no create, update, delete, pass-role, object-write, table-write, workload-start, or deployment
 permission.
+
+The operator-session exception is not added to the GitHub role or the read-only qualification
+manifest. It is constrained in the plan executor to one `If-Match` write on the exact lease key and
+requires separately recorded human authorization. All planning calls after it are read-only.
 
 Wildcard resources exist only where AWS read/list APIs or Step Functions log-delivery APIs do not
 support meaningful resource scoping. They are read-only or service-required log-control calls; the
