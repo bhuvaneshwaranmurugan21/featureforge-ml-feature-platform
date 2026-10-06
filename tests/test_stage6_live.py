@@ -195,6 +195,59 @@ def test_plan_normalization_is_sanitized_and_fail_closed() -> None:
         normalize_terraform_plan(_plan(["delete", "create"]), run_id="s6-plan-20260930")
 
 
+def test_plan_normalization_accepts_exact_managed_glue_log_namespace() -> None:
+    plan = _plan()
+    resource_changes = plan["resource_changes"]
+    assert isinstance(resource_changes, list)
+    resource_changes.append(
+        {
+            "address": "aws_cloudwatch_log_group.glue_error",
+            "name": "glue_error",
+            "type": "aws_cloudwatch_log_group",
+            "change": {
+                "actions": ["create"],
+                "after": {
+                    "name": (
+                        "/aws-glue/jobs/featureforge-stage6-s6-plan-20260930/"
+                        "featureforge_stage6_s6_plan_20260930_glue_security-role/"
+                        "featureforge-stage6-s6-plan-20260930-glue-role/error"
+                    )
+                },
+            },
+        }
+    )
+
+    normalized = normalize_terraform_plan(plan, run_id="s6-plan-20260930")
+
+    assert normalized["resource_count"] == 9
+    assert normalized["action_counts"] == {"create": 9}
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "/aws-glue/jobs/unrelated/error",
+        "/aws-glue/jobs/featureforge-stage6-s6-plan-20260930-escape/error",
+        "/aws-glue/jobs/featureforge-stage6-s6-plan-20260930",
+    ],
+)
+def test_plan_normalization_rejects_glue_log_namespace_escape(name: str) -> None:
+    plan = _plan()
+    resource_changes = plan["resource_changes"]
+    assert isinstance(resource_changes, list)
+    resource_changes.append(
+        {
+            "address": "aws_cloudwatch_log_group.glue_error",
+            "name": "glue_error",
+            "type": "aws_cloudwatch_log_group",
+            "change": {"actions": ["create"], "after": {"name": name}},
+        }
+    )
+
+    with pytest.raises(LiveEvidenceError, match="escapes FeatureForge namespace"):
+        normalize_terraform_plan(plan, run_id="s6-plan-20260930")
+
+
 @pytest.mark.parametrize(
     "execution_property",
     [

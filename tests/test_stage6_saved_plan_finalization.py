@@ -59,16 +59,29 @@ def test_successor_lease_is_exact_source_owner_lifetime_and_plan_current() -> No
 
 
 def test_saved_plan_identifiers_are_bound_to_observed_private_evidence() -> None:
-    assert finalizer.PLAN_TIMESTAMP == "2026-10-06T05:37:10Z"
+    assert finalizer.PLAN_TIMESTAMP == "2026-10-06T08:55:53Z"
     assert finalizer.BINARY_PLAN_SHA256 == (
-        "21283629c85ce06bad6166f505bbbd0d750505ea293802e326f16d85f2747620"
+        "9f1d0ee441aff40e37bf0a3091bf1f0448f3974d012e0d58c3013d04227dc7ec"
     )
     assert finalizer.RAW_PLAN_SHA256 == (
-        "cf3df22c415c2d8c17045bdf15f6e979f82fe72427c0b9735870c3cd28c0ca7e"
+        "c27bd50dc9dbabd05b238ca661177ff2e566441682e0112f56afd13b8b6b4126"
     )
     assert finalizer.SUCCESSOR_LEASE_OBJECT_SHA256 == (
-        "f425d87569905859407f9e50b93762321ea86ff3b5476cc53631574b4b9718c4"
+        "8fd398f278015ab5d5339849c8d1f34712e0d2b236b7616474d934f04c291342"
     )
+    assert finalizer.SUCCESSOR_LEASE_VERSION_FINGERPRINT == (
+        "cfc0db7925addc22d85dbdc11af2460d211058cfb666f786412a4d3a77bae8b1"
+    )
+    assert finalizer.LEASE_VERSION_COUNT == 3
+
+
+def test_failure_observation_is_exact_and_semantically_bound() -> None:
+    value = finalizer._validate_failure_observation()
+    assert value["source_commit"] == finalizer.SOURCE_COMMIT
+    assert value["source_tree"] == finalizer.SOURCE_TREE
+    assert value["lease"]["version_count"] == 3
+    assert value["saved_plan"]["resource_count"] == 47
+    assert value["aws_writes_executed_by_observation"] is False
 
 
 def test_finalizer_has_no_aws_write_or_new_terraform_plan_path() -> None:
@@ -88,3 +101,5 @@ def test_finalizer_has_no_aws_write_or_new_terraform_plan_path() -> None:
         assert forbidden not in source
     assert '"validate"' in source
     assert '"show"' in source
+    assert '"init"' in source
+    assert '"-backend=false"' in source

@@ -75,6 +75,7 @@ INDEXED = (
     "evidence/stage6/bootstrap-receipt.json",
     "evidence/stage6/failure-recovery-proof.json",
     "evidence/stage6/local-proof.json",
+    "evidence/stage6/plan-retry-failure-observation.json",
     "evidence/stage6/plan-retry-prior-observation.json",
     "evidence/stage6/recovery-observation.json",
     "evidence/stage6/historical-reconstitution/normalized-plan.json",
@@ -315,6 +316,9 @@ def _validate_plan_executor(root: Path) -> None:
     recovery = (root / "tools/recover_stage6_readonly.py").read_text(encoding="utf-8")
     live = (root / "src/featureforge/stage6_live.py").read_text(encoding="utf-8")
     retry_observation = _load(root, "evidence/stage6/plan-retry-prior-observation.json")
+    failure_observation = _load(
+        root, "evidence/stage6/plan-retry-failure-observation.json"
+    )
     _verify_embedded_digest(retry_observation, "receipt_sha256")
     _check(
         retry_observation.get("contract") == "stage6-plan-retry-prior-observation-v1"
@@ -322,6 +326,16 @@ def _validate_plan_executor(root: Path) -> None:
         and retry_observation.get("lease_expired_at_observation") is True
         and retry_observation.get("delete_marker_count") == 0,
         "retry prior observation is not read-only, expired and marker-free",
+    )
+    _check(
+        _sha(root / "evidence/stage6/plan-retry-failure-observation.json")
+        == "5124d08f63f384222ee3564b0b0db521fe5b4c4f92f4c66962843b3db2f44366"
+        and failure_observation.get("aws_writes_executed_by_observation") is False
+        and failure_observation.get("source_commit")
+        == "2acd63e2222ada623d277dbd4f5a8032dea8e376"
+        and failure_observation.get("lease", {}).get("version_count") == 3
+        and failure_observation.get("saved_plan", {}).get("resource_count") == 47,
+        "retry failure observation is not exact, read-only and plan-bound",
     )
     _check(executor.count("s3.put_object(**request)") == 1, "lease writer count differs")
     _check('"IfMatch": previous_etag' in executor, "successor lease is not CAS guarded")
@@ -354,6 +368,10 @@ def _validate_plan_executor(root: Path) -> None:
         and '"stage6-thirty-day-cost-horizon"' in live,
         "saved-plan normalization does not strictly validate the lifecycle cost horizon",
     )
+    _check(
+        'f"/aws-glue/jobs/{prefix}/"' in live,
+        "saved-plan normalization omits the exact managed Glue log namespace",
+    )
     for forbidden in (
         ".put_object(",
         ".delete_object(",
@@ -367,7 +385,9 @@ def _validate_plan_executor(root: Path) -> None:
             f"saved-plan finalizer contains forbidden path: {forbidden}",
         )
     _check(
-        '"validate"' in finalizer
+        '"init"' in finalizer
+        and '"-backend=false"' in finalizer
+        and '"validate"' in finalizer
         and '"show"' in finalizer
         and '"current_execution_authority": False' in finalizer,
         "saved-plan finalizer does not preserve its read-only historical boundary",

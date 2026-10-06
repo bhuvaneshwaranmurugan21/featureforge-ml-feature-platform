@@ -16,6 +16,7 @@ import os
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 import zipfile
 from collections.abc import Mapping, Sequence
@@ -38,25 +39,32 @@ from tools import execute_stage6_plan as executor
 from tools import qualify_stage6_aws as qualifier
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_COMMIT = "8fc29d36f39a8cb8105f004b594bbedea8292d77"
-SOURCE_TREE = "41814b95c2e5dde78e9cf0d3b62a7ad7a9b455a2"
+SOURCE_COMMIT = "2acd63e2222ada623d277dbd4f5a8032dea8e376"
+SOURCE_TREE = "2f84914d4c7dd9564de85957a7379f0750b67515"
 ACCOUNT = "857229544428"
 REGION = "ap-southeast-2"
 RUN_ID = "s6-plan-20260930"
 LEASE_KEY = "leases/featureforge/stage6.json"
 STATE_KEY = "state/stage6/terraform.tfstate"
 LEASE_CAP = 16_384
-QUALIFICATION_RUN_ID = 37_416_197_533
+QUALIFICATION_RUN_ID = 37_437_171_228
 QUALIFICATION_RECEIPT_SHA256 = (
-    "a74c42fdbf7fab362e34f29b43d524ea2383c2e71562374efb05bbc7e3ae6199"
+    "fc974fd094c5d60f0cdef876ea201cf26fd202186b144eff4c3f4c5792a36451"
 )
-PLAN_TIMESTAMP = "2026-10-06T05:37:10Z"
-BINARY_PLAN_SHA256 = "21283629c85ce06bad6166f505bbbd0d750505ea293802e326f16d85f2747620"
-RAW_PLAN_SHA256 = "cf3df22c415c2d8c17045bdf15f6e979f82fe72427c0b9735870c3cd28c0ca7e"
+PLAN_TIMESTAMP = "2026-10-06T08:55:53Z"
+BINARY_PLAN_SHA256 = "9f1d0ee441aff40e37bf0a3091bf1f0448f3974d012e0d58c3013d04227dc7ec"
+RAW_PLAN_SHA256 = "c27bd50dc9dbabd05b238ca661177ff2e566441682e0112f56afd13b8b6b4126"
 SUCCESSOR_LEASE_OBJECT_SHA256 = (
-    "f425d87569905859407f9e50b93762321ea86ff3b5476cc53631574b4b9718c4"
+    "8fd398f278015ab5d5339849c8d1f34712e0d2b236b7616474d934f04c291342"
 )
-CONFIRMATION = "FINALIZE_EXISTING_PLAN_READ_ONLY"
+SUCCESSOR_LEASE_VERSION_FINGERPRINT = (
+    "cfc0db7925addc22d85dbdc11af2460d211058cfb666f786412a4d3a77bae8b1"
+)
+LEASE_VERSION_COUNT = 3
+FAILURE_OBSERVATION_SHA256 = (
+    "5124d08f63f384222ee3564b0b0db521fe5b4c4f92f4c66962843b3db2f44366"
+)
+CONFIRMATION = "FINALIZE_EXISTING_RETRY_PLAN_READ_ONLY"
 
 
 class SavedPlanFinalizationError(RuntimeError):
@@ -69,7 +77,7 @@ def _require(condition: bool, message: str) -> None:
 
 
 def _sha_file(path: Path) -> str:
-    return cast(str, sha256_bytes(path.read_bytes()))
+    return sha256_bytes(path.read_bytes())
 
 
 def _parse_timestamp(value: str) -> int:
@@ -130,14 +138,11 @@ def successor_lease_proof(value: Mapping[str, Any], *, plan_created_at: int) -> 
         value["expires_at_epoch"] - acquired == executor.LEASE_SECONDS,
         "lease lifetime differs",
     )
-    return cast(
-        dict[str, Any],
-        validate_lease(
-            value,
-            source_commit=SOURCE_COMMIT,
-            owner=RUN_ID,
-            observed_at_epoch=plan_created_at,
-        ),
+    return validate_lease(
+        value,
+        source_commit=SOURCE_COMMIT,
+        owner=RUN_ID,
+        observed_at_epoch=plan_created_at,
     )
 
 
@@ -252,6 +257,60 @@ def _decode_object(body: bytes, label: str) -> dict[str, Any]:
     return cast(dict[str, Any], value)
 
 
+def _validate_failure_observation() -> dict[str, Any]:
+    path = ROOT / "evidence/stage6/plan-retry-failure-observation.json"
+    _require(path.is_file() and not path.is_symlink(), "failure observation is absent")
+    _require(
+        _sha_file(path) == FAILURE_OBSERVATION_SHA256,
+        "failure observation digest differs",
+    )
+    value = _decode_object(path.read_bytes(), "failure observation")
+    saved = value.get("saved_plan")
+    lease = value.get("lease")
+    backend = value.get("backend")
+    inventory = value.get("managed_inventory")
+    _require(
+        value.get("contract") == "stage6-plan-retry-failure-observation-v1"
+        and value.get("aws_writes_executed_by_observation") is False
+        and value.get("source_commit") == SOURCE_COMMIT
+        and value.get("source_tree") == SOURCE_TREE,
+        "failure observation authority differs",
+    )
+    _require(
+        isinstance(saved, Mapping)
+        and saved.get("binary_sha256") == BINARY_PLAN_SHA256
+        and saved.get("raw_json_sha256") == RAW_PLAN_SHA256
+        and saved.get("timestamp") == PLAN_TIMESTAMP
+        and saved.get("resource_count") == 47
+        and saved.get("action_counts") == {"create": 47}
+        and saved.get("failed_executor_public_file_count") == 0,
+        "failure observation saved-plan evidence differs",
+    )
+    _require(
+        isinstance(lease, Mapping)
+        and lease.get("version_count") == LEASE_VERSION_COUNT
+        and lease.get("latest_object_sha256") == SUCCESSOR_LEASE_OBJECT_SHA256
+        and lease.get("latest_version_fingerprint")
+        == SUCCESSOR_LEASE_VERSION_FINGERPRINT
+        and lease.get("source_commit") == SOURCE_COMMIT
+        and lease.get("owner") == RUN_ID,
+        "failure observation lease evidence differs",
+    )
+    _require(
+        isinstance(backend, Mapping)
+        and backend.get("state_serial") == 0
+        and isinstance(backend.get("state_bytes_sha256"), str),
+        "failure observation backend evidence differs",
+    )
+    _require(
+        isinstance(inventory, Mapping)
+        and inventory.get("resource_count") == 20
+        and inventory.get("all_absent") is True,
+        "failure observation inventory evidence differs",
+    )
+    return value
+
+
 def _validate_private_inputs(failed_output: Path, source_root: Path) -> tuple[Path, Path, Path]:
     private = failed_output / "private"
     public = failed_output / "public"
@@ -358,26 +417,39 @@ def _validate_terraform_saved_plan(
     _write_exclusive(private / "terraform-version.err", version_err)
     version = _decode_object(version_out, "Terraform version output")
     _require(version.get("terraform_version") == "1.9.8", "Terraform version differs")
-    terraform_data = failed_output / "private/terraform-data"
-    _require(terraform_data.is_dir(), "saved Terraform data directory is absent")
-    environment = {"TF_DATA_DIR": str(terraform_data)}
-    validate_out, validate_err = _run(
-        [str(terraform), "-chdir=infra/terraform", "validate", "-no-color"],
-        cwd=source_root,
-        environment_overrides=environment,
-    )
-    _write_exclusive(private / "terraform-validate.log", validate_out + validate_err)
-    shown, show_err = _run(
-        [str(terraform), "-chdir=infra/terraform", "show", "-json", str(binary_plan)],
-        cwd=source_root,
-        environment_overrides=environment,
-    )
+    with tempfile.TemporaryDirectory(prefix="featureforge-stage6-finalizer-data.") as data:
+        environment = {"TF_DATA_DIR": data}
+        init_out, init_err = _run(
+            [
+                str(terraform),
+                "-chdir=infra/terraform",
+                "init",
+                "-backend=false",
+                "-input=false",
+                "-lockfile=readonly",
+                "-no-color",
+            ],
+            cwd=source_root,
+            environment_overrides=environment,
+        )
+        _write_exclusive(private / "terraform-init.log", init_out + init_err)
+        validate_out, validate_err = _run(
+            [str(terraform), "-chdir=infra/terraform", "validate", "-no-color"],
+            cwd=source_root,
+            environment_overrides=environment,
+        )
+        _write_exclusive(private / "terraform-validate.log", validate_out + validate_err)
+        shown, show_err = _run(
+            [str(terraform), "-chdir=infra/terraform", "show", "-json", str(binary_plan)],
+            cwd=source_root,
+            environment_overrides=environment,
+        )
     _write_exclusive(private / "terraform-show.err", show_err)
     _require(shown == raw_plan.read_bytes(), "binary plan does not reproduce saved raw JSON")
     value = _decode_object(shown, "saved Terraform plan")
     _require(value.get("timestamp") == PLAN_TIMESTAMP, "saved Terraform timestamp differs")
     _require(value.get("terraform_version") == "1.9.8", "saved plan Terraform version differs")
-    normalized = cast(dict[str, Any], normalize_terraform_plan(value, run_id=RUN_ID))
+    normalized = normalize_terraform_plan(value, run_id=RUN_ID)
     _require(normalized.get("resource_count") == 47, "saved managed resource count differs")
     _require(normalized.get("action_counts") == {"create": 47}, "saved plan actions differ")
     return normalized
@@ -398,22 +470,44 @@ def _live_read_only_proofs(plan_created_at: int) -> dict[str, Any]:
     s3 = executor._client("s3")
     versions_before = executor._version_inventory(s3, bucket, LEASE_KEY)
     _require(
-        len(versions_before["versions"]) == 2,
-        "lease history is not exactly original plus successor",
+        len(versions_before["versions"]) == LEASE_VERSION_COUNT,
+        "lease history is not exactly the three authenticated versions",
     )
-    historical_matches = [
-        version
-        for version in versions_before["versions"]
-        if fingerprint(version) == executor.HISTORICAL_LEASE_VERSION_FINGERPRINT
-    ]
-    _require(len(historical_matches) == 1, "authorized historical lease version is absent")
-    historical_body = _read_version(s3, bucket, historical_matches[0])
+    versions_by_fingerprint = {
+        fingerprint(version): version for version in versions_before["versions"]
+    }
+    expected_fingerprints = {
+        executor.HISTORICAL_LEASE_VERSION_FINGERPRINT,
+        executor.PRIOR_LEASE_VERSION_FINGERPRINT,
+        SUCCESSOR_LEASE_VERSION_FINGERPRINT,
+    }
+    _require(
+        set(versions_by_fingerprint) == expected_fingerprints,
+        "lease version fingerprints differ from the authenticated history",
+    )
+    historical_body = _read_version(
+        s3,
+        bucket,
+        versions_by_fingerprint[executor.HISTORICAL_LEASE_VERSION_FINGERPRINT],
+    )
     _require(
         sha256_bytes(historical_body) == executor.HISTORICAL_LEASE_OBJECT_SHA256,
         "historical lease bytes differ",
     )
+    prior_body = _read_version(
+        s3,
+        bucket,
+        versions_by_fingerprint[executor.PRIOR_LEASE_VERSION_FINGERPRINT],
+    )
+    _require(
+        sha256_bytes(prior_body) == executor.PRIOR_LEASE_OBJECT_SHA256,
+        "prior retry-authority lease bytes differ",
+    )
     latest_version = versions_before["latest"]
-    _require(latest_version != historical_matches[0], "successor lease is not latest")
+    _require(
+        fingerprint(latest_version) == SUCCESSOR_LEASE_VERSION_FINGERPRINT,
+        "saved-plan successor lease is not latest",
+    )
     successor_body = _read_version(s3, bucket, latest_version)
     _require(
         sha256_bytes(successor_body) == SUCCESSOR_LEASE_OBJECT_SHA256,
@@ -464,6 +558,7 @@ def finalize(args: argparse.Namespace) -> dict[str, Any]:
     recovery_commit = _git(ROOT, "rev-parse", "HEAD")
     recovery_tree = _git(ROOT, "rev-parse", "HEAD^{tree}")
     _require(not _git(ROOT, "status", "--porcelain"), "recovery executor worktree is not clean")
+    failure_observation = _validate_failure_observation()
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
     private = output / "private"
     public = output / "public"
@@ -513,19 +608,20 @@ def finalize(args: argparse.Namespace) -> dict[str, Any]:
         expires_at_epoch=expires_at,
     )
     lease_receipt = {
-        "contract": "stage6-lease-successor-recovery-receipt-v1",
-        "historical_lease_preserved": True,
+        "additional_aws_writes_by_finalizer": 0,
+        "contract": "stage6-retry-lease-recovery-receipt-v2",
+        "full_lease_history_preserved": True,
         "lease_digest": lease["digest"],
         "lease_object_sha256": SUCCESSOR_LEASE_OBJECT_SHA256,
         "lease_version_count": live["lease_version_count"],
         "owner": RUN_ID,
         "source_commit": SOURCE_COMMIT,
-        "successor_version_fingerprint": fingerprint(live["successor_version"]),
-        "successor_write_count": 1,
+        "retry_successor_version_fingerprint": fingerprint(live["successor_version"]),
+        "retry_successor_write_count": 1,
     }
     no_mutation = {
         "aws_writes_executed_by_finalizer": False,
-        "contract": "stage6-saved-plan-finalization-no-mutation-v1",
+        "contract": "stage6-saved-retry-plan-finalization-no-mutation-v2",
         "lease_renewed": False,
         "managed_workload_executed": False,
         "new_terraform_plan_executed": False,
@@ -543,10 +639,11 @@ def finalize(args: argparse.Namespace) -> dict[str, Any]:
     }
     report = {
         "binary_plan_sha256": BINARY_PLAN_SHA256,
-        "contract": "stage6-saved-plan-finalization-report-v1",
+        "contract": "stage6-saved-retry-plan-finalization-report-v2",
         "current_execution_authority": False,
-        "evidence_kind": "HISTORICAL_SAVED_PLAN_RECOVERY",
+        "evidence_kind": "HISTORICAL_SAVED_RETRY_PLAN_RECOVERY",
         "failed_executor_public_file_count": 0,
+        "failure_observation_sha256": FAILURE_OBSERVATION_SHA256,
         "finalized_at_epoch": int(time.time()),
         "historical_plan_authority": authority.as_dict(),
         "lifecycle_resource_count": 3,
@@ -559,6 +656,11 @@ def finalize(args: argparse.Namespace) -> dict[str, Any]:
         "source_commit": SOURCE_COMMIT,
         "source_tree": SOURCE_TREE,
     }
+    _require(
+        failure_observation["saved_plan"]["binary_sha256"]
+        == report["binary_plan_sha256"],
+        "finalization report is not bound to the failure observation",
+    )
     report["receipt_sha256"] = digest(report)
     _write_public(public / "normalized-plan.json", normalized)
     _write_public(public / "plan-authority.json", authority.as_dict())
@@ -576,7 +678,7 @@ def finalize(args: argparse.Namespace) -> dict[str, Any]:
     }
     manifest["manifest_sha256"] = digest(manifest)
     _write_public(public / "manifest.json", manifest)
-    archive = output / "featureforge-stage6-saved-plan-public.zip"
+    archive = output / "featureforge-stage6-saved-retry-plan-public.zip"
     _public_archive(public, archive)
     return {
         "archive": str(archive),

@@ -337,3 +337,25 @@ state, inventory, Terraform, artifact, and cost gates pass. A separately confirm
 one new latest version, yielding exactly three versions. This work prepares that distinct
 transaction; it does not authorize the write, create a new plan, apply infrastructure, run a managed
 workload, or recover the lost plan.
+
+## 2026-10-06 saved retry plan and read-only finalization
+
+The authorized retry ran from exact source `2acd63e2222ada623d277dbd4f5a8032dea8e376`, tree
+`2f84914d4c7dd9564de85957a7379f0750b67515`, after exact-head CI run `37437171238` and AWS
+Qualification run `37437171228` passed. Qualification receipt SHA-256 is
+`fc974fd094c5d60f0cdef876ea201cf26fd202186b144eff4c3f4c5792a36451`.
+
+The executor added exactly the authorized third lease version and produced a persistent plan before
+the Glue log namespace omission stopped normalization. A zero-write observation authenticated plan
+timestamp `2026-10-06T08:55:53Z`, 47 create actions, binary SHA-256
+`9f1d0ee441aff40e37bf0a3091bf1f0448f3974d012e0d58c3013d04227dc7ec`, raw JSON SHA-256
+`c27bd50dc9dbabd05b238ca661177ff2e566441682e0112f56afd13b8b6b4126`, serial-zero state, and all
+20 managed-inventory checks absent. The third lease object SHA-256 is
+`8fd398f278015ab5d5339849c8d1f34712e0d2b236b7616474d934f04c291342`; its version fingerprint is
+`cfc0db7925addc22d85dbdc11af2460d211058cfb666f786412a4d3a77bae8b1`. The canonical observation
+SHA-256 is `5124d08f63f384222ee3564b0b0db521fe5b4c4f92f4c66962843b3db2f44366`.
+
+The exact-prefix validator repair and read-only finalizer now require full validation, publication,
+exact-head remote checks, and execution against the preserved CloudShell plan files. Finalization
+will produce historical plan evidence only; it will perform zero AWS writes and zero new Terraform
+plans and will not claim current deployment authority.

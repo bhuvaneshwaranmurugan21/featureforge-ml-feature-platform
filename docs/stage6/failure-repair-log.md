@@ -88,3 +88,18 @@ not accept arbitrary lifecycle resources. A separate read-only finalizer consume
 private plan, reproduces its JSON with `terraform show`, and rechecks source, artifacts, qualification
 time, lease history, state bytes, and empty inventory. It has no AWS write or new Terraform plan
 path and labels the result historical rather than current execution authority.
+
+## Saved retry plan Glue log namespace
+
+The separately authorized retry at exact source
+`2acd63e2222ada623d277dbd4f5a8032dea8e376` authenticated the two-version lease history, added
+exactly one CAS successor version, and generated a persistent 47-create Terraform 1.9.8 plan.
+Normalization then failed closed at `aws_cloudwatch_log_group.glue_error`. The reviewed Terraform
+correctly uses `/aws-glue/jobs/featureforge-stage6-s6-plan-20260930/`; the validator covered the
+managed Lambda and Step Functions paths but omitted the managed Glue hierarchy.
+
+The repair admits only the exact Glue hierarchy followed by a slash. Negative controls reject an
+unrelated namespace, a near-prefix escape, and an incomplete prefix. The saved-plan finalizer is
+rebound to the exact plan hashes and three immutable lease versions. It may run backend-disabled
+initialization, validation, and `terraform show`; it cannot write AWS state, acquire or renew a
+lease, create a new plan, apply, destroy, import, deploy, or execute a managed workload.

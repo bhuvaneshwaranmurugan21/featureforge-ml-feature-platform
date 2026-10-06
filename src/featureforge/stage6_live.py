@@ -472,6 +472,7 @@ def _name_in_namespace(value: str, prefix: str) -> bool:
         value.startswith(prefix)
         or value.startswith(f"alias/{prefix}")
         or value.startswith(f"/aws/lambda/{prefix}")
+        or value.startswith(f"/aws-glue/jobs/{prefix}/")
         or value.startswith(f"/aws/vendedlogs/states/{prefix}")
         or value.startswith(prefix.replace("-", "_"))
     )

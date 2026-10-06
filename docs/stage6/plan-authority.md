@@ -51,7 +51,7 @@ plan, it must never be blindly rerun. While the authenticated private binary/raw
 binary/raw-plan hashes and timestamp; reproduces raw JSON from the saved binary with Terraform 1.9.8;
 rebuilds the exact plan-source artifacts twice; validates the strict lifecycle and existing
 capacity/security invariants; proves the plan timestamp fell inside the original lease and exact-head
-qualification windows; and re-reads the state, residual inventory, and two-version lease history
+qualification windows; and re-reads the state, residual inventory, and exact three-version lease history
 before and after finalization. It implements no lease write or Terraform plan/apply/destroy/import
 command. Its output is explicitly historical saved-plan evidence and sets
 `current_execution_authority` to false; it cannot authorize deployment.
@@ -65,3 +65,11 @@ SHA-256 and exact immutable-version fingerprint. It rejects any missing, extra, 
 or differently identified prior version and requires the CAS result to increase the history from
 exactly two versions to exactly three. This is not recovery of the lost plan and does not reuse its
 expired authority.
+
+The persistent retry plan is the finalizer's current input. The finalizer is byte-bound to its
+canonical zero-write failure observation, binary and raw-plan hashes, timestamp, source commit and
+tree, exact-head qualification, latest successor object hash and immutable-version fingerprint. The
+Glue log-group namespace predicate accepts only
+`/aws-glue/jobs/featureforge-stage6-s6-plan-20260930/` and descendants; a sibling near-prefix or the
+bare prefix is rejected. Backend-disabled provider initialization may be repeated because it does
+not plan or mutate AWS; `terraform show` must reproduce the authenticated raw JSON byte for byte.
