@@ -290,3 +290,25 @@ planning, validates the normalized allowlist/invariants, and proves the lease, s
 inventory, and worktree did not change. Apply, destroy, import, IAM change, deployment, and managed
 workload paths remain absent and unauthorized. This repair requires complete local validation,
 publication, and a new exact-head qualification before the one authorized lease transition may run.
+
+## 2026-10-06 saved-plan finalization repair
+
+The authorized successor transaction ran once from exact source
+`8fc29d36f39a8cb8105f004b594bbedea8292d77`, tree
+`41814b95c2e5dde78e9cf0d3b62a7ad7a9b455a2`, after exact-head CI run `37416197471` and Stage 6
+AWS Qualification run `37416197533` passed. Qualification receipt SHA-256 is
+`a74c42fdbf7fab362e34f29b43d524ea2383c2e71562374efb05bbc7e3ae6199`.
+
+The executor completed the sole conditional lease write and generated the refresh-aware saved plan,
+then failed during normalization because the allowlist did not include the already-reviewed S3
+lifecycle-configuration type. Read-only inspection found exactly 47 creates, including lifecycle
+resources for `artifacts`, `evidence`, and `offline`; Terraform 1.9.8 timestamped the plan
+`2026-10-06T05:37:10Z`. The successor lease was acquired at epoch `1791265021`, expires at
+`1791268321`, and is the only version added to the preserved historical lease. No state mutation,
+managed resource creation, workload, apply, destroy, or import occurred.
+
+This repair closes the validator defect with exact lifecycle semantics and provides a saved-plan
+finalizer that cannot repeat either the lease write or Terraform plan. Publication, exact-head remote
+quality checks, and execution of that read-only finalizer against the preserved private CloudShell
+files remain required. The generated evidence will be historical plan proof and will not claim
+current deployment authority.

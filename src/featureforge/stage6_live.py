@@ -30,6 +30,7 @@ ALLOWED_RESOURCE_TYPES = frozenset(
         "aws_kms_key",
         "aws_lambda_function",
         "aws_s3_bucket",
+        "aws_s3_bucket_lifecycle_configuration",
         "aws_s3_bucket_public_access_block",
         "aws_s3_bucket_server_side_encryption_configuration",
         "aws_s3_bucket_versioning",
@@ -379,6 +380,23 @@ def normalize_terraform_plan(plan: Mapping[str, Any], *, run_id: str) -> dict[st
     glue = _find_after(plan, "aws_glue_job.offline")
     control = _find_after(plan, "aws_dynamodb_table.control")
     online = _find_after(plan, "aws_dynamodb_table.online")
+    lifecycle_addresses = {
+        f'aws_s3_bucket_lifecycle_configuration.managed["{name}"]'
+        for name in ("artifacts", "evidence", "offline")
+    }
+    observed_lifecycle_addresses = {
+        row["address"]
+        for row in rows
+        if row["type"] == "aws_s3_bucket_lifecycle_configuration"
+    }
+    lifecycle_rules = (
+        [
+            _find_after(plan, address).get("rule")
+            for address in sorted(lifecycle_addresses)
+        ]
+        if observed_lifecycle_addresses == lifecycle_addresses
+        else []
+    )
     checks = {
         "all_actions_allowlisted": True,
         "event_schedule_disabled": event.get("state") == "DISABLED",
@@ -392,6 +410,10 @@ def normalize_terraform_plan(plan: Mapping[str, Any], *, run_id: str) -> dict[st
         "control_table_pitr": _nested_enabled(control.get("point_in_time_recovery")),
         "online_table_pitr": _nested_enabled(online.get("point_in_time_recovery")),
         "online_table_ttl": _nested_enabled(online.get("ttl")),
+        "s3_lifecycle_cost_horizon": (
+            observed_lifecycle_addresses == lifecycle_addresses
+            and all(_lifecycle_cost_horizon(rule) for rule in lifecycle_rules)
+        ),
     }
     failed = sorted(name for name, passed in checks.items() if not passed)
     if failed:
@@ -416,6 +438,24 @@ def normalize_terraform_plan(plan: Mapping[str, Any], *, run_id: str) -> dict[st
 
 def _nested_enabled(value: Any) -> bool:
     return _nested_equals(value, "enabled", True)
+
+
+def _lifecycle_cost_horizon(value: Any) -> bool:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)) or len(value) != 1:
+        return False
+    rule = value[0]
+    return (
+        isinstance(rule, Mapping)
+        and rule.get("id") == "stage6-thirty-day-cost-horizon"
+        and rule.get("status") == "Enabled"
+        and _nested_equals(rule.get("expiration"), "days", 30)
+        and _nested_equals(
+            rule.get("noncurrent_version_expiration"), "noncurrent_days", 30
+        )
+        and _nested_equals(
+            rule.get("abort_incomplete_multipart_upload"), "days_after_initiation", 1
+        )
+    )
 
 
 def _nested_equals(value: Any, key: str, expected: Any) -> bool:

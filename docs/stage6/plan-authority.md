@@ -20,7 +20,11 @@ URLs, session material, and private variable files are never committed.
 
 The normalized plan must contain only allowlisted FeatureForge creates/reads for the bounded graph. A
 delete, replacement, unexplained update, non-FeatureForge address, enabled schedule, concurrency above
-one, unencrypted store, or cost above the ceiling blocks approval.
+one, unencrypted store, or cost above the ceiling blocks approval. The three
+`aws_s3_bucket_lifecycle_configuration` resources are admitted only as the exact reviewed
+`artifacts`, `evidence`, and `offline` instances. Each must contain one enabled
+`stage6-thirty-day-cost-horizon` rule with 30-day current and noncurrent expiration and a one-day
+incomplete-multipart abort. Merely adding the resource type to an allowlist is insufficient.
 
 `tools/execute_stage6_plan.py` is the bounded plan-only executor. Before its sole conditional lease
 write becomes reachable, it requires the exact clean commit, a successful exact-head qualification
@@ -35,3 +39,13 @@ change, deployment, or workload path. After planning it requires an unchanged le
 bytes/serial, unchanged empty inventory, and clean worktree. Only canonical sanitized JSON receipts
 and a deterministic public archive leave the private output directory. Authority expires at the
 earlier of the successor lease expiry and the qualification's one-hour freshness boundary.
+
+If the executor has already completed its one conditional successor write and created the binary
+plan, it must never be blindly rerun. `tools/finalize_stage6_saved_plan.py` is the only recovery path
+for that state. It pins the observed binary/raw-plan hashes and timestamp; reproduces raw JSON from
+the saved binary with Terraform 1.9.8; rebuilds the exact plan-source artifacts twice; validates the
+strict lifecycle and existing capacity/security invariants; proves the plan timestamp fell inside
+the original lease and exact-head qualification windows; and re-reads the state, residual inventory,
+and two-version lease history before and after finalization. It implements no lease write or
+Terraform plan/apply/destroy/import command. Its output is explicitly historical saved-plan evidence
+and sets `current_execution_authority` to false; it cannot authorize deployment.

@@ -106,6 +106,7 @@ INDEXED = (
     "tests/test_stage6_oracle_authority.py",
     "tests/test_stage6_orchestration_shape.py",
     "tests/test_stage6_plan_execution.py",
+    "tests/test_stage6_saved_plan_finalization.py",
     "tests/test_stage6_reconstitution.py",
     "tests/test_stage6_recovery.py",
     "tests/test_stage6_runtime_effects.py",
@@ -113,6 +114,7 @@ INDEXED = (
     "tests/test_stage6_terraform.py",
     "tools/build_stage6_artifacts.py",
     "tools/execute_stage6_plan.py",
+    "tools/finalize_stage6_saved_plan.py",
     "tools/run_stage6_proof.py",
     "tools/qualify_stage6_aws.py",
     "tools/recover_stage6_readonly.py",
@@ -308,7 +310,9 @@ def _validate_read_manifest(root: Path) -> None:
 
 def _validate_plan_executor(root: Path) -> None:
     executor = (root / "tools/execute_stage6_plan.py").read_text(encoding="utf-8")
+    finalizer = (root / "tools/finalize_stage6_saved_plan.py").read_text(encoding="utf-8")
     recovery = (root / "tools/recover_stage6_readonly.py").read_text(encoding="utf-8")
+    live = (root / "src/featureforge/stage6_live.py").read_text(encoding="utf-8")
     _check(executor.count("s3.put_object(**request)") == 1, "lease writer count differs")
     _check('"IfMatch": previous_etag' in executor, "successor lease is not CAS guarded")
     _check('"IfNoneMatch"' not in executor, "successor executor uses initial-acquisition guard")
@@ -333,6 +337,30 @@ def _validate_plan_executor(root: Path) -> None:
         and "_version_with_fingerprint" in recovery
         and '"lease_successor_versions_present"' in recovery,
         "historical recovery does not preserve the pinned lease across successors",
+    )
+    _check(
+        '"aws_s3_bucket_lifecycle_configuration"' in live
+        and '"s3_lifecycle_cost_horizon"' in live
+        and '"stage6-thirty-day-cost-horizon"' in live,
+        "saved-plan normalization does not strictly validate the lifecycle cost horizon",
+    )
+    for forbidden in (
+        ".put_object(",
+        ".delete_object(",
+        '"apply"',
+        '"destroy"',
+        '"import"',
+        '[str(terraform), "-chdir=infra/terraform", "plan"',
+    ):
+        _check(
+            forbidden not in finalizer,
+            f"saved-plan finalizer contains forbidden path: {forbidden}",
+        )
+    _check(
+        '"validate"' in finalizer
+        and '"show"' in finalizer
+        and '"current_execution_authority": False' in finalizer,
+        "saved-plan finalizer does not preserve its read-only historical boundary",
     )
 
 

@@ -149,6 +149,26 @@ def _plan(actions: list[str] | None = None) -> dict[str, object]:
                 "ttl": [{"enabled": True}],
             },
         ),
+        *[
+            (
+                f'aws_s3_bucket_lifecycle_configuration.managed["{name}"]',
+                "aws_s3_bucket_lifecycle_configuration",
+                {
+                    "rule": [
+                        {
+                            "abort_incomplete_multipart_upload": [
+                                {"days_after_initiation": 1}
+                            ],
+                            "expiration": [{"days": 30}],
+                            "id": "stage6-thirty-day-cost-horizon",
+                            "noncurrent_version_expiration": [{"noncurrent_days": 30}],
+                            "status": "Enabled",
+                        }
+                    ]
+                },
+            )
+            for name in ("artifacts", "evidence", "offline")
+        ],
     ]
     return {
         "format_version": "1.2",
@@ -167,8 +187,8 @@ def _plan(actions: list[str] | None = None) -> dict[str, object]:
 
 def test_plan_normalization_is_sanitized_and_fail_closed() -> None:
     normalized = normalize_terraform_plan(_plan(), run_id="s6-plan-20260930")
-    assert normalized["resource_count"] == 5
-    assert normalized["action_counts"] == {"create": 5}
+    assert normalized["resource_count"] == 8
+    assert normalized["action_counts"] == {"create": 8}
     assert all(normalized["checks"].values())
     assert len(normalized["normalized_plan_sha256"]) == 64
     with pytest.raises(LiveEvidenceError, match="not allowlisted"):
@@ -192,6 +212,73 @@ def test_plan_normalization_rejects_unbounded_glue_execution_property(
     glue = next(row for row in resource_changes if row["address"] == "aws_glue_job.offline")
     glue["change"]["after"]["execution_property"] = execution_property
     with pytest.raises(LiveEvidenceError, match="glue_concurrency_one"):
+        normalize_terraform_plan(plan, run_id="s6-plan-20260930")
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("id", "unreviewed-rule"),
+        ("status", "Disabled"),
+        ("expiration", [{"days": 31}]),
+        ("noncurrent_version_expiration", [{"noncurrent_days": 31}]),
+        ("abort_incomplete_multipart_upload", [{"days_after_initiation": 2}]),
+    ],
+)
+def test_plan_normalization_rejects_lifecycle_cost_horizon_drift(
+    field: str, value: object
+) -> None:
+    plan = _plan()
+    resource_changes = plan["resource_changes"]
+    assert isinstance(resource_changes, list)
+    lifecycle = next(
+        row
+        for row in resource_changes
+        if row["address"]
+        == 'aws_s3_bucket_lifecycle_configuration.managed["artifacts"]'
+    )
+    lifecycle["change"]["after"]["rule"][0][field] = value
+    with pytest.raises(LiveEvidenceError, match="s3_lifecycle_cost_horizon"):
+        normalize_terraform_plan(plan, run_id="s6-plan-20260930")
+
+
+def test_plan_normalization_requires_all_three_lifecycle_resources() -> None:
+    plan = _plan()
+    resource_changes = plan["resource_changes"]
+    assert isinstance(resource_changes, list)
+    plan["resource_changes"] = [
+        row
+        for row in resource_changes
+        if row["address"]
+        != 'aws_s3_bucket_lifecycle_configuration.managed["evidence"]'
+    ]
+    with pytest.raises(LiveEvidenceError, match="s3_lifecycle_cost_horizon"):
+        normalize_terraform_plan(plan, run_id="s6-plan-20260930")
+
+
+def test_plan_normalization_rejects_extra_or_ambiguous_lifecycle_resources() -> None:
+    plan = _plan()
+    resource_changes = plan["resource_changes"]
+    assert isinstance(resource_changes, list)
+    extra = dict(resource_changes[-1])
+    extra["address"] = 'aws_s3_bucket_lifecycle_configuration.managed["unreviewed"]'
+    resource_changes.append(extra)
+    with pytest.raises(LiveEvidenceError, match="s3_lifecycle_cost_horizon"):
+        normalize_terraform_plan(plan, run_id="s6-plan-20260930")
+
+    plan = _plan()
+    resource_changes = plan["resource_changes"]
+    assert isinstance(resource_changes, list)
+    lifecycle = next(
+        row
+        for row in resource_changes
+        if row["address"]
+        == 'aws_s3_bucket_lifecycle_configuration.managed["offline"]'
+    )
+    lifecycle["change"]["after"]["rule"].append(
+        dict(lifecycle["change"]["after"]["rule"][0])
+    )
+    with pytest.raises(LiveEvidenceError, match="s3_lifecycle_cost_horizon"):
         normalize_terraform_plan(plan, run_id="s6-plan-20260930")
 
 

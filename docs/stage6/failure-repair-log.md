@@ -66,3 +66,25 @@ normalizer now reads that exact provider shape and requires exactly one block wh
 Provider-shaped regression coverage rejects a missing block, a value above one, and ambiguous
 multiple blocks. The exclusive lease was not acquired while this deterministic validation defect
 was present, so the one-time conditional lease object was not stranded or overwritten.
+
+## Saved-plan lifecycle allowlist drift
+
+The exact-head executor at `8fc29d36f39a8cb8105f004b594bbedea8292d77` passed its prewrite
+checks, wrote one conditional successor lease, and created a 47-resource refresh-aware Terraform
+plan. Public finalization then failed closed because the plan normalizer omitted
+`aws_s3_bucket_lifecycle_configuration`, even though the reviewed Terraform and Stage 6 structural
+validator require exactly three such resources. The failure occurred after the sole authorized
+write and plan, so rerunning the executor would violate the transaction boundary.
+
+Read-only diagnostics authenticated the saved binary plan SHA-256
+`21283629c85ce06bad6166f505bbbd0d750505ea293802e326f16d85f2747620`, raw JSON SHA-256
+`cf3df22c415c2d8c17045bdf15f6e979f82fe72427c0b9735870c3cd28c0ca7e`, Terraform timestamp
+`2026-10-06T05:37:10Z`, 47 create actions, and the exact three lifecycle addresses. The lease key
+has exactly the preserved historical version plus one latest successor, no delete marker, and
+successor object SHA-256 `f425d87569905859407f9e50b93762321ea86ff3b5476cc53631574b4b9718c4`.
+
+The repair adds the missing type together with strict rule semantics and negative controls; it does
+not accept arbitrary lifecycle resources. A separate read-only finalizer consumes the existing
+private plan, reproduces its JSON with `terraform show`, and rechecks source, artifacts, qualification
+time, lease history, state bytes, and empty inventory. It has no AWS write or new Terraform plan
+path and labels the result historical rather than current execution authority.
