@@ -53,7 +53,12 @@ cannot be unavailable. Those claims remain explicitly false and require Stage 7/
 Budget admission requires a currently applicable account-wide COST/USD/MONTHLY budget, with credits
 and refunds excluded, exact USD actual and forecast spend, and sufficient remaining headroom after
 subtracting their maximum from the budget limit. If several applicable budgets exist, the smallest
-remaining headroom governs. Names are fingerprinted. No budget is created or modified.
+remaining headroom governs. The validator accepts AWS's deprecated `CostFilters`/`CostTypes`
+representation only when it has no account filters and explicitly excludes credits and refunds. It
+also accepts the modern representation only when its complete expression is exactly `NOT
+RECORD_TYPE IN (Credit, Refund)`, its sole metric is `UnblendedCost`, and it has no billing-view,
+legacy-filter, or legacy-cost-type scope. Additional predicates, values, metrics, billing views, or
+mixed representations fail closed. Names are fingerprinted. No budget is created or modified.
 
 Managed/runtime artifact and graph repairs supersede the old saved plan. A fresh exact-source price
 observation, budget authority, exclusive lease and saved plan are still needed; historical authority

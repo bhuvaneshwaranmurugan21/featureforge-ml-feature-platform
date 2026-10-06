@@ -38,7 +38,12 @@ class ReadBoundary:
                 "Start": datetime.fromtimestamp(1000, UTC),
                 "End": datetime.fromtimestamp(2000, UTC),
             },
-            "CostTypes": {"IncludeCredit": False, "IncludeRefund": False},
+            "FilterExpression": {
+                "Not": {
+                    "Dimensions": {"Key": "RECORD_TYPE", "Values": ["Credit", "Refund"]}
+                }
+            },
+            "Metrics": ["UnblendedCost"],
             "CalculatedSpend": {
                 "ActualSpend": {"Unit": "USD", "Amount": "1"},
                 "ForecastedSpend": {"Unit": "USD", "Amount": "2"},
@@ -163,7 +168,9 @@ def test_budget_and_cost_arithmetic_cannot_be_weakened() -> None:
     with pytest.raises(AdmissionDenied, match="arithmetic"):
         adapter(boundary, approval).verify(run)
     approval["cost"] = costs().as_dict()
-    boundary.budget["CostTypes"]["IncludeCredit"] = True
+    boundary.budget["FilterExpression"] = {
+        "Not": {"Dimensions": {"Key": "RECORD_TYPE", "Values": ["Credit"]}}
+    }
     with pytest.raises(LiveEvidenceError, match="no applicable"):
         adapter(boundary, approval).verify(run)
 

@@ -136,6 +136,51 @@ def priced_cost_envelope(
     return result.as_dict()
 
 
+def _modern_gross_budget(budget: Mapping[str, Any]) -> bool:
+    """Recognize only the account-wide modern equivalent of the legacy gross-cost model."""
+    expression = budget.get("FilterExpression")
+    metrics = budget.get("Metrics")
+    if not isinstance(expression, Mapping) or set(expression) != {"Not"}:
+        return False
+    excluded = expression.get("Not")
+    if not isinstance(excluded, Mapping) or set(excluded) != {"Dimensions"}:
+        return False
+    dimensions = excluded.get("Dimensions")
+    if not isinstance(dimensions, Mapping):
+        return False
+    if set(dimensions) not in ({"Key", "Values"}, {"Key", "Values", "MatchOptions"}):
+        return False
+    values = dimensions.get("Values")
+    if (
+        dimensions.get("Key") != "RECORD_TYPE"
+        or type(values) is not list
+        or len(values) != 2
+        or not all(isinstance(value, str) for value in values)
+        or set(values) != {"Credit", "Refund"}
+        or dimensions.get("MatchOptions", ["EQUALS"]) != ["EQUALS"]
+    ):
+        return False
+    return type(metrics) is list and metrics == ["UnblendedCost"]
+
+
+def _gross_account_budget(budget: Mapping[str, Any]) -> bool:
+    """Accept the deprecated or modern AWS representation without accepting scoped budgets."""
+    if budget.get("BillingViewArn") or budget.get("CostFilters"):
+        return False
+    cost_types = budget.get("CostTypes")
+    expression = budget.get("FilterExpression")
+    metrics = budget.get("Metrics")
+    legacy = (
+        not expression
+        and not metrics
+        and isinstance(cost_types, Mapping)
+        and cost_types.get("IncludeCredit") is False
+        and cost_types.get("IncludeRefund") is False
+    )
+    modern = not cost_types and _modern_gross_budget(budget)
+    return legacy or modern
+
+
 def budget_headroom(
     budgets: Sequence[Mapping[str, Any]], *, observed_at_epoch: int, worst_case_microusd: int
 ) -> dict[str, Any]:
@@ -146,15 +191,11 @@ def budget_headroom(
         start, end = period.get("Start"), period.get("End")
         if not isinstance(start, datetime) or not isinstance(end, datetime):
             continue
-        cost_types = budget.get("CostTypes", {})
         if (
             budget.get("BudgetType") != "COST"
             or budget.get("TimeUnit") != "MONTHLY"
             or budget.get("BudgetLimit", {}).get("Unit") != "USD"
-            or budget.get("CostFilters")
-            or budget.get("FilterExpression")
-            or cost_types.get("IncludeCredit") is not False
-            or cost_types.get("IncludeRefund") is not False
+            or not _gross_account_budget(budget)
             or not (
                 start.replace(tzinfo=start.tzinfo or UTC).timestamp()
                 <= observed_at_epoch

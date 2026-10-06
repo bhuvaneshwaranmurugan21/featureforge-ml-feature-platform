@@ -334,6 +334,16 @@ def budget(limit: str = "100", actual: str = "10", forecast: str = "80") -> dict
     }
 
 
+def modern_budget() -> dict[str, Any]:
+    value = budget()
+    value.pop("CostTypes")
+    value["FilterExpression"] = {
+        "Not": {"Dimensions": {"Key": "RECORD_TYPE", "Values": ["Credit", "Refund"]}}
+    }
+    value["Metrics"] = ["UnblendedCost"]
+    return value
+
+
 def test_budget_is_applicable_gross_forecast_headroom_not_budget_count() -> None:
     observed = int(datetime(2026, 10, 2, tzinfo=UTC).timestamp())
     result = budget_headroom([budget()], observed_at_epoch=observed, worst_case_microusd=20_000_000)
@@ -355,10 +365,60 @@ def test_budget_is_applicable_gross_forecast_headroom_not_budget_count() -> None
         )
 
 
+def test_modern_account_wide_gross_budget_is_equivalent_to_legacy_shape() -> None:
+    observed = int(datetime(2026, 10, 2, tzinfo=UTC).timestamp())
+    current = modern_budget()
+    result = budget_headroom(
+        [current], observed_at_epoch=observed, worst_case_microusd=20_000_000
+    )
+    assert result["available_headroom_microusd"] == 20_000_000
+    current["FilterExpression"]["Not"]["Dimensions"] = {
+        "Key": "RECORD_TYPE",
+        "Values": ["Refund", "Credit"],
+        "MatchOptions": ["EQUALS"],
+    }
+    assert budget_headroom(
+        [current], observed_at_epoch=observed, worst_case_microusd=20_000_000
+    )["headroom_verified"] is True
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("FilterExpression", {"Dimensions": {"Key": "SERVICE", "Values": ["Amazon EC2"]}}),
+        (
+            "FilterExpression",
+            {
+                "Not": {
+                    "Dimensions": {
+                        "Key": "RECORD_TYPE",
+                        "Values": ["Credit", "Refund", "Discount"],
+                    }
+                }
+            },
+        ),
+        (
+            "FilterExpression",
+            {"Not": {"Dimensions": {"Key": "RECORD_TYPE", "Values": [["Credit"], "Refund"]}}},
+        ),
+        ("Metrics", ["NetUnblendedCost"]),
+        ("BillingViewArn", "arn:aws:billing::123456789012:billingview/scoped"),
+        ("CostTypes", {"IncludeCredit": False, "IncludeRefund": False}),
+    ],
+)
+def test_modern_budget_rejects_scope_or_cost_model_drift(field: str, value: Any) -> None:
+    observed = int(datetime(2026, 10, 2, tzinfo=UTC).timestamp())
+    current = modern_budget()
+    current[field] = value
+    with pytest.raises(LiveEvidenceError, match="applicable"):
+        budget_headroom([current], observed_at_epoch=observed, worst_case_microusd=1)
+
+
 def test_budget_fixture_and_collector_use_real_pinned_service_shapes() -> None:
     model = get_session().get_service_model("budgets")
     assert set(budget()["CostTypes"]) <= set(model.shape_for("CostTypes").members)
     assert "ShowFilterExpression" in model.operation_model("DescribeBudgets").input_shape.members
+    assert modern_budget()["Metrics"] == ["UnblendedCost"]
     filtered = budget()
     filtered["FilterExpression"] = {"Dimensions": {"Key": "SERVICE", "Values": ["Amazon EC2"]}}
     with pytest.raises(LiveEvidenceError, match="applicable"):

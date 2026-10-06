@@ -2,6 +2,23 @@
 
 Status: incomplete; no Stage 6 PR was opened or merged.
 
+## 2026-10-06 modern budget authority repair
+
+Exact-head AWS qualification at `ea519c98fe5af831283da15b65eaf8a3fa6ca2cf` passed current
+catalog pricing after the symmetric-KMS correction, then failed before the paid Cost Explorer read
+because the budget validator recognized only AWS's deprecated `CostFilters`/`CostTypes` model. A
+read-only account observation showed one current COST/USD/MONTHLY budget with USD 20 limit, USD
+0.111 actual spend, USD 0.31 forecast spend, and the modern expression `NOT RECORD_TYPE IN (Credit,
+Refund)` with the sole `UnblendedCost` metric. That gives USD 19.69 headroom against the unchanged
+USD 17.703514 project envelope; the budget itself is sufficient and requires no mutation.
+
+The repair recognizes that exact modern semantic shape while retaining the legacy path. It rejects
+service/tag/account predicates, extra excluded record types, other metrics, billing views, mixed
+legacy/modern representations, and malformed expressions. This is compatibility with AWS's current
+API model, not a reduction of the account-wide gross-cost requirement. Fresh exact-head local and
+remote validation remains required; no AWS write, Terraform operation, managed workload, PR, or
+merge has been performed by this repair.
+
 ## Verified progress
 
 The Stage 6 branch is at `ac1907373b89273d70e1247ebc38db90c314db0d`, tree `0ece218791afc623e33b20123efa20fd9f017060`. GitHub Actions run `36984709058` completed both `recover_historical_evidence` and `qualify` successfully using the existing FeatureForge OIDC role. The recovery observation is retained in `evidence/stage6/recovery-observation.json`; its embedded receipt SHA-256 is `756edd3e6deec133df05e79991696c456afc306b33479786b070424814b10a13`. The observation proves a single unchanged state version and a single expired lease version; it is historical evidence only, not current execution authority. No AWS writes or Terraform execution occurred in recovery.
