@@ -68,6 +68,8 @@ def test_glue5_custom_security_log_names_match_the_job_configuration() -> None:
 
 def test_log_key_encryption_context_permits_only_exact_managed_groups() -> None:
     main = _text("main.tf")
+    assert 'customer_master_key_spec = "SYMMETRIC_DEFAULT"' in main
+    assert 'key_usage                = "ENCRYPT_DECRYPT"' in main
     policy = _statement(main, "CloudWatchLogsEncryption")
     assert 'test     = "ArnEquals"' in policy
     assert 'variable = "kms:EncryptionContext:aws:logs:arn"' in policy

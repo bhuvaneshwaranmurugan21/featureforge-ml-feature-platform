@@ -149,7 +149,7 @@
       "units": [
         "Requests"
       ],
-      "usage_pattern": "KMS-Requests",
+      "usage_pattern": "^ap-southeast-2-KMS-Requests(?: |$)",
       "quantity_millionths": 250000000000
     },
     {

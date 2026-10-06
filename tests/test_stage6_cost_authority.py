@@ -205,6 +205,60 @@ def test_live_prices_paginate_and_choose_maximum_tier(monkeypatch: pytest.Monkey
     assert result[0]["selected_dimension"]["rate_id"] == "dimension"
 
 
+def test_kms_price_selector_excludes_asymmetric_and_data_key_pair_rates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def kms_product(usage: str, rate: str, description: str) -> dict[str, Any]:
+        value = product(rate)
+        value["product"]["attributes"]["usagetype"] = usage
+        dimension = value["terms"]["OnDemand"]["term"]["priceDimensions"]["dimension"]
+        dimension["description"] = description
+        return value
+
+    standard = kms_product(
+        "ap-southeast-2-KMS-Requests",
+        "0.000003",
+        "$0.03 per 10000 KMS requests in Asia Pacific (Sydney)",
+    )
+    rsa_pair = kms_product(
+        "ap-southeast-2-KMS-Requests-GenerateDatakeyPair-RSA",
+        "0.0012",
+        "$12 per 10000 RSA Generate Data Key Pair Requests in Asia Pacific (Sydney)",
+    )
+    asymmetric = kms_product(
+        "ap-southeast-2-KMS-Requests-Asymmetric",
+        "0.000015",
+        "$0.15 per 10000 KMS Asymmetric Requests in Asia Pacific (Sydney)",
+    )
+
+    class Catalog:
+        def get_products(self, **kwargs: Any) -> dict[str, Any]:
+            assert kwargs["ServiceCode"] == "awskms"
+            return {
+                "PriceList": [
+                    json.dumps(standard),
+                    json.dumps(rsa_pair),
+                    json.dumps(asymmetric),
+                ]
+            }
+
+    monkeypatch.setattr(qualifier, "PRICE_SERVICES", ("awskms",))
+    monkeypatch.setattr(qualifier, "_client", lambda *args: Catalog())
+    profile = {
+        "lines": [
+            {
+                "component": "kms-requests",
+                **qualifier.EXPECTED_KMS_REQUEST_SELECTOR,
+            }
+        ]
+    }
+
+    result = qualifier._pricing(1_800_000_000, profile)
+    assert result[0]["matching_dimension_count"] == 1
+    assert result[0]["unit_cost_microusd"] == 3
+    assert result[0]["selected_dimension"]["description"].startswith("$0.03")
+
+
 def test_global_dashboard_price_has_explicit_narrow_applicability() -> None:
     observed = product("3", region="")
     observed["product"]["attributes"] |= {
@@ -346,6 +400,13 @@ def test_plan_bound_scope_is_verified_without_overstating_execution_or_teardown(
     changed_quantity["lines"][0]["quantity_millionths"] += 1
     with pytest.raises(LiveEvidenceError, match="quantities"):
         qualifier._cost_envelope(100, changed_quantity, rates)
+
+    changed_kms_selector = json.loads(json.dumps(profile))
+    next(
+        line for line in changed_kms_selector["lines"] if line["component"] == "kms-requests"
+    )["usage_pattern"] = "KMS-Requests"
+    with pytest.raises(LiveEvidenceError, match="KMS price selector"):
+        qualifier._cost_envelope(100, changed_kms_selector, rates)
 
 
 def test_cost_explorer_published_request_price_is_explicit_and_fail_closed(

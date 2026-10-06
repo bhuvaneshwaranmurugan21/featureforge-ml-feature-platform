@@ -27,6 +27,14 @@ to integer micro-USD before quantity multiplication. Free tiers and credits neve
 Unknown products, absent components, pagination cycles and a twenty-percent-inclusive total above
 USD 25 reject admission.
 
+The KMS request selector is anchored to the exact Sydney standard-request usage type,
+`ap-southeast-2-KMS-Requests`. The managed key is explicitly `SYMMETRIC_DEFAULT` with
+`ENCRYPT_DECRYPT` usage, and runtime roles permit encrypt, decrypt and symmetric `GenerateDataKey`
+operations—not `GenerateDataKeyPair`. Premium asymmetric and RSA/ECC data-key-pair catalog entries
+therefore do not describe this graph and cannot be selected merely because their usage names share
+the `KMS-Requests` prefix. This applicability constraint changes neither the 250,000-request bound
+nor the no-free-tier rule.
+
 `cost-workload-profile.json` freezes one future separately authorized execution and a thirty-day
 pricing/authorization horizon. It includes three durable Glue launch slots, twenty-eight possible
 Lambda invocations, PITR, object versions, logs, metrics, alarms, dashboard, X-Ray and the one paid
@@ -125,3 +133,11 @@ products, explicitly retains their global applicability, rejects pagination inco
 selects the maximum current OnDemand USD tier. It never relabels another region's rate as Sydney's
 and excludes the separate `Global-` free-tier entries. Other components retain strict region checks.
 This fixes price applicability only; it does not establish quantity enforcement or budget headroom.
+
+The 2026-10-06 exact-head qualification then exposed one remaining over-broad selector: generic
+`KMS-Requests` admitted five Sydney dimensions and chose the USD 12 per 10,000 RSA
+GenerateDataKeyPair rate. Read-only catalog inspection confirmed that the graph's ordinary symmetric
+rate has the exact usage type `ap-southeast-2-KMS-Requests`; asymmetric and data-key-pair products
+carry additional suffixes. The anchored selector and symmetric Terraform key declaration bind the
+price to the executable graph while preserving all workload quantities, the twenty-percent margin
+and the USD 25 ceiling.

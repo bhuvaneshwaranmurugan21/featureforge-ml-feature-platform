@@ -88,6 +88,11 @@ EXPECTED_COST_QUANTITIES = {
     "glue-catalog-requests": 1_000_000_000,
     "cost-explorer-requests": 1_000_000,
 }
+EXPECTED_KMS_REQUEST_SELECTOR = {
+    "service_code": "awskms",
+    "units": ["Requests"],
+    "usage_pattern": "^ap-southeast-2-KMS-Requests(?: |$)",
+}
 
 
 def _sha(value: bytes) -> str:
@@ -551,6 +556,17 @@ def _cost_envelope(
     }
     if len(quantities) != len(profile.get("lines", [])) or quantities != EXPECTED_COST_QUANTITIES:
         raise LiveEvidenceError("Stage 6 cost quantities differ from the reviewed planning bound")
+    kms_lines = [
+        line
+        for line in profile.get("lines", [])
+        if isinstance(line, Mapping) and line.get("component") == "kms-requests"
+    ]
+    if len(kms_lines) != 1 or any(
+        kms_lines[0].get(field) != value for field, value in EXPECTED_KMS_REQUEST_SELECTOR.items()
+    ):
+        raise LiveEvidenceError(
+            "Stage 6 KMS price selector differs from symmetric request authority"
+        )
     compute = Path("infra/terraform/compute.tf").read_text(encoding="utf-8")
     main = Path("infra/terraform/main.tf").read_text(encoding="utf-8")
     launch = Path("src/featureforge/glue_launch.py").read_text(encoding="utf-8")
@@ -573,6 +589,8 @@ def _cost_envelope(
         or "MAX_GLUE_LAUNCHES = 3" not in launch
         or "MAX_OBJECT_BYTES = 32 * 1024 * 1024" not in immutable
         or main.count("force_destroy = true") != 3
+        or 'customer_master_key_spec = "SYMMETRIC_DEFAULT"' not in main
+        or 'key_usage                = "ENCRYPT_DECRYPT"' not in main
         or 'id     = "stage6-thirty-day-cost-horizon"' not in main
         or "noncurrent_days = 30" not in main
         or "days_after_initiation = 1" not in main

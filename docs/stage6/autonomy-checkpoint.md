@@ -210,3 +210,32 @@ Glue library `bf4df096ca91bf53bc0c3526395747412eab25a39fe98d72e70c475a423984bd`,
 and artifact manifest `0e7f32250cf395d1b0431d69b17afcdb61c8fc12bae1d16b2caee98d44f04cb7`.
 The local environment has no Terraform binary; pinned formatting, clean initialization and validation
 remain mandatory exact-head remote checks rather than an inferred local success.
+
+## 2026-10-06 exact-head cost-selector repair
+
+Remote infrastructure and quality checks passed at exact head
+`a06f7bd7c04c5b7b5e74b53f99d470dfa67488e7`; historical evidence recovery also passed. The
+read-only AWS qualification failed closed at the unchanged USD 25 ceiling because the generic
+`KMS-Requests` selector admitted five current Sydney price dimensions and conservatively selected
+the USD 12 per 10,000 RSA GenerateDataKeyPair rate. A separate read-only catalog observation showed
+the standard symmetric dimension is exactly `ap-southeast-2-KMS-Requests`; premium asymmetric and
+RSA/ECC data-key-pair products have suffixed usage types.
+
+The repaired profile anchors that exact standard usage type, while Terraform explicitly declares a
+`SYMMETRIC_DEFAULT`/`ENCRYPT_DECRYPT` key and the qualifier fails closed if either source binding or
+selector drifts. Regression tests present the standard, asymmetric and RSA data-key-pair catalog
+rows together and require only the standard row to match. Quantities, no-free-tier treatment,
+twenty-percent safety margin and USD 25 ceiling are unchanged. This repair still requires full local
+validation, publication, exact-head remote checks and a fresh live qualification; it confers no
+lease, plan, apply, runtime, teardown or billed-cost authority.
+
+The captured 2026-10-06 catalog rates, with only the corrected standard KMS dimension substituted,
+produce a USD 14.752928 subtotal and USD 17.703514 worst case after the unchanged twenty-percent
+margin, leaving USD 7.296486 below the ceiling. This projection is diagnostic evidence, not a
+replacement for the next exact-source AWS qualification receipt. Local verification passed 473
+tests at 88.14% coverage, 23 focused cost/security tests, Ruff, strict MyPy, dependency integrity,
+all Stage 0–6 validators, `git diff --check`, and two byte-identical Stage 6 proof and artifact
+builds. The checksum-verified workflow-pinned Terraform 1.9.8 binary passed recursive formatting and
+clean backend-disabled initialization. Local provider-schema validation cannot open its required
+Unix socket in this execution sandbox (`socket: operation not permitted`), so exact-head GitHub
+Infrastructure validation remains mandatory rather than inferred or bypassed.
