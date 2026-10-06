@@ -40,12 +40,28 @@ bytes/serial, unchanged empty inventory, and clean worktree. Only canonical sani
 and a deterministic public archive leave the private output directory. Authority expires at the
 earlier of the successor lease expiry and the qualification's one-hour freshness boundary.
 
+The provider working directory is isolated in temporary storage rather than nested beneath the plan
+output. This keeps the authenticated plan, raw JSON, inputs, logs and small deterministic artifacts
+in a persistent CloudShell output directory without copying the large replaceable provider cache
+into the persistent quota. Loss of the provider cache does not remove the saved plan evidence.
+
 If the executor has already completed its one conditional successor write and created the binary
-plan, it must never be blindly rerun. `tools/finalize_stage6_saved_plan.py` is the only recovery path
-for that state. It pins the observed binary/raw-plan hashes and timestamp; reproduces raw JSON from
-the saved binary with Terraform 1.9.8; rebuilds the exact plan-source artifacts twice; validates the
-strict lifecycle and existing capacity/security invariants; proves the plan timestamp fell inside
-the original lease and exact-head qualification windows; and re-reads the state, residual inventory,
-and two-version lease history before and after finalization. It implements no lease write or
-Terraform plan/apply/destroy/import command. Its output is explicitly historical saved-plan evidence
-and sets `current_execution_authority` to false; it cannot authorize deployment.
+plan, it must never be blindly rerun. While the authenticated private binary/raw pair still exists,
+`tools/finalize_stage6_saved_plan.py` is the recovery path for that state. It pins the observed
+binary/raw-plan hashes and timestamp; reproduces raw JSON from the saved binary with Terraform 1.9.8;
+rebuilds the exact plan-source artifacts twice; validates the strict lifecycle and existing
+capacity/security invariants; proves the plan timestamp fell inside the original lease and exact-head
+qualification windows; and re-reads the state, residual inventory, and two-version lease history
+before and after finalization. It implements no lease write or Terraform plan/apply/destroy/import
+command. Its output is explicitly historical saved-plan evidence and sets
+`current_execution_authority` to false; it cannot authorize deployment.
+
+If both authenticated private plan files are lost, their recorded hashes cannot reconstruct their
+bytes and the finalizer must fail closed. A replacement plan is a distinct transaction: it requires
+a new reviewed source, a new exact-head qualification, and separate explicit authorization for one
+additional conditional successor write. The retry executor is pinned to the previously observed
+two-version history, expired source `8fc29d36f39a8cb8105f004b594bbedea8292d77`, exact prior-object
+SHA-256 and exact immutable-version fingerprint. It rejects any missing, extra, replaced, current,
+or differently identified prior version and requires the CAS result to increase the history from
+exactly two versions to exactly three. This is not recovery of the lost plan and does not reuse its
+expired authority.

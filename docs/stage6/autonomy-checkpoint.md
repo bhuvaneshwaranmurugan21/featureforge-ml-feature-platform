@@ -312,3 +312,28 @@ finalizer that cannot repeat either the lease write or Terraform plan. Publicati
 quality checks, and execution of that read-only finalizer against the preserved private CloudShell
 files remain required. The generated evidence will be historical plan proof and will not claim
 current deployment authority.
+
+## 2026-10-06 lost private plan and fail-closed retry preparation
+
+The finalizer repair was published at `620380d890aa39451fc74d5aa0abdb57b15a930c`, tree
+`ae0c72154339b11389272f94366bf46fcfee2c40`. Exact-head CI run `37429447266` and AWS
+Qualification run `37429447217` passed. Before the read-only finalizer ran, CloudShell recycled the
+temporary output directory. An exhaustive hash search found zero copies of the authenticated binary
+plan `21283629c85ce06bad6166f505bbbd0d750505ea293802e326f16d85f2747620` and raw plan
+`cf3df22c415c2d8c17045bdf15f6e979f82fe72427c0b9735870c3cd28c0ca7e`. Hash witnesses do not
+reconstruct missing bytes, so the historical finalization path is closed; no replacement evidence is
+claimed for the lost plan.
+
+A subsequent read-only AWS observation authenticated the unchanged latest lease at epoch
+`1791272110`: account `857229544428`, no delete markers, exactly two immutable versions, latest
+source `8fc29d36f39a8cb8105f004b594bbedea8292d77`, object SHA-256
+`f425d87569905859407f9e50b93762321ea86ff3b5476cc53631574b4b9718c4`, version fingerprint
+`2d7588461a2bf1b81a63c8d1803728c64ba6c6409ec81878091a098784a1b720`, and expiry epoch
+`1791268321`. The observation performed no AWS write.
+
+The retry repair binds the executor to that exact expired prior object and exactly-two-version
+history. It permits no write until a new exact-head qualification and all existing clean-source,
+state, inventory, Terraform, artifact, and cost gates pass. A separately confirmed CAS may add only
+one new latest version, yielding exactly three versions. This work prepares that distinct
+transaction; it does not authorize the write, create a new plan, apply infrastructure, run a managed
+workload, or recover the lost plan.

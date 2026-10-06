@@ -75,6 +75,7 @@ INDEXED = (
     "evidence/stage6/bootstrap-receipt.json",
     "evidence/stage6/failure-recovery-proof.json",
     "evidence/stage6/local-proof.json",
+    "evidence/stage6/plan-retry-prior-observation.json",
     "evidence/stage6/recovery-observation.json",
     "evidence/stage6/historical-reconstitution/normalized-plan.json",
     "evidence/stage6/historical-reconstitution/plan-authority.json",
@@ -313,6 +314,15 @@ def _validate_plan_executor(root: Path) -> None:
     finalizer = (root / "tools/finalize_stage6_saved_plan.py").read_text(encoding="utf-8")
     recovery = (root / "tools/recover_stage6_readonly.py").read_text(encoding="utf-8")
     live = (root / "src/featureforge/stage6_live.py").read_text(encoding="utf-8")
+    retry_observation = _load(root, "evidence/stage6/plan-retry-prior-observation.json")
+    _verify_embedded_digest(retry_observation, "receipt_sha256")
+    _check(
+        retry_observation.get("contract") == "stage6-plan-retry-prior-observation-v1"
+        and retry_observation.get("aws_writes_executed") is False
+        and retry_observation.get("lease_expired_at_observation") is True
+        and retry_observation.get("delete_marker_count") == 0,
+        "retry prior observation is not read-only, expired and marker-free",
+    )
     _check(executor.count("s3.put_object(**request)") == 1, "lease writer count differs")
     _check('"IfMatch": previous_etag' in executor, "successor lease is not CAS guarded")
     _check('"IfNoneMatch"' not in executor, "successor executor uses initial-acquisition guard")

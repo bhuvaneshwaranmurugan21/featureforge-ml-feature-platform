@@ -19,6 +19,7 @@ import secrets
 import shutil
 import stat
 import subprocess
+import tempfile
 import time
 import urllib.request
 import zipfile
@@ -61,6 +62,14 @@ HISTORICAL_LEASE_OBJECT_SHA256 = (
 HISTORICAL_LEASE_VERSION_FINGERPRINT = (
     "6afda4e75158fa14b748709eba4fe8a2c5a6795cfa72838de1986119022600dc"
 )
+PRIOR_SOURCE_COMMIT = "8fc29d36f39a8cb8105f004b594bbedea8292d77"
+PRIOR_LEASE_OBJECT_SHA256 = (
+    "f425d87569905859407f9e50b93762321ea86ff3b5476cc53631574b4b9718c4"
+)
+PRIOR_LEASE_VERSION_FINGERPRINT = (
+    "2d7588461a2bf1b81a63c8d1803728c64ba6c6409ec81878091a098784a1b720"
+)
+PRIOR_LEASE_VERSION_COUNT = 2
 
 
 class PlanExecutionError(RuntimeError):
@@ -169,6 +178,35 @@ def _version_inventory(s3: Any, bucket: str, key: str) -> dict[str, Any]:
     return {"latest": latest[0], "versions": tuple(sorted(ids))}
 
 
+def validate_authorized_prior_inventory(value: Mapping[str, Any]) -> None:
+    """Require the exact history cardinality observed before retry authorization."""
+    versions = value.get("versions")
+    latest = value.get("latest")
+    if not isinstance(versions, tuple):
+        raise PlanExecutionError("prior lease version inventory is invalid")
+    _require(
+        len(versions) == PRIOR_LEASE_VERSION_COUNT,
+        "lease history does not contain exactly the authorized prior versions",
+    )
+    if not isinstance(latest, str) or latest not in versions:
+        raise PlanExecutionError("authorized prior latest lease version is invalid")
+
+
+def validate_successor_inventory(
+    before: Mapping[str, Any], after: Mapping[str, Any], *, new_version: str
+) -> None:
+    """Require one and only one immutable version to be added by the CAS write."""
+    before_versions = set(before.get("versions", ()))
+    after_versions = set(after.get("versions", ()))
+    _require(
+        after.get("latest") == new_version
+        and before_versions < after_versions
+        and after_versions - before_versions == {new_version}
+        and len(after_versions) == PRIOR_LEASE_VERSION_COUNT + 1,
+        "lease version history did not advance by exactly one successor",
+    )
+
+
 def _read_latest_lease(s3: Any, bucket: str) -> tuple[dict[str, Any], bytes, str, str]:
     inventory = _version_inventory(s3, bucket, LEASE_KEY)
     version_id = inventory["latest"]
@@ -230,7 +268,7 @@ def parse_expired_lease(value: Mapping[str, Any], *, observed_at_epoch: int) -> 
         expires_at_epoch=value["expires_at_epoch"],
     )
     _require(lease.owner == RUN_ID, "prior lease owner differs")
-    _require(lease.source_commit == HISTORICAL_SOURCE_COMMIT, "prior lease source differs")
+    _require(lease.source_commit == PRIOR_SOURCE_COMMIT, "prior lease source differs")
     _require(observed_at_epoch >= lease.expires_at_epoch, "prior lease is not expired")
     return lease
 
@@ -383,25 +421,33 @@ def execute(args: argparse.Namespace) -> dict[str, Any]:
 
     s3 = _client("s3")
     lease_inventory_before = _version_inventory(s3, bucket, LEASE_KEY)
+    validate_authorized_prior_inventory(lease_inventory_before)
     prior_value, prior_body, prior_version, prior_etag = _read_latest_lease(s3, bucket)
     _require(
         prior_version == lease_inventory_before["latest"],
         "lease changed during preflight",
     )
     _require(
-        fingerprint(prior_version) == HISTORICAL_LEASE_VERSION_FINGERPRINT,
-        "latest lease version is not the authorized historical version",
+        fingerprint(prior_version) == PRIOR_LEASE_VERSION_FINGERPRINT,
+        "latest lease version is not the authorized prior version",
     )
     _require(
-        sha256_bytes(prior_body) == HISTORICAL_LEASE_OBJECT_SHA256,
-        "latest lease bytes are not the authorized historical lease",
+        sha256_bytes(prior_body) == PRIOR_LEASE_OBJECT_SHA256,
+        "latest lease bytes are not the authorized prior lease",
     )
     prior = parse_expired_lease(prior_value, observed_at_epoch=observed_at)
 
     terraform = shutil.which("terraform")
     _require(terraform is not None, "Terraform is not installed")
-    terraform_data = private / "terraform-data"
-    terraform_data.mkdir(mode=0o700)
+    terraform_data = Path(
+        tempfile.mkdtemp(prefix="featureforge-stage6-terraform-data.")
+    ).resolve()
+    _require(
+        not terraform_data.is_relative_to(ROOT.resolve())
+        and not terraform_data.is_relative_to(output),
+        "Terraform data directory is not independently isolated",
+    )
+    terraform_data.chmod(0o700)
     terraform_environment = {"TF_DATA_DIR": str(terraform_data)}
     version_file = private / "terraform-version.json"
     _run_private(
@@ -494,11 +540,10 @@ def execute(args: argparse.Namespace) -> dict[str, Any]:
     lease_inventory_after = _version_inventory(s3, bucket, LEASE_KEY)
     before_versions = set(lease_inventory_before["versions"])
     after_versions = set(lease_inventory_after["versions"])
-    _require(
-        lease_inventory_after["latest"] == new_version
-        and before_versions < after_versions
-        and after_versions - before_versions == {new_version},
-        "lease version history did not advance by exactly one successor",
+    validate_successor_inventory(
+        lease_inventory_before,
+        lease_inventory_after,
+        new_version=new_version,
     )
     current_value, current_body, current_version, _ = _read_latest_lease(s3, bucket)
     _require(
@@ -615,7 +660,7 @@ def execute(args: argparse.Namespace) -> dict[str, Any]:
         ),
     )
     lease_receipt = {
-        "contract": "stage6-lease-successor-receipt-v1",
+        "contract": "stage6-lease-successor-receipt-v2",
         "conditional_write": "If-Match",
         "current_lease_digest": current["digest"],
         "current_version_fingerprint": fingerprint(new_version),
@@ -624,6 +669,7 @@ def execute(args: argparse.Namespace) -> dict[str, Any]:
         "lease_version_count_after": len(after_versions),
         "owner": RUN_ID,
         "previous_expired_at_epoch": prior.expires_at_epoch,
+        "previous_lease_version_count": len(before_versions),
         "previous_lease_digest": digest(prior.as_dict()),
         "previous_lease_object_sha256": sha256_bytes(prior_body),
         "previous_version_fingerprint": fingerprint(prior_version),

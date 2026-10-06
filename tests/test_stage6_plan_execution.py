@@ -18,7 +18,7 @@ def expired_lease() -> dict[str, object]:
         "contract": "stage6-lease-snapshot-v1",
         "lease_id": "historical-private-id",
         "owner": executor.RUN_ID,
-        "source_commit": executor.HISTORICAL_SOURCE_COMMIT,
+        "source_commit": executor.PRIOR_SOURCE_COMMIT,
         "acquired_at_epoch": 100,
         "heartbeat_at_epoch": 100,
         "expires_at_epoch": 3_400,
@@ -78,6 +78,47 @@ def test_successor_is_bound_to_published_historical_lease() -> None:
         value["lease_object_version_fingerprint"]
         == executor.HISTORICAL_LEASE_VERSION_FINGERPRINT
     )
+
+
+def test_retry_is_bound_to_authenticated_expired_successor() -> None:
+    observation = executor.ROOT / "evidence/stage6/plan-retry-prior-observation.json"
+    value = json.loads(observation.read_text(encoding="utf-8"))
+    lease = value["lease"]
+    assert value["contract"] == "stage6-plan-retry-prior-observation-v1"
+    assert value["aws_writes_executed"] is False
+    assert value["lease_expired_at_observation"] is True
+    assert value["delete_marker_count"] == 0
+    assert lease["source_commit"] == executor.PRIOR_SOURCE_COMMIT
+    assert lease["owner"] == executor.RUN_ID
+    assert lease["version_count"] == executor.PRIOR_LEASE_VERSION_COUNT
+    assert lease["latest_object_sha256"] == executor.PRIOR_LEASE_OBJECT_SHA256
+    assert (
+        lease["latest_version_fingerprint"]
+        == executor.PRIOR_LEASE_VERSION_FINGERPRINT
+    )
+
+
+def test_retry_requires_exact_prior_and_single_successor_version() -> None:
+    prior = {"latest": "second", "versions": ("first", "second")}
+    executor.validate_authorized_prior_inventory(prior)
+    executor.validate_successor_inventory(
+        prior,
+        {"latest": "third", "versions": ("first", "second", "third")},
+        new_version="third",
+    )
+
+    with pytest.raises(executor.PlanExecutionError, match="authorized prior versions"):
+        executor.validate_authorized_prior_inventory(
+            {"latest": "third", "versions": ("first", "second", "third")}
+        )
+
+    for changed in (
+        {"latest": "second", "versions": ("first", "second", "third")},
+        {"latest": "third", "versions": ("first", "second", "third", "fourth")},
+        {"latest": "third", "versions": ("first", "third")},
+    ):
+        with pytest.raises(executor.PlanExecutionError, match="exactly one successor"):
+            executor.validate_successor_inventory(prior, changed, new_version="third")
 
 
 def test_terraform_commands_are_refresh_aware_lock_free_and_plan_only(tmp_path: Path) -> None:
