@@ -78,6 +78,7 @@ INDEXED = (
     "evidence/stage6/plan-retry-failure-observation.json",
     "evidence/stage6/plan-retry-prior-observation.json",
     "evidence/stage6/recovery-observation.json",
+    "evidence/stage6/saved-retry-finalization-receipt.json",
     "evidence/stage6/historical-reconstitution/normalized-plan.json",
     "evidence/stage6/historical-reconstitution/plan-authority.json",
     "evidence/stage6/historical-reconstitution/no-mutation-receipt.json",
@@ -492,6 +493,40 @@ def validate(root: Path, expect_head: str | None = None) -> None:
     _validate_read_manifest(root)
     _validate_plan_executor(root)
     _validate_bootstrap_receipt(root)
+    finalization = _load(root, "evidence/stage6/saved-retry-finalization-receipt.json")
+    _check(
+        finalization.get("contract") == "stage6-saved-retry-finalization-receipt-v1",
+        "saved retry finalization contract drift",
+    )
+    _check(finalization.get("resource_count") == 47, "saved retry resource count drift")
+    _check(
+        finalization.get("plan_action_counts") == {"create": 47},
+        "saved retry action count drift",
+    )
+    _check(
+        finalization.get("lifecycle_resource_count") == 3,
+        "saved retry lifecycle count drift",
+    )
+    _check(finalization.get("aws_write_count") == 0, "finalizer performed an AWS write")
+    _check(
+        finalization.get("new_terraform_plan_count") == 0,
+        "finalizer executed a new Terraform plan",
+    )
+    _check(
+        finalization.get("current_execution_authority") is False,
+        "historical saved plan is presented as current authority",
+    )
+    for field in (
+        "terraform_apply_executed",
+        "terraform_destroy_executed",
+        "terraform_import_executed",
+    ):
+        _check(finalization.get(field) is False, f"unsupported finalization claim: {field}")
+    _check(finalization.get("state_bytes_unchanged") is True, "state changed during finalization")
+    _check(
+        finalization.get("terraform_show_reproduced_saved_json") is True,
+        "saved plan JSON was not reproduced",
+    )
     claims = _load(root, "docs/stage6/claims.json")
     _check(
         {row.get("class") for row in claims.get("claims", [])}

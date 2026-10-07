@@ -359,3 +359,22 @@ The exact-prefix validator repair and read-only finalizer now require full valid
 exact-head remote checks, and execution against the preserved CloudShell plan files. Finalization
 will produce historical plan evidence only; it will perform zero AWS writes and zero new Terraform
 plans and will not claim current deployment authority.
+
+## 2026-10-07 saved retry plan finalized without mutation
+
+Recovery executor `e61a934d0d68f8370aaed9d05b543b515925e1ca`, tree
+`b3dec23e4222eafc91266f53a507cd7bf8790bb8`, passed exact-head CI run `37442240249`
+and Stage 6 AWS Qualification run `37442240274`. The read-only finalizer then authenticated the
+preserved private plan from source `2acd63e2222ada623d277dbd4f5a8032dea8e376`, reproduced its raw
+JSON with Terraform 1.9.8, and emitted the sanitized public archive with SHA-256
+`e7f29b2c3fbabcab8c1fc0e22d97096031cd4845ae00e0a82b2433be95c1b2a4`.
+
+The finalized historical plan contains exactly 47 creates and three reviewed S3 lifecycle
+configurations. All plan invariants passed. The finalizer performed zero AWS writes, created zero
+new Terraform plans, preserved the three-version lease history and serial-zero state bytes, and did
+not apply, destroy, import, mutate runtime resources, or execute the managed workload. The plan's
+original authority window has expired, so this evidence deliberately sets
+`current_execution_authority` to false. It proves the reviewed Stage 6 plan existed and was valid
+inside its original authority windows; it does not authorize deployment. The sanitized publication
+receipt is `evidence/stage6/saved-retry-finalization-receipt.json`; private plan bytes and local
+paths remain outside Git.

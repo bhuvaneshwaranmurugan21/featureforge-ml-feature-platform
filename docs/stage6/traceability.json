@@ -159,13 +159,15 @@
       "acceptance": "ST6-AC-17",
       "evidence": [
         "src/featureforge/managed.py",
-        "evidence/stage6/plan-receipt.json"
+        "evidence/stage6/plan-receipt.json",
+        "evidence/stage6/saved-retry-finalization-receipt.json"
       ]
     },
     {
       "acceptance": "ST6-AC-18",
       "evidence": [
         "evidence/stage6/plan-receipt.json",
+        "evidence/stage6/saved-retry-finalization-receipt.json",
         "docs/stage6/cleanup-matrix.md"
       ]
     },
@@ -173,7 +175,8 @@
       "acceptance": "ST6-AC-19",
       "evidence": [
         "evidence/stage6/aws-read-only-receipt.json",
-        "evidence/stage6/plan-receipt.json"
+        "evidence/stage6/plan-receipt.json",
+        "evidence/stage6/saved-retry-finalization-receipt.json"
       ]
     },
     {
@@ -189,6 +192,7 @@
       "acceptance": "ST6-AC-21",
       "evidence": [
         "evidence/stage6/evidence-index.json",
+        "evidence/stage6/saved-retry-finalization-receipt.json",
         "tools/validate_stage6.py"
       ]
     },

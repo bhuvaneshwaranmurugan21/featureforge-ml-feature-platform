@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -103,3 +104,25 @@ def test_finalizer_has_no_aws_write_or_new_terraform_plan_path() -> None:
     assert '"show"' in source
     assert '"init"' in source
     assert '"-backend=false"' in source
+
+
+def test_published_finalization_receipt_is_historical_and_zero_mutation() -> None:
+    receipt = json.loads(
+        (
+            finalizer.ROOT
+            / "evidence/stage6/saved-retry-finalization-receipt.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert receipt["source_commit"] == finalizer.SOURCE_COMMIT
+    assert receipt["source_tree"] == finalizer.SOURCE_TREE
+    assert receipt["resource_count"] == 47
+    assert receipt["plan_action_counts"] == {"create": 47}
+    assert receipt["lifecycle_resource_count"] == 3
+    assert receipt["lease_version_count"] == 3
+    assert receipt["aws_write_count"] == 0
+    assert receipt["new_terraform_plan_count"] == 0
+    assert receipt["state_bytes_unchanged"] is True
+    assert receipt["current_execution_authority"] is False
+    assert receipt["terraform_apply_executed"] is False
+    assert receipt["terraform_destroy_executed"] is False
+    assert receipt["terraform_import_executed"] is False
