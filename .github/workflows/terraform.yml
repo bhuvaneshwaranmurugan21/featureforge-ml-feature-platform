@@ -2,7 +2,7 @@ name: Infrastructure
 
 on:
   push:
-    branches: [main]
+    branches: [main, part3-stage6-aws-plan-qualification]
     paths: ["infra/terraform/**", ".github/workflows/terraform.yml"]
   pull_request:
     paths: ["infra/terraform/**", ".github/workflows/terraform.yml"]
@@ -13,11 +13,12 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
         with:
           terraform_version: "1.9.8"
       - run: terraform fmt -check -diff -recursive
-      - run: terraform -chdir=infra/terraform init -backend=false
+      - run: terraform -chdir=infra/terraform init -backend=false -lockfile=readonly
       - run: terraform -chdir=infra/terraform validate

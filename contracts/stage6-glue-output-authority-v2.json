@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage6-glue-output-authority:v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "generation_id",
+    "input_authority",
+    "manifest_authority",
+    "rows_authority",
+    "launch_authority_digest",
+    "authority_digest"
+  ],
+  "properties": {
+    "contract": {
+      "const": "stage6-glue-output-authority-v2"
+    },
+    "generation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input_authority": {
+      "$ref": "urn:featureforge:stage6-managed-run:v1#/$defs/s3Object"
+    },
+    "manifest_authority": {
+      "$ref": "urn:featureforge:stage6-managed-run:v1#/$defs/s3Object"
+    },
+    "rows_authority": {
+      "$ref": "urn:featureforge:stage6-managed-run:v1#/$defs/s3Object"
+    },
+    "launch_authority_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "authority_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

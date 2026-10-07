@@ -1,5 +1,5 @@
 project: featureforge-ml-feature-platform
-updated: 2026-09-27
+updated: 2026-09-29
 stage0_claim_registry: docs/stage0/claims.json
 claim_levels:
   LOCAL_SIMULATION:
@@ -57,6 +57,16 @@ claim_levels:
       - persisted nine-gate activation policy bound to the existing pointer CAS
       - controlled-clock freshness and cardinality-bounded structured telemetry
       - frozen local 3-by-3 benchmark with 486 retained correctness-bound trials
+    stage6_evidence:
+      - evidence/stage6/local-proof.json
+      - evidence/stage6/failure-recovery-proof.json
+      - evidence/stage6/artifact-qualification.json
+      - docs/stage6/claims.json
+    stage6_scope:
+      - canonical managed-run, exact object, lease, inventory, cost, task, and plan authority
+      - deterministic admission and saved-plan negative controls
+      - deterministic allowlisted Lambda and Glue runtime archives
+      - real Glue and Lambda orchestration integrations with fail-closed quarantine
   DYNAMODB_REQUEST_BOUNDARY:
     status: IMPLEMENTATION_PRESENT_STATICALLY_VALIDATED
     evidence:
@@ -69,14 +79,15 @@ claim_levels:
       - receipt condition check, pointer CAS, and immutable activation operation transaction shape
     explicit_limit: no live DynamoDB or AWS request was executed
   TERRAFORM_STATIC:
-    status: HISTORICALLY_VALIDATED_IN_CI
+    status: STAGE6_LOCAL_FORMAT_AND_INIT_VERIFIED_AWAITING_EXACT_HEAD_CI_VALIDATE
     evidence:
       - infra/terraform/
       - https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/runs/31691791184
     evidence_head_sha: 3b0ab03a0a0ef1e936be7af40cc0c517171fd81f
     scope:
       - formatting
-      - terraform validate with providers initialized
+      - clean backend-disabled initialization with the exact provider lock
+      - exact-head CI provider schema validation required for closure
   AWS_MANAGED_RUNTIME:
     status: NOT_YET_VERIFIED
     required_evidence:

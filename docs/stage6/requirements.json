@@ -1,0 +1,30 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": 6,
+  "acceptance_criteria": [
+    {"id": "ST6-AC-01", "requirement": "The exact Part 2 merged-main commit, tree, completion receipt, governance, and all predecessor gates are independently reverified before Stage 6 changes."},
+    {"id": "ST6-AC-02", "requirement": "Managed-run, task, completion, plan, lease, cost, inventory, and object-authority contracts are versioned, canonical, bounded, and fail closed."},
+    {"id": "ST6-AC-03", "requirement": "Expected outputs and admission decisions are frozen independently from primitive inputs before any managed output can exist."},
+    {"id": "ST6-AC-04", "requirement": "Every input and output is bound to exact bucket, key, version, checksum, manifest, source, definition, cutoff, and run identities."},
+    {"id": "ST6-AC-05", "requirement": "The Glue entry point executes the verified bitemporal five-feature computation under explicit row, runtime, concurrency, and output limits."},
+    {"id": "ST6-AC-06", "requirement": "The online path preserves candidate isolation, exact reconciliation, independent parity, conditional activation, and generation-pinned serving semantics."},
+    {"id": "ST6-AC-07", "requirement": "Retries, task identities, object identities, DynamoDB conditions, and completion receipts make restart and lost-acknowledgement behavior fail closed."},
+    {"id": "ST6-AC-08", "requirement": "The Step Functions graph contains real Lambda and Glue integrations, explicit retries, quarantine, and no placeholder states."},
+    {"id": "ST6-AC-09", "requirement": "Runtime artifacts are allowlisted, deterministic, content-addressed, size-bounded, and free of credentials, tests, caches, state, and local paths."},
+    {"id": "ST6-AC-10", "requirement": "Terraform, providers, and GitHub actions are exactly pinned; formatting, clean initialization, provider locking, validation, provenance, checksum, and license gates pass."},
+    {"id": "ST6-AC-11", "requirement": "S3, DynamoDB, Glue, Lambda, Step Functions, EventBridge, CloudWatch, KMS, and catalog resources form one minimal deployable bounded-run graph."},
+    {"id": "ST6-AC-12", "requirement": "Encryption, public-access blocking, PITR, retention, disabled scheduling, concurrency one, and log redaction defaults are enforced by configuration."},
+    {"id": "ST6-AC-13", "requirement": "Runtime and plan-only IAM is least privilege; OIDC binds the exact repository, audience, and protected environment; unavoidable wildcard reads are documented."},
+    {"id": "ST6-AC-14", "requirement": "The authorized AWS account, role, region, namespace inventory, service availability, and quotas are qualified using only the enumerated read APIs."},
+    {"id": "ST6-AC-15", "requirement": "The project-neutral exclusive lease is current, FeatureForge-owned, commit-bound, heartbeat-bounded, and rejects absent, conflicting, or expired state."},
+    {"id": "ST6-AC-16", "requirement": "The exact planned configuration has a current price basis, budget headroom, USD 25 ceiling, and mandatory twenty-percent safety margin."},
+    {"id": "ST6-AC-17", "requirement": "A refresh-aware saved Terraform plan is bound to source, variables, providers, state lineage and serial, account, region, artifacts, inventory, lease, and expiry."},
+    {"id": "ST6-AC-18", "requirement": "The normalized plan contains only allowlisted create/update/read actions, no unexplained replacement or deletion, and an independently reviewed cleanup inverse."},
+    {"id": "ST6-AC-19", "requirement": "Command and API receipts enumerate the separately authorized OIDC trust, encrypted backend, initial empty-state, and exclusive-lease bootstrap writes and prove that Stage 6 performed no Terraform apply, destroy, import, runtime-resource mutation, or managed workload."},
+    {"id": "ST6-AC-20", "requirement": "Wrong account, region, source, artifact, variables, provider lock, state, lease, inventory, quota, cost, and expired-plan controls all reject before mutation."},
+    {"id": "ST6-AC-21", "requirement": "Public evidence is deterministic, digest-indexed, sanitized, and contains no secrets, account IDs, sensitive ARNs or URLs, local paths, binary state, or other-project content."},
+    {"id": "ST6-AC-22", "requirement": "All Stage 0-5 quality, proof, claim, and evidence gates remain unchanged and green."},
+    {"id": "ST6-AC-23", "requirement": "The unchanged reviewed head passes required CI and review governance, merges by expected head, and merged main is independently reproduced."},
+    {"id": "ST6-AC-24", "requirement": "An external continuation receipt binds all identities, versions, evidence, limitations, plan expiry, and FEATUREFORGE_STAGE6_AWS_PLAN_VERIFIED."}
+  ]
+}

@@ -1,0 +1,93 @@
+name: Stage 6 AWS Qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [part3-stage6-aws-plan-qualification]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: featureforge-stage6-aws-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    if: github.ref == 'refs/heads/part3-stage6-aws-plan-qualification'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FF_RUN_ID: s6-plan-20260930
+      FF_SOURCE_BRANCH: part3-stage6-aws-plan-qualification
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install exact AWS evidence dependencies
+        run: PIP_CONSTRAINT="$GITHUB_WORKSPACE/requirements-dev.lock" python -m pip install -e '.[aws]'
+      - name: Assume exact FeatureForge bootstrap role
+        # v6.2.3 immutable release commit, verified on 2026-09-30.
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ap-southeast-2
+          role-session-name: featureforge-stage6-qualification
+          mask-aws-account-id: true
+          allowed-account-ids: "857229544428"
+          unset-current-credentials: true
+      - name: Execute enumerated read-only qualification
+        run: |
+          set -euo pipefail
+          python tools/qualify_stage6_aws.py \
+            --run-id "$FF_RUN_ID" \
+            --source-branch "$FF_SOURCE_BRANCH" \
+            --output /tmp/featureforge-stage6-qualification.json
+      - name: Publish sanitized receipt to job summary
+        run: |
+          {
+            echo '## FeatureForge Stage 6 sanitized AWS qualification'
+            echo
+            echo '```json'
+            python -m json.tool /tmp/featureforge-stage6-qualification.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  recover_historical_evidence:
+    if: github.ref == 'refs/heads/part3-stage6-aws-plan-qualification'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install repository-pinned read-only dependencies
+        run: PIP_CONSTRAINT="$GITHUB_WORKSPACE/requirements-dev.lock" python -m pip install -e '.[aws]'
+      - name: Assume existing FeatureForge read-only role
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ap-southeast-2
+          role-duration-seconds: 900
+          role-session-name: featureforge-stage6-readonly-recovery
+          mask-aws-account-id: true
+          allowed-account-ids: "857229544428"
+          unset-current-credentials: true
+      - name: Read and validate immutable historical evidence
+        env:
+          FF_RECOVERY_EXECUTOR_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python tools/recover_stage6_readonly.py \
+            --executor-commit "$FF_RECOVERY_EXECUTOR_COMMIT" \
+            --output /tmp/featureforge-stage6-historical-recovery.json
+          python - <<'PY'
+          from pathlib import Path
+          receipt = Path('/tmp/featureforge-stage6-historical-recovery.json').read_text().strip()
+          print('FEATUREFORGE_STAGE6_READONLY_RECOVERY_RECEIPT=' + receipt)
+          PY

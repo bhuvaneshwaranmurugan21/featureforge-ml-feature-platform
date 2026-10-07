@@ -1,0 +1,249 @@
+{
+  "contract": "stage6-cost-workload-profile-v2",
+  "region": "ap-southeast-2",
+  "maximum_microusd": 25000000,
+  "safety_margin_bps": 2000,
+  "planning_bounds_verified": true,
+  "verification_scope": "ONE_SEPARATELY_AUTHORIZED_EXECUTION_AND_THIRTY_DAY_COST_HORIZON",
+  "cost_horizon_days": 30,
+  "maximum_workflow_executions": 1,
+  "planned_max_input_rows": 1000,
+  "planned_max_output_rows": 5000,
+  "maximum_explicit_object_bytes": 33554432,
+  "maximum_explicit_run_objects": 9,
+  "managed_runtime_executed": false,
+  "teardown_executed": false,
+  "billed_cost_observed": false,
+  "bound_requirements": [
+    "One workflow execution only",
+    "Lambda: seven tasks, initial plus three retries, 512 MiB and 300 seconds each",
+    "Glue: two G.1X DPUs, fifteen minutes, initial plus two orchestration retries",
+    "At most two GiB across all DynamoDB storage and PITR versions",
+    "At most two GiB across all S3 object versions; the job has no S3 TempDir and all nine explicit run/artifact/input objects are individually bounded to 32 MiB",
+    "At most one GiB log ingestion and retained log storage",
+    "At most 250000 charged units per request component",
+    "At most ten custom metric series",
+    "Authorize no resource retention beyond thirty days under this worksheet; S3 current and noncurrent objects have thirty-day lifecycle rules and exact buckets are destroyable through the reviewed Terraform inverse",
+    "No cross-region or Internet transfer; exact same-region endpoints only",
+    "X-Ray recorded plus retrieved/scanned trace ceilings 250 each"
+  ],
+  "limitations": [
+    "This is Stage 6 plan authority for one future separately authorized execution, not evidence that the managed workload ran.",
+    "Thirty days is the conservative pricing and authorization horizon, not a claim that teardown already happened or that provider deletion APIs cannot be unavailable.",
+    "Stage 7 must bind one execution to this exact worksheet; Stage 8 must separately prove teardown, residual state, and billed cost.",
+    "The original saved plan is superseded by any runtime, orchestration, cost-control or artifact change."
+  ],
+  "lines": [
+    {
+      "component": "glue-dpu-hours",
+      "service_code": "AWSGlue",
+      "units": [
+        "DPU-Hour"
+      ],
+      "usage_pattern": "(?:ETL|Spark|DPU)",
+      "quantity_millionths": 1500000
+    },
+    {
+      "component": "lambda-gb-seconds",
+      "service_code": "AWSLambda",
+      "units": [
+        "Lambda-GB-Second",
+        "GB-Seconds"
+      ],
+      "usage_pattern": "Lambda-GB-Second",
+      "quantity_millionths": 4200000000
+    },
+    {
+      "component": "lambda-requests",
+      "service_code": "AWSLambda",
+      "units": [
+        "Request"
+      ],
+      "usage_pattern": "^APS2-Request(?: |$)",
+      "quantity_millionths": 28000000
+    },
+    {
+      "component": "states-transitions",
+      "service_code": "AmazonStates",
+      "units": [
+        "StateTransitions"
+      ],
+      "usage_pattern": "StateTransition",
+      "quantity_millionths": 2000000000
+    },
+    {
+      "component": "dynamodb-write-units",
+      "service_code": "AmazonDynamoDB",
+      "units": [
+        "WriteRequestUnits"
+      ],
+      "usage_pattern": "WriteRequestUnits",
+      "quantity_millionths": 250000000000
+    },
+    {
+      "component": "dynamodb-read-units",
+      "service_code": "AmazonDynamoDB",
+      "units": [
+        "ReadRequestUnits"
+      ],
+      "usage_pattern": "ReadRequestUnits",
+      "quantity_millionths": 250000000000
+    },
+    {
+      "component": "dynamodb-storage",
+      "service_code": "AmazonDynamoDB",
+      "units": [
+        "GB-Mo"
+      ],
+      "usage_pattern": "(?:TimedStorage-ByteHrs|Storage)",
+      "quantity_millionths": 2000000
+    },
+    {
+      "component": "dynamodb-pitr",
+      "service_code": "AmazonDynamoDB",
+      "units": [
+        "GB-Mo"
+      ],
+      "usage_pattern": "(?:PITR|Backup)",
+      "quantity_millionths": 2000000
+    },
+    {
+      "component": "s3-storage",
+      "service_code": "AmazonS3",
+      "units": [
+        "GB-Mo"
+      ],
+      "usage_pattern": "TimedStorage-ByteHrs",
+      "quantity_millionths": 2000000
+    },
+    {
+      "component": "s3-write-requests",
+      "service_code": "AmazonS3",
+      "units": [
+        "Requests"
+      ],
+      "usage_pattern": "Requests-Tier1",
+      "quantity_millionths": 250000000000
+    },
+    {
+      "component": "s3-read-requests",
+      "service_code": "AmazonS3",
+      "units": [
+        "Requests"
+      ],
+      "usage_pattern": "Requests-Tier2",
+      "quantity_millionths": 250000000000
+    },
+    {
+      "component": "kms-key",
+      "service_code": "awskms",
+      "units": [
+        "Keys"
+      ],
+      "usage_pattern": "KMS-Keys",
+      "quantity_millionths": 1000000
+    },
+    {
+      "component": "kms-requests",
+      "service_code": "awskms",
+      "units": [
+        "Requests"
+      ],
+      "usage_pattern": "^ap-southeast-2-KMS-Requests(?: |$)",
+      "quantity_millionths": 250000000000
+    },
+    {
+      "component": "logs-ingestion",
+      "service_code": "AmazonCloudWatch",
+      "units": [
+        "GB"
+      ],
+      "usage_pattern": "(?:DataProcessing-Bytes|DataProcessing)",
+      "quantity_millionths": 1000000
+    },
+    {
+      "component": "logs-storage",
+      "service_code": "AmazonCloudWatch",
+      "units": [
+        "GB-Mo"
+      ],
+      "usage_pattern": "TimedStorage-ByteHrs",
+      "quantity_millionths": 1000000
+    },
+    {
+      "component": "metric-alarms",
+      "service_code": "AmazonCloudWatch",
+      "units": [
+        "Alarms"
+      ],
+      "usage_pattern": "AlarmMonitorUsage",
+      "quantity_millionths": 3000000
+    },
+    {
+      "component": "custom-metrics",
+      "service_code": "AmazonCloudWatch",
+      "units": [
+        "Metrics"
+      ],
+      "usage_pattern": "MetricMonitorUsage",
+      "quantity_millionths": 10000000
+    },
+    {
+      "component": "dashboard",
+      "service_code": "AmazonCloudWatch",
+      "units": [
+        "Dashboards"
+      ],
+      "usage_pattern": "DashboardUsage",
+      "quantity_millionths": 1000000
+    },
+    {
+      "component": "xray-recording",
+      "service_code": "AWSXRay",
+      "units": [
+        "traces"
+      ],
+      "usage_pattern": "XRay-TracesStored",
+      "quantity_millionths": 250000000
+    },
+    {
+      "component": "xray-retrieval",
+      "service_code": "AWSXRay",
+      "units": [
+        "traces"
+      ],
+      "usage_pattern": "XRay-TracesAccessed",
+      "quantity_millionths": 250000000
+    },
+    {
+      "component": "glue-catalog-storage",
+      "service_code": "AWSGlue",
+      "units": [
+        "Obj-Month"
+      ],
+      "usage_pattern": "(?:Storage|Catalog)",
+      "quantity_millionths": 1000000000
+    },
+    {
+      "component": "glue-catalog-requests",
+      "service_code": "AWSGlue",
+      "units": [
+        "Request"
+      ],
+      "usage_pattern": "(?:Request|Catalog)",
+      "quantity_millionths": 1000000000
+    },
+    {
+      "component": "cost-explorer-requests",
+      "service_code": "DOCUMENTED_FIXED_RATE",
+      "units": [
+        "Request"
+      ],
+      "usage_pattern": "PrimaryBillingViewRequest",
+      "quantity_millionths": 1000000,
+      "fixed_unit_cost_microusd": 10000,
+      "price_authority_url": "https://aws.amazon.com/aws-cost-management/aws-cost-explorer/pricing/",
+      "price_authority_observed_date": "2026-10-05"
+    }
+  ]
+}

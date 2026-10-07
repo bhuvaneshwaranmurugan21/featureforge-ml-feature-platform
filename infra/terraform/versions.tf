@@ -1,14 +1,12 @@
 terraform {
-  required_version = ">= 1.7.0"
+  required_version = "= 1.9.8"
+
+  backend "s3" {}
 
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.6"
+      version = "= 5.100.0"
     }
   }
 }
@@ -18,9 +16,10 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project   = "FeatureForge"
       ManagedBy = "Terraform"
-      Claim     = "production-shaped-not-runtime-verified"
+      Project   = "FeatureForge"
+      RunId     = var.run_id
+      Stage     = "6"
     }
   }
 }

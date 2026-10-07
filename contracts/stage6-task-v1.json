@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage6-task:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "run_id", "task", "manifest_digest", "request_digest", "state"],
+  "properties": {
+    "contract": {"const": "stage6-task-v1"},
+    "run_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,127}$"},
+    "task": {"enum": ["VALIDATE", "START_GLUE", "RECORD_GLUE", "MATERIALIZE_ONLINE", "PARITY", "ACTIVATE", "COMPLETE"]},
+    "manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "request_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "result_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "result": {"type": "object"},
+    "state": {"enum": ["STARTED", "COMPLETED", "FAILED"]}
+  }
+}

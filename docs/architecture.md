@@ -80,6 +80,20 @@ measure durations. Telemetry labels are finite and exclude entity identities. Lo
 measurements remain separate from byte-deterministic correctness evidence. See
 `docs/stage5/parity-activation-specification.md`.
 
+## Managed plan semantics
+
+Stage 6 translates the verified local semantics into one bounded AWS resource graph without
+executing it. A managed-run manifest pins source commit/tree, region and sanitized account identity,
+versioned/checksummed objects, row limits, artifact digests, output namespace, and cost ceiling.
+Admission additionally requires a current exclusive lease, empty FeatureForge residual inventory,
+sufficient quota, and a current price envelope with twenty-percent margin.
+
+The Standard Step Functions graph invokes real Lambda and synchronous Glue integrations and routes
+all errors or parity rejection to quarantine. EventBridge dispatch and the Lambda entry point remain
+disabled by default. A saved plan is usable only while every commit, variable, provider lock, state,
+account, region, artifact, inventory, lease, cost, and expiry binding is unchanged. Stage 6 does not
+apply that plan or establish managed-runtime behavior.
+
 ## Primary references
 
 - [Feast point-in-time joins](https://docs.feast.dev/getting-started/concepts/point-in-time-joins)

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:featureforge:stage6-candidate-write-projection:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "plan_digest", "record_count", "item_bytes_upper_bound", "maximum_item_bytes_upper_bound", "owner_item_bytes", "transaction_write_units_upper_bound", "transaction_condition_write_units_upper_bound", "projection_digest"],
+  "properties": {
+    "contract": {"const": "stage6-candidate-write-projection-v1"},
+    "plan_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "record_count": {"type": "integer", "minimum": 0},
+    "item_bytes_upper_bound": {"type": "integer", "minimum": 0},
+    "maximum_item_bytes_upper_bound": {"type": "integer", "minimum": 0, "maximum": 409600},
+    "owner_item_bytes": {"type": "integer", "minimum": 1, "maximum": 409600},
+    "transaction_write_units_upper_bound": {"type": "integer", "minimum": 0},
+    "transaction_condition_write_units_upper_bound": {"type": "integer", "minimum": 0},
+    "projection_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

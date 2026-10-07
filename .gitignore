@@ -9,3 +9,10 @@ __pycache__/
 /build/
 .terraform/
 *.tfstate*
+*.tfplan
+*.tfvars
+*.tfvars.json
+.terraformrc
+terraform.rc
+backend.hcl
+/build/stage6/

@@ -1,0 +1,29 @@
+{
+  "project": "featureforge-ml-feature-platform",
+  "stage": 6,
+  "builder": "tools/build_stage6_artifacts.py",
+  "build_count": 2,
+  "byte_identical_rebuild": true,
+  "artifact_manifest_sha256": "23e62a2ff6e44c3fd7646ef1e5aed8f03a3616bcf982f31aee207becf968fe30",
+  "artifacts": [
+    {
+      "maximum_bytes": 10485760,
+      "name": "featureforge-control-worker.zip",
+      "sha256": "48f03f44a2ab74215e385ea81396c9f2bb009f44dbdbdfb1c8ffcfa7436f45f0",
+      "size_bytes": 55705
+    },
+    {
+      "maximum_bytes": 10485760,
+      "name": "featureforge-glue-library.zip",
+      "sha256": "bf4df096ca91bf53bc0c3526395747412eab25a39fe98d72e70c475a423984bd",
+      "size_bytes": 20302
+    }
+  ],
+  "allowlist_only": true,
+  "tests_included": false,
+  "caches_included": false,
+  "credentials_included": false,
+  "terraform_state_included": false,
+  "local_paths_included": false,
+  "binaries_committed": false
+}

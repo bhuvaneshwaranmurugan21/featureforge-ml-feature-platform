@@ -1,0 +1,42 @@
+# Stage 6 IAM matrix
+
+| Principal | Allowed capability | Resource boundary | Reason |
+|---|---|---|---|
+| Control worker | Exact S3 version reads and encrypted writes | Offline and evidence buckets only | Validate manifests and persist receipts |
+| Control worker | Get/put/query/update/transaction | Control and online tables only | Idempotency, candidate reconciliation, guarded activation |
+| Control worker | Start/get one Glue job | Exact job ARN | Bounded orchestration |
+| Control worker | KMS encrypt/decrypt/data key | One project key | Required by encrypted buckets/tables |
+| Glue job | Read artifacts and exact inputs; write isolated output | Artifact, offline, and evidence buckets | Execute bounded feature computation |
+| Glue job | Publish enabled job metrics | `Glue` namespace and configured region; API has no resource ARN | Preserve job observability; aggregate cardinality remains an open cost gate |
+| Glue job | KMS encrypt/decrypt/data key | One project key | Encrypted input/output and logs |
+| State machine | Invoke exact Lambda; read exact Glue job-run status | Exact function/job | Managed control graph; launching requires durable worker admission |
+| EventBridge | Start exact state machine | Exact state machine | Disabled schedule definition only |
+| GitHub plan role | Get/list/describe/simulate | Read-only qualification APIs | Terraform refresh and qualification, never apply |
+| Explicitly authorized operator session | One conditional encrypted `PutObject` | Exact private Stage 6 lease key | CAS successor only; no retry on unknown outcome and no deployment write |
+
+The plan role trust requires audience `sts.amazonaws.com` and the immutable GitHub subject
+`repo:bhuvaneshwaranmurugan21@276895096/featureforge-ml-feature-platform@1332971230:environment:featureforge-stage6-plan`.
+The immutable owner and repository identifiers prevent a renamed or recreated repository from
+inheriting this trust boundary.
+It has no create, update, delete, pass-role, object-write, table-write, workload-start, or deployment
+permission.
+
+The operator-session exception is not added to the GitHub role or the read-only qualification
+manifest. It is constrained in the plan executor to one `If-Match` write on the exact lease key and
+requires separately recorded human authorization. All planning calls after it are read-only.
+
+Wildcard resources exist only where AWS read/list APIs or Step Functions log-delivery APIs do not
+support meaningful resource scoping. They are read-only or service-required log-control calls; the
+action allowlist, account-bound provider, exact OIDC subject, and no-apply workflow remain the
+compensating boundaries. Any added wildcard action is a blocking change requiring a new review.
+# Admission read authority
+
+The control worker additionally reads only versioned artifacts at `admission/*`, the exact
+FeatureForge Stage 6 bootstrap lease object, service quota observations in the authorized region,
+and gross account budget observations. Budget reads use the account's budget ARN namespace;
+service quota reads require `*` because the API has no resource-level scope, with an explicit
+requested-region condition. These are future Terraform policy definitions, not applied IAM changes.
+The control worker now additionally has `GetJob` and `StartJobRun` only for the exact deployed
+Glue job. The Step Functions role has only `GetJobRun` for that job; it cannot bypass the durable
+launch budget. Glue's own role cannot launch jobs, and runtime roles cannot delete launch records.
+All changes remain Terraform definitions; none have been applied.

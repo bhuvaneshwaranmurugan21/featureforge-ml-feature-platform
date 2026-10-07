@@ -1,8 +1,8 @@
 {
   "base_sha": "ce2646754065145cbf609f286c588bbaa4fb3284",
   "files_sha256": {
-    ".github/workflows/ci.yml": "7148d2869fcc2630a9b465a5a337ef96978188a478a283e540dee3c481f9a52e",
-    "README.md": "ad4f4b52377bbe0c30b7c928108f7ea97599c001dfb82b009a703f0a9167cf07",
+    ".github/workflows/ci.yml": "28c1566e99c5a0d6547f6ecc766a9eeeb889cd276e8f96d2ad10135730b7e7d2",
+    "README.md": "2d69420950a2e1823108df908f415c7a2ccd134a5f90655aff2a5d1cdeb4c5d9",
     "contracts/payment-event-v2.json": "65373f09f3647f9a70c68e705d7983b132df0ee61c7598c1bda87b6a862b7fdf",
     "docs/stage1/claims.json": "ae05e1e94ac236eb63ad5d2ff924d72aeb51d26418f12f231819b6fd105758ce",
     "docs/stage1/decision-table.json": "be96880e7141f52744e6ee90c82c3798b165b3cc0499e9ad80ca1d468d7cdf49",
@@ -13,7 +13,7 @@
     "evidence/stage1/baseline.json": "b62127aa5feb5551c406872ee5ccd11b8a22c3e5420d05b3dc3473b0df793a0c",
     "evidence/stage1/local-simulation.json": "50e1dcf30b6278c3f8dd4c65b86994d4340055882432c704f90a25ed9d01f308",
     "evidence/stage1/temporal-proof.json": "efd1d08aedc58348cf05f678c6a3d77f835549aa95332c1000ae019045daee09",
-    "pyproject.toml": "b242f698d675b88c10fcbd6105491ff48bd9dc62157c9d4f2b5486b41aa5fb02",
+    "pyproject.toml": "e44e5c96b4b6a4c411348e73051acfbb6c8417c3cb69d6efd3543e79854f2c1a",
     "requirements-dev.lock": "6cbc9f858fa182ca95513ca621e677ee2d66bb8b9027d2506efc57e0d0de734f",
     "src/featureforge/computation.py": "a486ccf1812e7d75f1cbf9901d23bf4b34a46cf7cca6d0d1581659b6fa3c84ac",
     "src/featureforge/dataset.py": "e4bd3cd9cd647e359f949720fa497d0a20c47073a6d3755302f3821721bf245d",
