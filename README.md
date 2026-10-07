@@ -1,7 +1,14 @@
 # FeatureForge — ML Feature Platform
 
-[![CI](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/ci.yml)
-[![Infrastructure](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/terraform.yml/badge.svg)](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/terraform.yml)
+[![CI](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/ci.yml?query=branch%3Amain)
+[![Infrastructure](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/terraform.yml/badge.svg?branch=main)](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/terraform.yml?query=branch%3Amain)
+[![AWS OIDC Identity](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/aws-oidc-identity.yml/badge.svg?branch=main)](https://github.com/bhuvaneshwaranmurugan21/featureforge-ml-feature-platform/actions/workflows/aws-oidc-identity.yml?query=branch%3Amain)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python: 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg)](pyproject.toml)
+[![Java: 17](https://img.shields.io/badge/Java-17-ED8B00.svg)](.github/workflows/ci.yml)
+[![PySpark: 3.5.9](https://img.shields.io/badge/PySpark-3.5.9-E25A1C.svg)](pyproject.toml)
+[![Terraform](https://img.shields.io/badge/Terraform-844FBA.svg?logo=terraform&logoColor=white)](infra/terraform/README.md)
+[![AWS](https://img.shields.io/badge/AWS-FF9900.svg?logo=amazonwebservices&logoColor=white)](docs/stage6/managed-architecture.md)
 
 FeatureForge is a local bitemporal reference implementation for payment-risk features. Its
 checked fixtures exclude late-known corrections from historical training rows, apply typed

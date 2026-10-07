@@ -4,7 +4,7 @@
   "files_sha256": {
     ".github/workflows/ci.yml": "28c1566e99c5a0d6547f6ecc766a9eeeb889cd276e8f96d2ad10135730b7e7d2",
     "Makefile": "9df52a137cc7c9952544d0084a80513179b8cbbffc8f75b97c64f05a38065809",
-    "README.md": "2d69420950a2e1823108df908f415c7a2ccd134a5f90655aff2a5d1cdeb4c5d9",
+    "README.md": "1500822735d1e34bb54553128d8f6a383bb76ab694924e5146227b263f9c3aff",
     "contracts/definition-set-manifest-v1.json": "6c560b4c3991816923435c71438ef752d8c4462fe34b81f1acec8d93b9570d39",
     "contracts/generation-manifest-v1.json": "be549e5a7317299ff88aee049cc150f649737ea82c675c3d2fe7f7a67c548b01",
     "contracts/publication-receipt-v1.json": "7620c8221f67305116c809d2d88259dfc9ecac1678258260f8cbeea389efab0b",
