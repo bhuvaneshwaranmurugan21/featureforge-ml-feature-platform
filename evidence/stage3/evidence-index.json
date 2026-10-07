@@ -4,7 +4,7 @@
   "files_sha256": {
     ".github/workflows/ci.yml": "28c1566e99c5a0d6547f6ecc766a9eeeb889cd276e8f96d2ad10135730b7e7d2",
     "Makefile": "9df52a137cc7c9952544d0084a80513179b8cbbffc8f75b97c64f05a38065809",
-    "README.md": "2d69420950a2e1823108df908f415c7a2ccd134a5f90655aff2a5d1cdeb4c5d9",
+    "README.md": "1500822735d1e34bb54553128d8f6a383bb76ab694924e5146227b263f9c3aff",
     "contracts/affected-scope-plan-v1.json": "734718f595b35b84792ba6c27de10f74dcf04aa813ba76d7912bfedeaa71dddf",
     "contracts/spark-offline-generation-v1.json": "1da77177f915200407b8791535e5382e32643106bf6d26b197217dcce1f91b13",
     "docs/architecture.md": "e037f9ba4563c66f2d0b6345028c418e5a11f76990e04bfbc02c9e57e08e2825",

@@ -2,7 +2,7 @@
   "base_sha": "ce2646754065145cbf609f286c588bbaa4fb3284",
   "files_sha256": {
     ".github/workflows/ci.yml": "28c1566e99c5a0d6547f6ecc766a9eeeb889cd276e8f96d2ad10135730b7e7d2",
-    "README.md": "2d69420950a2e1823108df908f415c7a2ccd134a5f90655aff2a5d1cdeb4c5d9",
+    "README.md": "1500822735d1e34bb54553128d8f6a383bb76ab694924e5146227b263f9c3aff",
     "contracts/payment-event-v2.json": "65373f09f3647f9a70c68e705d7983b132df0ee61c7598c1bda87b6a862b7fdf",
     "docs/stage1/claims.json": "ae05e1e94ac236eb63ad5d2ff924d72aeb51d26418f12f231819b6fd105758ce",
     "docs/stage1/decision-table.json": "be96880e7141f52744e6ee90c82c3798b165b3cc0499e9ad80ca1d468d7cdf49",
